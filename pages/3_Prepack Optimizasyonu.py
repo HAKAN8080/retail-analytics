@@ -1,42 +1,4 @@
-st.markdown("""
-    **Durum:** Bir ürün mağazalarda satılıyor, analiz periyodu: 2 Haftalık
-    
-    | Paket | 15 adet | 10 adet | 5 adet | 3 adet | 1 adet | 0 adet | Karar |
-    |-------|---------|---------|--------|--------|--------|--------|--------|
-    | 3'lü  | **5**   | **8**   | 12     | 15     | 8      | 2      | **⭐ SEÇ** |
-    | 4'lü  | 3       | 6       | 14     | 16     | 9      | 2      | |
-    | 5'li  | 2       | 5       | 15     | 17     | 9      | 2      | |
-    
-    **Sonuç:** 3'lü paket önerilir çünkü:
-    - ✅ **EN FAZLA** 15 adet satış mağazası (5 mağaza)
-    - ✅ **EN FAZLA** 10 adet satış mağazası (8 mağaza)
-    - ✅ Yüksek satış yapan mağaza sayısı maksimum
-    - ✅ Küçük paket → Az şişme + Fazla lojistik tasarruf
-    
-    **Mantık:** 
-    - Önce en yüksek satış adetine bakılır (20+, 20, 19, ...)
-    - Hangi pakette o kategoride en fazla mağaza varsa seçilir
-    - Eşitlik durumunda bir sonraki satış adetine bakılır
-    """)
-    
-    st.info("""
-    💡 **Neden bu mantık?**
-    
-    **Örnek:** Ortalama 8.5 adet satış
-    - 3'lü paket → 9 adet gider → 0.5 şişme ✅
-    - 5'li paket → 10 adet gider → 1.5 şişme
-    - 10'lu paket → 10 adet gider → 1.5 şişme
-    
-    **Her satış adedi ayrı görünür:**
-    - 0 adet: X mağaza (satış yok)
-    - 1 adet: Y mağaza (çok düşük)
-    - 2 adet: Z mağaza
-    - ...
-    - 15 adet: A mağaza (yüksek satış)
-    - 20+ adet: B mağaza (çok yüksek satış)
-    
-    Bu sayede hangi mağazalarda ne kadar satış olduğunu tam olarak görürsünüz!
-    """)|import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -156,12 +118,10 @@ def csv_oku(file):
     for encoding in encodings:
         for delimiter in delimiters:
             try:
-                file.seek(0)  # Dosya pointerını başa al
+                file.seek(0)
                 df = pd.read_csv(file, encoding=encoding, delimiter=delimiter)
                 
-                # Başarılı okuma kontrolü
                 if len(df.columns) > 1 and len(df) > 0:
-                    # Kolon isimlerini temizle
                     df.columns = df.columns.str.strip()
                     st.success(f"✅ Dosya başarıyla okundu! (Encoding: {encoding}, Delimiter: '{delimiter}')")
                     return df
@@ -175,14 +135,10 @@ def kolon_normalize(df):
     import unicodedata
     
     def temizle(text):
-        """Türkçe karakterleri ve özel karakterleri temizle"""
         if not isinstance(text, str):
             return text
-        # Unicode normalizasyonu
         text = unicodedata.normalize('NFKD', text)
-        # ASCII'ye çevir
         text = text.encode('ascii', 'ignore').decode('ascii')
-        # Küçük harfe çevir ve boşlukları temizle
         text = text.lower().strip()
         return text
     
@@ -190,7 +146,6 @@ def kolon_normalize(df):
     for col in df.columns:
         col_clean = temizle(col)
         
-        # Eşleştirme - yeni kolon isimleri
         if any(x in col_clean for x in ['tarih', 'date']):
             kolon_map[col] = 'Tarih'
         elif any(x in col_clean for x in ['magaza', 'store', 'magazakod', 'magazakodu']):
@@ -214,13 +169,12 @@ def ornek_veri_olustur():
     for tarih in tarihler:
         for magaza in magazalar:
             for urun in urunler:
-                # Farklı satış paternleri
                 if magaza in ['MGZ001', 'MGZ002']:
-                    satis = np.random.poisson(5)  # Yüksek satış
+                    satis = np.random.poisson(5)
                 elif magaza == 'MGZ003':
-                    satis = np.random.poisson(2)  # Orta satış
+                    satis = np.random.poisson(2)
                 else:
-                    satis = np.random.poisson(1)  # Düşük satış
+                    satis = np.random.poisson(1)
                 
                 stok = np.random.randint(10, 50)
                 data.append({
@@ -236,15 +190,12 @@ def ornek_veri_olustur():
 def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
     """Ana analiz fonksiyonu"""
     
-    # Tarih kolonunu datetime'a çevir
     if 'Tarih' in df.columns:
         df['Tarih'] = pd.to_datetime(df['Tarih'])
     
-    # Kolon isimlerini normalize et
     kolon_map = kolon_normalize(df)
     df = df.rename(columns=kolon_map)
     
-    # Gerekli kolonları kontrol et
     gerekli_kolonlar = ['Tarih', 'magaza_kod', 'urun_kod', 'satis', 'stok']
     eksik_kolonlar = [k for k in gerekli_kolonlar if k not in df.columns]
     
@@ -253,20 +204,18 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
         st.info(f"Mevcut kolonlar: {', '.join(df.columns.tolist())}")
         return []
     
-    # Periyod günü hesapla
     if periyod == "Tüm Veri (2 Haftalık Ort.)":
-        periyod_gun = 14  # 2 haftalık ortalama için
+        periyod_gun = 14
         tum_veri_modu = True
     elif periyod == "İki Haftalık":
         periyod_gun = 14
         tum_veri_modu = False
-    else:  # Haftalık
+    else:
         periyod_gun = 7
         tum_veri_modu = False
     
     sonuclar = []
     
-    # Her ürün için analiz
     for urun in df['urun_kod'].unique():
         urun_df = df[df['urun_kod'] == urun]
         
@@ -275,16 +224,13 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
         for paket_boyutu in paket_boyutlari:
             toplam_sisme = 0
             magaza_sayisi = 0
-            # 0'dan 20'ye kadar + 20+ kategorisi
-            satis_dagilimi = {i: 0 for i in range(21)}  # 0,1,2,...,20
+            satis_dagilimi = {i: 0 for i in range(21)}
             satis_dagilimi['20+'] = 0
             magaza_detaylari = []
             
-            # Her mağaza için
             for magaza in urun_df['magaza_kod'].unique():
                 magaza_df = urun_df[urun_df['magaza_kod'] == magaza]
                 
-                # Toplam satış ve periyod sayısı
                 toplam_satis = magaza_df['satis'].sum()
                 
                 if 'Tarih' in magaza_df.columns:
@@ -292,24 +238,19 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 else:
                     gun_sayisi = len(magaza_df)
                 
-                # Periyod sayısı hesaplama
                 if tum_veri_modu:
-                    # Tüm veriyi al, 2 haftalık ortalamaya böl
                     periyod_sayisi = gun_sayisi / 14
                 else:
                     periyod_sayisi = max(1, gun_sayisi / periyod_gun)
                 
-                # Ortalama satış
                 ortalama_satis = toplam_satis / periyod_sayisi
                 
-                # Tam sayıya yuvarla ve dağılıma ekle
                 ortalama_satis_tam = int(round(ortalama_satis))
                 if ortalama_satis_tam <= 20:
                     satis_dagilimi[ortalama_satis_tam] += 1
                 else:
                     satis_dagilimi['20+'] += 1
                 
-                # Şişme hesapla - YENİ FORMÜL
                 ihtiyac = ortalama_satis
                 gonderilecek = np.ceil(ihtiyac / paket_boyutu) * paket_boyutu
                 sisme = max(0, gonderilecek - ihtiyac)
@@ -325,13 +266,8 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                     'sisme': round(sisme, 2)
                 })
             
-            # Skorları hesapla - YENİ FORMÜLLER
-            # Lojistik Tasarruf = (1 / paket_boyutu) * lojistik_katsayi
             lojistik_tasarruf = (1 / paket_boyutu) * lojistik_kat * magaza_sayisi
-            
-            # Şişme Maliyeti = Σ(paket_boyutu - ortalama_satis) * sisme_katsayi
             sisme_maliyeti = toplam_sisme * sisme_kat
-            
             net_skor = lojistik_tasarruf - sisme_maliyeti
             
             paket_sonuclari.append({
@@ -341,26 +277,22 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 'sisme_maliyeti': round(sisme_maliyeti, 1),
                 'net_skor': round(net_skor, 1),
                 'magaza_sayisi': magaza_sayisi,
-                'satis_dagilimi': satis_dagilimi,  # 0,1,2,...,20,20+
+                'satis_dagilimi': satis_dagilimi,
                 'magaza_detaylari': magaza_detaylari,
                 'lojistik_kat': lojistik_kat,
                 'sisme_kat': sisme_kat
             })
         
-        # En iyi paketi bul - EN YÜKSEK SATIŞ ADEDİNDEN BAŞLAYARAK
         if paket_sonuclari:
             def paket_oncelik_skoru(paket):
                 satis_dagilimi = paket['satis_dagilimi']
                 skor_listesi = []
                 
-                # 20+ önce
                 skor_listesi.append(satis_dagilimi.get('20+', 0))
                 
-                # Sonra 20'den 0'a kadar
                 for i in range(20, -1, -1):
                     skor_listesi.append(satis_dagilimi.get(i, 0))
                 
-                # Net skor en son
                 skor_listesi.append(-abs(paket['net_skor']))
                 
                 return tuple(skor_listesi)
@@ -379,7 +311,6 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
 # ANA UYGULAMA
 # ============================================
 
-# Dosya yükleme bölümü
 col1, col2, col3 = st.columns([2, 1, 1])
 
 with col1:
@@ -422,24 +353,15 @@ with col3:
                     st.success("✅ Analiz tamamlandı!")
             except Exception as e:
                 st.error(f"❌ Analiz hatası: {str(e)}")
-                st.exception(e)  # Detaylı hata bilgisi
+                st.exception(e)
 
-# Veri önizleme
 if uploaded_file is not None:
     try:
         df = csv_oku(uploaded_file)
         
         if df is None:
             st.error("❌ CSV dosyası okunamadı. Lütfen dosya formatını kontrol edin.")
-            st.info("""
-            **Olası çözümler:**
-            - Dosyanın UTF-8 encoding ile kaydedildiğinden emin olun
-            - Excel'den CSV olarak kaydederken 'CSV UTF-8 (Virgülle ayrılmış)' seçeneğini kullanın
-            - Kolon ayırıcısının virgül (,) olduğundan emin olun
-            - Dosyanın boş olmadığını kontrol edin
-            """)
         else:
-            # Kolon kontrolü
             kolon_map = kolon_normalize(df)
             df_normalized = df.rename(columns=kolon_map)
             
@@ -448,13 +370,6 @@ if uploaded_file is not None:
             
             if eksik_kolonlar:
                 st.warning(f"⚠️ Eksik kolonlar: {', '.join(eksik_kolonlar)}")
-                st.info(f"""
-                **Mevcut kolonlar:** {', '.join(df.columns.tolist())}
-                
-                **Beklenen kolonlar:** Tarih, magaza_kod, urun_kod, satis, stok
-                
-                Kolon eşleştirme otomatik yapılacak, ancak tam eşleşme bulunamadı.
-                """)
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -480,7 +395,6 @@ if uploaded_file is not None:
     
     except Exception as e:
         st.error(f"❌ Beklenmeyen hata: {str(e)}")
-        st.info("Lütfen destek için hata mesajını kaydedin.")
 
 # ============================================
 # SONUÇLARI GÖSTER
@@ -491,29 +405,24 @@ if 'analiz_sonuclari' in st.session_state:
     st.markdown("---")
     st.header("📊 Analiz Sonuçları")
     
-    # Özet tablo - TÜM PAKET BOYUTLARI
     st.subheader("🎯 Öneriler Özeti - Tüm Paket Boyutları")
     
     for sonuc in sonuclar:
         st.markdown(f"### 📦 {sonuc['urun']}")
         
-        # Her paket boyutu için sonuçları göster
         ozet_data = []
         for paket_sonuc in sonuc['paket_sonuclari']:
             en_iyi = "⭐" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
             
-            # Temel bilgiler
             row = {
                 '': en_iyi,
                 'Paket': f"{paket_sonuc['paket_boyutu']}'lü"
             }
             
-            # 20+'dan 0'a kadar tüm satış adetleri
             row['20+'] = paket_sonuc['satis_dagilimi'].get('20+', 0)
             for i in range(20, -1, -1):
                 row[f'{i}'] = paket_sonuc['satis_dagilimi'].get(i, 0)
             
-            # Diğer metrikler
             row['Net Skor'] = round(paket_sonuc['net_skor'], 2)
             row['Lojistik'] = round(paket_sonuc['lojistik_tasarruf'], 2)
             row['Şişme'] = round(paket_sonuc['toplam_sisme'], 2)
@@ -522,7 +431,6 @@ if 'analiz_sonuclari' in st.session_state:
         
         ozet_df = pd.DataFrame(ozet_data)
         
-        # En iyi paketi vurgula
         def highlight_best(row):
             if row[''] == '⭐':
                 return ['background-color: #d4edda'] * len(row)
@@ -537,18 +445,16 @@ if 'analiz_sonuclari' in st.session_state:
         except:
             st.dataframe(ozet_df, use_container_width=True, hide_index=True)
         
-        # Seçim açıklaması
         en_iyi = sonuc['en_iyi_paket']
         dag = en_iyi['satis_dagilimi']
         
-        # En yüksek satış kategorilerini bul
         yuksek_kategoriler = []
         if dag.get('20+', 0) > 0:
             yuksek_kategoriler.append(f"20+ adet: {dag['20+']} mağaza")
         for i in range(20, -1, -1):
             if dag.get(i, 0) > 0:
                 yuksek_kategoriler.append(f"{i} adet: {dag[i]} mağaza")
-                if len(yuksek_kategoriler) >= 5:  # İlk 5 kategoriyi göster
+                if len(yuksek_kategoriler) >= 5:
                     break
         
         aciklama = "\n".join([f"- {k}" for k in yuksek_kategoriler[:5]])
@@ -565,10 +471,8 @@ if 'analiz_sonuclari' in st.session_state:
         
         st.markdown("---")
     
-    # CSV indirme - TÜM SONUÇLAR
     st.subheader("💾 Rapor İndirme")
     
-    # Tüm sonuçları birleştir
     tum_sonuclar = []
     for sonuc in sonuclar:
         for paket_sonuc in sonuc['paket_sonuclari']:
@@ -580,12 +484,10 @@ if 'analiz_sonuclari' in st.session_state:
                 'Paket Boyutu': paket_sonuc['paket_boyutu']
             }
             
-            # Tüm satış kategorileri
             row['20+ adet'] = paket_sonuc['satis_dagilimi'].get('20+', 0)
             for i in range(20, -1, -1):
                 row[f'{i} adet'] = paket_sonuc['satis_dagilimi'].get(i, 0)
             
-            # Metrikler
             row['Net Skor'] = round(paket_sonuc['net_skor'], 2)
             row['Lojistik Tasarruf'] = round(paket_sonuc['lojistik_tasarruf'], 2)
             row['Şişme Miktarı'] = round(paket_sonuc['toplam_sisme'], 2)
@@ -607,7 +509,6 @@ if 'analiz_sonuclari' in st.session_state:
     
     st.markdown("---")
     
-    # Her ürün için detaylı analiz
     for idx, sonuc in enumerate(sonuclar):
         st.markdown(f"## 📦 {sonuc['urun']}")
         
@@ -619,7 +520,6 @@ if 'analiz_sonuclari' in st.session_state:
                 delta=f"Skor: {sonuc['en_iyi_paket']['net_skor']}"
             )
         
-        # Metrikler
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("🏪 Mağaza Sayısı", sonuc['en_iyi_paket']['magaza_sayisi'])
@@ -630,7 +530,6 @@ if 'analiz_sonuclari' in st.session_state:
         with col4:
             st.metric("⚠️ Şişme Maliyeti", f"-{sonuc['en_iyi_paket']['sisme_maliyeti']}")
         
-        # Grafik
         paket_df = pd.DataFrame(sonuc['paket_sonuclari'])
         
         fig = go.Figure()
@@ -666,14 +565,12 @@ if 'analiz_sonuclari' in st.session_state:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Mağaza dağılımı - LİSTE FORMAT (TÜM SATIŞLAR)
         st.markdown("**📊 Mağaza Satış Dağılımı (Önerilen Paket)**")
         
         dag_data = []
         dag = sonuc['en_iyi_paket']['satis_dagilimi']
         toplam_magaza = sonuc['en_iyi_paket']['magaza_sayisi']
         
-        # 20+ önce
         if dag.get('20+', 0) > 0:
             dag_data.append({
                 'Satış Adedi (periyot)': '20+',
@@ -681,7 +578,6 @@ if 'analiz_sonuclari' in st.session_state:
                 'Oran (%)': round(dag['20+'] / toplam_magaza * 100, 1) if toplam_magaza > 0 else 0
             })
         
-        # 20'den 0'a kadar - sadece 0'dan büyük olanları göster
         for i in range(20, -1, -1):
             if dag.get(i, 0) > 0:
                 dag_data.append({
@@ -693,7 +589,6 @@ if 'analiz_sonuclari' in st.session_state:
         dag_df = pd.DataFrame(dag_data)
         st.dataframe(dag_df, use_container_width=True, hide_index=True)
         
-        # Mağaza detayları
         with st.expander(f"🔍 {sonuc['urun']} - Mağaza Detayları"):
             detay_df = pd.DataFrame(sonuc['en_iyi_paket']['magaza_detaylari'])
             try:
@@ -709,7 +604,6 @@ if 'analiz_sonuclari' in st.session_state:
                     hide_index=True
                 )
         
-        # Öneri kutusu - GÜNCEL FORMÜLLER
         en_iyi = sonuc['en_iyi_paket']
         st.info(f"""
         **💡 Öneri:** {en_iyi['paket_boyutu']}'lü paket kullanarak:
@@ -724,7 +618,6 @@ if 'analiz_sonuclari' in st.session_state:
             st.markdown("---")
 
 else:
-    # Boş ekran - kullanım talimatları
     st.info("👆 Lütfen CSV dosyanızı yükleyin ve 'Analizi Başlat' butonuna tıklayın")
     
     st.markdown("---")
@@ -803,44 +696,45 @@ else:
     st.markdown("## 🎯 Örnek Senaryo")
     
     st.markdown("""
-    **Durum:** Bir ürün 20 mağazada satılıyor, analiz periyodu: 2 Haftalık
+    **Durum:** Bir ürün mağazalarda satılıyor, analiz periyodu: 2 Haftalık
     
-    | Paket | 7+ | 5-6 | 3-4 | 1-2 | 0 | Lojistik | Şişme | Net | Karar |
-    |-------|-----|-----|-----|-----|---|----------|-------|-----|--------|
-    | 3'lü  | **12** | 5 | 2 | 1 | 0 | +20.0 | -15.3 | +4.7 | **⭐ SEÇ** |
-    | 4'lü  | 10 | 6 | 3 | 1 | 0 | +15.0 | -18.6 | -3.6 | |
-    | 5'li  | 8 | 7 | 4 | 1 | 0 | +12.0 | -21.2 | -9.2 | |
-    | 6'lı  | 6 | 8 | 5 | 1 | 0 | +10.0 | -24.5 | -14.5 | |
+    | Paket | 15 adet | 10 adet | 5 adet | 3 adet | 1 adet | 0 adet | Karar |
+    |-------|---------|---------|--------|--------|--------|--------|--------|
+    | 3'lü  | **5**   | **8**   | 12     | 15     | 8      | 2      | **⭐ SEÇ** |
+    | 4'lü  | 3       | 6       | 14     | 16     | 9      | 2      | |
+    | 5'li  | 2       | 5       | 15     | 17     | 9      | 2      | |
     
     **Sonuç:** 3'lü paket önerilir çünkü:
-    - ✅ **EN FAZLA** 7+ satış mağazası (12 mağaza)
-    - ✅ Küçük paket → Az şişme (15.3 birim)
-    - ✅ Küçük paket → Fazla lojistik tasarruf (20.0 puan)
-    - ✅ Güçlü talep var (12 mağaza 2 haftada 7+ adet satıyor)
+    - ✅ **EN FAZLA** 15 adet satış mağazası (5 mağaza)
+    - ✅ **EN FAZLA** 10 adet satış mağazası (8 mağaza)
+    - ✅ Yüksek satış yapan mağaza sayısı maksimum
+    - ✅ Küçük paket → Az şişme + Fazla lojistik tasarruf
     
     **Mantık:** 
-    - Önce 7+ kolonuna bakılır → En fazla olan seçilir
-    - 7+ eşitse → 5-6 kolonuna bakılır
-    - 5-6 de eşitse → 3-4 kolonuna bakılır
-    - Tüm kolonlar eşitse → Net skoru 0'a en yakın olan seçilir
+    - Önce en yüksek satış adetine bakılır (20+, 20, 19, ...)
+    - Hangi pakette o kategoride en fazla mağaza varsa seçilir
+    - Eşitlik durumunda bir sonraki satış adetine bakılır
     """)
     
     st.info("""
     💡 **Neden bu mantık?**
     
-    Daha küçük paket seçince:
-    - ✅ **Şişme azalır**: İhtiyaca daha yakın miktar gönderiyoruz
-    - ✅ **Lojistik artar**: (1/paket) formülü sayesinde
-    - ✅ **Talep karşılanır**: Yüksek satış yapan mağaza sayısı maksimize olur
-    
-    Örnek: 8.5 adet ortalama satış
+    **Örnek:** Ortalama 8.5 adet satış
     - 3'lü paket → 9 adet gider → 0.5 şişme ✅
-    - 6'lı paket → 12 adet gider → 3.5 şişme ❌
+    - 5'li paket → 10 adet gider → 1.5 şişme
+    - 10'lu paket → 10 adet gider → 1.5 şişme
+    
+    **Her satış adedi ayrı görünür:**
+    - 0 adet: X mağaza (satış yok)
+    - 1 adet: Y mağaza (çok düşük)
+    - 2 adet: Z mağaza
+    - ...
+    - 15 adet: A mağaza (yüksek satış)
+    - 20+ adet: B mağaza (çok yüksek satış)
+    
+    Bu sayede hangi mağazalarda ne kadar satış olduğunu tam olarak görürsünüz!
     """)
 
-# ============================================
-# FOOTER
-# ============================================
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 20px;'>
