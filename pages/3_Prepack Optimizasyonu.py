@@ -389,11 +389,21 @@ if 'analiz_sonuclari' in st.session_state:
         })
     
     ozet_df = pd.DataFrame(ozet_data)
-    st.dataframe(
-        ozet_df.style.background_gradient(subset=['Net Skor'], cmap='RdYlGn'),
-        use_container_width=True,
-        hide_index=True
-    )
+    
+    # Styling (matplotlib gerekmeyen basit versiyon)
+    try:
+        st.dataframe(
+            ozet_df.style.background_gradient(subset=['Net Skor'], cmap='RdYlGn'),
+            use_container_width=True,
+            hide_index=True
+        )
+    except ImportError:
+        # Matplotlib yoksa basit tablo göster
+        st.dataframe(
+            ozet_df,
+            use_container_width=True,
+            hide_index=True
+        )
     
     # CSV indirme
     csv = ozet_df.to_csv(index=False, encoding='utf-8-sig')
@@ -475,11 +485,18 @@ if 'analiz_sonuclari' in st.session_state:
         # Mağaza detayları
         with st.expander(f"🔍 {sonuc['urun']} - Mağaza Detayları"):
             detay_df = pd.DataFrame(sonuc['en_iyi_paket']['magaza_detaylari'])
-            st.dataframe(
-                detay_df.style.background_gradient(subset=['sisme'], cmap='Reds'),
-                use_container_width=True,
-                hide_index=True
-            )
+            try:
+                st.dataframe(
+                    detay_df.style.background_gradient(subset=['sisme'], cmap='Reds'),
+                    use_container_width=True,
+                    hide_index=True
+                )
+            except ImportError:
+                st.dataframe(
+                    detay_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
         
         # Öneri kutusu
         st.info(f"""
