@@ -47,7 +47,7 @@ lojistik_katsayi = st.sidebar.slider(
 analiz_periyodu = st.sidebar.selectbox(
     "Analiz Periyodu",
     ["Tüm Veri (2 Haftalık Ort.)", "İki Haftalık", "Haftalık"],
-    help="Satış ortalaması hesaplama periyodu"
+    help="Satış ortalaması ve mağaza dağılımı bu periyoda göre hesaplanır"
 )
 
 paket_boyutlari = list(range(3, 21))
@@ -91,6 +91,13 @@ Toplam Şişme ×
 ```
 Lojistik Tasarruf - 
 Şişme Maliyeti
+```
+
+**Seçim Kriteri:**
+```
+|Net Skor - 0| 
+→ En küçük olan seçilir
+(0'a en yakın = ideal denge)
 ```
 """)
 
@@ -300,9 +307,22 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 'sisme_kat': sisme_kat
             })
         
-        # En iyi paketi bul - 0'a en yakın net skor
+        # En iyi paketi bul - ÇOK KRİTERLİ ÖNCELK
+        # 1. Öncelik: 7+ mağaza sayısı (en yüksek)
+        # 2. Öncelik: 5-6 mağaza sayısı
+        # 3. Öncelik: 3-4 mağaza sayısı
+        # 4. Öncelik: 1-2 mağaza sayısı
+        # 5. Son öncelik: Net skoru 0'a yakınlık
         if paket_sonuclari:
-            en_iyi_paket = min(paket_sonuclari, key=lambda x: abs(x['net_skor']))
+            def paket_oncelik_skoru(paket):
+                return (
+                    paket['dagitimlar']['7+'] * 100000000,    # En yüksek öncelik
+                    paket['dagitimlar']['5-6'] * 1000000,      # 2. öncelik
+                    paket['dagitimlar']['3-4'] * 10000,        # 3. öncelik
+                    paket['dagitimlar']['1-2'] * 100,          # 4. öncelik
+                    -abs(paket['net_skor'])                    # Son öncelik (0'a yakınlık)
+                )
+            en_iyi_paket = max(paket_sonuclari, key=paket_oncelik_skoru)
             
             sonuclar.append({
                 'urun': urun,
@@ -440,12 +460,15 @@ if 'analiz_sonuclari' in st.session_state:
             en_iyi = "⭐" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
             ozet_data.append({
                 '': en_iyi,
-                'Paket Boyutu': f"{paket_sonuc['paket_boyutu']}'lü",
+                'Paket': f"{paket_sonuc['paket_boyutu']}'lü",
+                '7+ adet': paket_sonuc['dagitimlar']['7+'],
+                '5-6 adet': paket_sonuc['dagitimlar']['5-6'],
+                '3-4 adet': paket_sonuc['dagitimlar']['3-4'],
+                '1-2 adet': paket_sonuc['dagitimlar']['1-2'],
+                '0 adet': paket_sonuc['dagitimlar']['0'],
                 'Net Skor': round(paket_sonuc['net_skor'], 2),
-                'Lojistik Tasarruf': round(paket_sonuc['lojistik_tasarruf'], 2),
-                'Şişme Miktarı': round(paket_sonuc['toplam_sisme'], 2),
-                'Şişme Maliyeti': round(paket_sonuc['sisme_maliyeti'], 2),
-                'Mağaza Sayısı': paket_sonuc['magaza_sayisi']
+                'Lojistik': round(paket_sonuc['lojistik_tasarruf'], 2),
+                'Şişme': round(paket_sonuc['toplam_sisme'], 2)
             })
         
         ozet_df = pd.DataFrame(ozet_data)
@@ -464,6 +487,16 @@ if 'analiz_sonuclari' in st.session_state:
             )
         except:
             st.dataframe(ozet_df, use_container_width=True, hide_index=True)
+        
+        # Seçim açıklaması
+        en_iyi = sonuc['en_iyi_paket']
+        st.success(f"""
+        **✅ {en_iyi['paket_boyutu']}'lü paket seçildi çünkü:**
+        - 🥇 7+ satış: {en_iyi['dagitimlar']['7+']} mağaza
+        - 🥈 5-6 satış: {en_iyi['dagitimlar']['5-6']} mağaza  
+        - 🥉 3-4 satış: {en_iyi['dagitimlar']['3-4']} mağaza
+        - Net Skor: {en_iyi['net_skor']:.2f} (Lojistik: {en_iyi['lojistik_tasarruf']:.2f} - Şişme: {en_iyi['toplam_sisme']:.2f})
+        """)
         
         st.markdown("---")
     
@@ -660,35 +693,68 @@ else:
         st.markdown("""
         ### 3️⃣ Sonuç Analizi
         
-        **Net Skor:**
-        ```
-        Lojistik Tasarruf
-        - Şişme Maliyeti
-        = Net Skor
-        ```
+        **Seçim Kriterleri (Öncelik Sırası):**
         
-        **En yüksek skora sahip paket önerilir**
+        🥇 **7+ adet satış yapan mağaza sayısı**
+           - En yüksek öncelik
+           - Hangi pakette en çok mağaza 7+ adet satıyor?
         
-        **Tüm paket boyutlarını görebilirsiniz**
+        🥈 **5-6 adet satış yapan mağaza sayısı**
+           - 2. öncelik (7+ eşitse)
         
-        **18 farklı paket testi (3-20)**
+        🥉 **3-4 adet satış yapan mağaza sayısı**
+           - 3. öncelik (5-6 da eşitse)
+        
+        4️⃣ **1-2 adet satış yapan mağaza sayısı**
+           - 4. öncelik
+        
+        5️⃣ **Net Skor 0'a yakınlık**
+           - Son öncelik (tüm kategoriler eşitse)
+           - Lojistik vs Şişme dengesi
+        
+        **Avantajlar:**
+        - ✅ Küçük paket = Az şişme
+        - ✅ Küçük paket = Fazla lojistik tasarruf
+        - ✅ Yüksek satış kategorisi = Güçlü talep
         """)
     
     st.markdown("---")
     st.markdown("## 🎯 Örnek Senaryo")
     
     st.markdown("""
-    **Durum:** Bir ürün için farklı paket boyutları değerlendiriliyor (10 mağaza):
+    **Durum:** Bir ürün 20 mağazada satılıyor, analiz periyodu: 2 Haftalık
     
-    | Paket | Lojistik Formül | Lojistik | Şişme | Net Skor |
-    |-------|-----------------|----------|-------|----------|
-    | 3'lü  | (1/3)×3×10      | +10.0    | -8.5  | **+1.5** |
-    | 4'lü  | (1/4)×3×10      | +7.5     | -12.0 | **-4.5** |
-    | 5'li  | (1/5)×3×10      | +6.0     | -15.5 | **-9.5** |
+    | Paket | 7+ | 5-6 | 3-4 | 1-2 | 0 | Lojistik | Şişme | Net | Karar |
+    |-------|-----|-----|-----|-----|---|----------|-------|-----|--------|
+    | 3'lü  | **12** | 5 | 2 | 1 | 0 | +20.0 | -15.3 | +4.7 | **⭐ SEÇ** |
+    | 4'lü  | 10 | 6 | 3 | 1 | 0 | +15.0 | -18.6 | -3.6 | |
+    | 5'li  | 8 | 7 | 4 | 1 | 0 | +12.0 | -21.2 | -9.2 | |
+    | 6'lı  | 6 | 8 | 5 | 1 | 0 | +10.0 | -24.5 | -14.5 | |
     
-    **Sonuç:** 3'lü paket önerilir çünkü en yüksek net skora sahip!
+    **Sonuç:** 3'lü paket önerilir çünkü:
+    - ✅ **EN FAZLA** 7+ satış mağazası (12 mağaza)
+    - ✅ Küçük paket → Az şişme (15.3 birim)
+    - ✅ Küçük paket → Fazla lojistik tasarruf (20.0 puan)
+    - ✅ Güçlü talep var (12 mağaza 2 haftada 7+ adet satıyor)
     
-    **Not:** Küçük paketler daha fazla lojistik tasarruf sağlar ama şişme de daha az olur.
+    **Mantık:** 
+    - Önce 7+ kolonuna bakılır → En fazla olan seçilir
+    - 7+ eşitse → 5-6 kolonuna bakılır
+    - 5-6 de eşitse → 3-4 kolonuna bakılır
+    - Tüm kolonlar eşitse → Net skoru 0'a en yakın olan seçilir
+    """)
+    
+    st.info("""
+    💡 **Neden bu mantık?**
+    
+    Daha küçük paket seçince:
+    - ✅ **Şişme azalır**: İhtiyaca daha yakın miktar gönderiyoruz
+    - ✅ **Lojistik artar**: (1/paket) formülü sayesinde
+    - ✅ **Talep karşılanır**: Yüksek satış yapan mağaza sayısı maksimize olur
+    
+    Örnek: 8.5 adet ortalama satış
+    - 3'lü paket → 9 adet gider → 0.5 şişme ✅
+    - 6'lı paket → 12 adet gider → 3.5 şişme ❌
     """)
 
 # ============================================
