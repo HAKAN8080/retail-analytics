@@ -28,11 +28,11 @@ st.sidebar.header("⚙️ Parametreler")
 
 sisme_katsayi = st.sidebar.slider(
     "Şişme Maliyet Katsayısı", 
-    min_value=0.1, 
-    max_value=5.0, 
+    min_value=1.0, 
+    max_value=10.0, 
     value=1.0, 
-    step=0.1,
-    help="Her fazla ürün için ceza puanı (Stok maliyeti, raf alanı kaybı, eskime riski)"
+    step=0.5,
+    help="Şişme maliyeti çarpanı: (Paket Boyutu - Ortalama Satış) × Bu Katsayı"
 )
 
 lojistik_katsayi = st.sidebar.slider(
@@ -41,21 +41,17 @@ lojistik_katsayi = st.sidebar.slider(
     max_value=10.0, 
     value=3.0, 
     step=0.5,
-    help="Her mağaza için lojistik avantaj puanı (Sevkiyat, paketleme, depo tasarrufu)"
+    help="Lojistik tasarruf çarpanı: (1 / Paket Boyutu) × Bu Katsayı"
 )
 
 analiz_periyodu = st.sidebar.selectbox(
     "Analiz Periyodu",
-    ["Haftalık", "İki Haftalık"],
+    ["Tüm Veri (2 Haftalık Ort.)", "İki Haftalık", "Haftalık"],
     help="Satış ortalaması hesaplama periyodu"
 )
 
-paket_boyutlari = st.sidebar.multiselect(
-    "Test Edilecek Paket Boyutları",
-    [2, 3, 4, 5, 6, 8, 10],
-    default=[2, 3, 4, 5, 6],
-    help="Simülasyon yapılacak paket büyüklükleri"
-)
+paket_boyutlari = list(range(3, 21))
+st.sidebar.info(f"📦 Test Edilecek Paket Boyutları: 3'lü - 20'li (Toplam {len(paket_boyutlari)} paket)")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Veri Formatı")
@@ -72,6 +68,29 @@ st.sidebar.info("""
 Tarih,magaza_kod,urun_kod,satis,stok
 2024-01-01,MGZ001,URN001,5,20
 2024-01-01,MGZ002,URN001,2,15
+```
+""")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🧮 Formüller")
+st.sidebar.success("""
+**Lojistik Tasarruf:**
+```
+(1 / Paket Boyutu) × 
+Lojistik Katsayı × 
+Mağaza Sayısı
+```
+
+**Şişme Maliyeti:**
+```
+Toplam Şişme × 
+Şişme Katsayı
+```
+
+**Net Skor:**
+```
+Lojistik Tasarruf - 
+Şişme Maliyeti
 ```
 """)
 
@@ -185,7 +204,15 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
         return []
     
     # Periyod günü hesapla
-    periyod_gun = 7 if periyod == "Haftalık" else 14
+    if periyod == "Tüm Veri (2 Haftalık Ort.)":
+        periyod_gun = 14  # 2 haftalık ortalama için
+        tum_veri_modu = True
+    elif periyod == "İki Haftalık":
+        periyod_gun = 14
+        tum_veri_modu = False
+    else:  # Haftalık
+        periyod_gun = 7
+        tum_veri_modu = False
     
     sonuclar = []
     
@@ -213,7 +240,12 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 else:
                     gun_sayisi = len(magaza_df)
                 
-                periyod_sayisi = max(1, gun_sayisi / periyod_gun)
+                # Periyod sayısı hesaplama
+                if tum_veri_modu:
+                    # Tüm veriyi al, 2 haftalık ortalamaya böl
+                    periyod_sayisi = gun_sayisi / 14
+                else:
+                    periyod_sayisi = max(1, gun_sayisi / periyod_gun)
                 
                 # Ortalama satış
                 ortalama_satis = toplam_satis / periyod_sayisi
@@ -230,8 +262,8 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 else:
                     dagitimlar['7+'] += 1
                 
-                # Şişme hesapla
-                ihtiyac = np.ceil(ortalama_satis)
+                # Şişme hesapla - YENİ FORMÜL
+                ihtiyac = ortalama_satis
                 gonderilecek = np.ceil(ihtiyac / paket_boyutu) * paket_boyutu
                 sisme = max(0, gonderilecek - ihtiyac)
                 
@@ -241,14 +273,18 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 magaza_detaylari.append({
                     'magaza_kod': magaza,
                     'ortalama_satis': round(ortalama_satis, 2),
-                    'ihtiyac': int(ihtiyac),
+                    'ihtiyac': round(ihtiyac, 2),
                     'gonderilecek': int(gonderilecek),
-                    'sisme': int(sisme)
+                    'sisme': round(sisme, 2)
                 })
             
-            # Skorları hesapla
-            lojistik_tasarruf = magaza_sayisi * lojistik_kat
+            # Skorları hesapla - YENİ FORMÜLLER
+            # Lojistik Tasarruf = (1 / paket_boyutu) * lojistik_katsayi
+            lojistik_tasarruf = (1 / paket_boyutu) * lojistik_kat * magaza_sayisi
+            
+            # Şişme Maliyeti = Σ(paket_boyutu - ortalama_satis) * sisme_katsayi
             sisme_maliyeti = toplam_sisme * sisme_kat
+            
             net_skor = lojistik_tasarruf - sisme_maliyeti
             
             paket_sonuclari.append({
@@ -259,7 +295,9 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 'net_skor': round(net_skor, 1),
                 'magaza_sayisi': magaza_sayisi,
                 'dagitimlar': dagitimlar,
-                'magaza_detaylari': magaza_detaylari
+                'magaza_detaylari': magaza_detaylari,
+                'lojistik_kat': lojistik_kat,  # Katsayıları kaydet
+                'sisme_kat': sisme_kat
             })
         
         # En iyi paketi bul
@@ -308,8 +346,6 @@ with col3:
                 
                 if df is None:
                     st.error("❌ CSV dosyası okunamadı!")
-                elif paket_boyutlari is None or len(paket_boyutlari) == 0:
-                    st.error("❌ Lütfen en az bir paket boyutu seçin!")
                 else:
                     sonuclar = analiz_yap(
                         df, 
@@ -392,43 +428,78 @@ if 'analiz_sonuclari' in st.session_state:
     st.markdown("---")
     st.header("📊 Analiz Sonuçları")
     
-    # Özet tablo
-    st.subheader("🎯 Öneriler Özeti")
-    ozet_data = []
+    # Özet tablo - TÜM PAKET BOYUTLARI
+    st.subheader("🎯 Öneriler Özeti - Tüm Paket Boyutları")
+    
     for sonuc in sonuclar:
-        ozet_data.append({
-            'Ürün Kodu': sonuc['urun'],
-            'Önerilen Paket': f"{sonuc['en_iyi_paket']['paket_boyutu']}'lü",
-            'Net Skor': sonuc['en_iyi_paket']['net_skor'],
-            'Toplam Şişme': sonuc['en_iyi_paket']['toplam_sisme'],
-            'Lojistik Tasarruf': sonuc['en_iyi_paket']['lojistik_tasarruf'],
-            'Mağaza Sayısı': sonuc['en_iyi_paket']['magaza_sayisi']
-        })
+        st.markdown(f"### 📦 {sonuc['urun']}")
+        
+        # Her paket boyutu için sonuçları göster
+        ozet_data = []
+        for paket_sonuc in sonuc['paket_sonuclari']:
+            en_iyi = "⭐" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
+            ozet_data.append({
+                '': en_iyi,
+                'Paket Boyutu': f"{paket_sonuc['paket_boyutu']}'lü",
+                'Net Skor': round(paket_sonuc['net_skor'], 2),
+                'Lojistik Tasarruf': round(paket_sonuc['lojistik_tasarruf'], 2),
+                'Şişme Miktarı': round(paket_sonuc['toplam_sisme'], 2),
+                'Şişme Maliyeti': round(paket_sonuc['sisme_maliyeti'], 2),
+                'Mağaza Sayısı': paket_sonuc['magaza_sayisi']
+            })
+        
+        ozet_df = pd.DataFrame(ozet_data)
+        
+        # En iyi paketi vurgula
+        def highlight_best(row):
+            if row[''] == '⭐':
+                return ['background-color: #d4edda'] * len(row)
+            return [''] * len(row)
+        
+        try:
+            st.dataframe(
+                ozet_df.style.apply(highlight_best, axis=1),
+                use_container_width=True,
+                hide_index=True
+            )
+        except:
+            st.dataframe(ozet_df, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
     
-    ozet_df = pd.DataFrame(ozet_data)
+    # CSV indirme - TÜM SONUÇLAR
+    st.subheader("💾 Rapor İndirme")
     
-    # Styling (matplotlib gerekmeyen basit versiyon)
-    try:
-        st.dataframe(
-            ozet_df.style.background_gradient(subset=['Net Skor'], cmap='RdYlGn'),
-            use_container_width=True,
-            hide_index=True
-        )
-    except ImportError:
-        # Matplotlib yoksa basit tablo göster
-        st.dataframe(
-            ozet_df,
-            use_container_width=True,
-            hide_index=True
-        )
+    # Tüm sonuçları birleştir
+    tum_sonuclar = []
+    for sonuc in sonuclar:
+        for paket_sonuc in sonuc['paket_sonuclari']:
+            en_iyi = "✓" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
+            tum_sonuclar.append({
+                'Ürün Kodu': sonuc['urun'],
+                'En İyi': en_iyi,
+                'Paket Boyutu': paket_sonuc['paket_boyutu'],
+                'Net Skor': round(paket_sonuc['net_skor'], 2),
+                'Lojistik Tasarruf': round(paket_sonuc['lojistik_tasarruf'], 2),
+                'Şişme Miktarı': round(paket_sonuc['toplam_sisme'], 2),
+                'Şişme Maliyeti': round(paket_sonuc['sisme_maliyeti'], 2),
+                'Mağaza Sayısı': paket_sonuc['magaza_sayisi'],
+                '0 adet': paket_sonuc['dagitimlar']['0'],
+                '1-2 adet': paket_sonuc['dagitimlar']['1-2'],
+                '3-4 adet': paket_sonuc['dagitimlar']['3-4'],
+                '5-6 adet': paket_sonuc['dagitimlar']['5-6'],
+                '7+ adet': paket_sonuc['dagitimlar']['7+']
+            })
     
-    # CSV indirme
-    csv = ozet_df.to_csv(index=False, encoding='utf-8-sig')
+    rapor_df = pd.DataFrame(tum_sonuclar)
+    csv = rapor_df.to_csv(index=False, encoding='utf-8-sig')
+    
     st.download_button(
-        label="📥 Özet Tabloyu İndir (CSV)",
+        label="📥 Tüm Sonuçları İndir (CSV)",
         data=csv,
-        file_name=f"prepack_ozet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-        mime="text/csv"
+        file_name=f"prepack_detayli_rapor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        mime="text/csv",
+        use_container_width=True
     )
     
     st.markdown("---")
@@ -492,12 +563,19 @@ if 'analiz_sonuclari' in st.session_state:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Mağaza dağılımı
+        # Mağaza dağılımı - LİSTE FORMAT
         st.markdown("**📊 Mağaza Satış Dağılımı (Önerilen Paket)**")
-        dag_cols = st.columns(5)
-        for i, (aralik, sayi) in enumerate(sonuc['en_iyi_paket']['dagitimlar'].items()):
-            with dag_cols[i]:
-                st.metric(f"{aralik} adet/periyod", f"{sayi} mağaza")
+        
+        dag_data = []
+        for aralik, sayi in sonuc['en_iyi_paket']['dagitimlar'].items():
+            dag_data.append({
+                'Satış Aralığı (adet/periyod)': aralik,
+                'Mağaza Sayısı': sayi,
+                'Oran (%)': round(sayi / sonuc['en_iyi_paket']['magaza_sayisi'] * 100, 1) if sonuc['en_iyi_paket']['magaza_sayisi'] > 0 else 0
+            })
+        
+        dag_df = pd.DataFrame(dag_data)
+        st.dataframe(dag_df, use_container_width=True, hide_index=True)
         
         # Mağaza detayları
         with st.expander(f"🔍 {sonuc['urun']} - Mağaza Detayları"):
@@ -515,12 +593,15 @@ if 'analiz_sonuclari' in st.session_state:
                     hide_index=True
                 )
         
-        # Öneri kutusu
+        # Öneri kutusu - GÜNCEL FORMÜLLER
+        en_iyi = sonuc['en_iyi_paket']
         st.info(f"""
-        **💡 Öneri:** {sonuc['en_iyi_paket']['paket_boyutu']}'lü paket kullanarak:
-        - ✅ Toplam **{sonuc['en_iyi_paket']['lojistik_tasarruf']}** puan lojistik tasarruf
-        - ⚠️ Sadece **{sonuc['en_iyi_paket']['toplam_sisme']}** birim şişme
-        - 🎯 Net Skor: **{sonuc['en_iyi_paket']['net_skor']}** puan
+        **💡 Öneri:** {en_iyi['paket_boyutu']}'lü paket kullanarak:
+        - ✅ Lojistik Tasarruf: **{en_iyi['lojistik_tasarruf']:.2f}** puan
+          - Formül: (1/{en_iyi['paket_boyutu']}) × {en_iyi['lojistik_kat']} × {en_iyi['magaza_sayisi']} mağaza
+        - ⚠️ Şişme Maliyeti: **{en_iyi['sisme_maliyeti']:.2f}** puan
+          - Toplam Şişme: {en_iyi['toplam_sisme']:.2f} birim × {en_iyi['sisme_kat']}
+        - 🎯 Net Skor: **{en_iyi['net_skor']:.2f}** puan
         """)
         
         if idx < len(sonuclar) - 1:
@@ -557,15 +638,22 @@ else:
         st.markdown("""
         ### 2️⃣ Parametre Ayarları
         
-        **Şişme Katsayısı:**
+        **Şişme Katsayısı (1-10):**
         - Fazla stok maliyeti
         - Raf alanı kaybı
         - Eskime riski
+        - Formül: Σ(Şişme) × Katsayı
         
-        **Lojistik Katsayısı:**
+        **Lojistik Katsayısı (1-10):**
         - Sevkiyat tasarrufu
         - Paketleme kolaylığı
         - Depo verimliliği
+        - Formül: (1/Paket) × Katsayı × Mağaza Sayısı
+        
+        **Analiz Periyodu:**
+        - Tüm Veri: Tüm veriye bak, 2 hafta ort.
+        - İki Haftalık: 14 günlük ortalama
+        - Haftalık: 7 günlük ortalama
         """)
     
     with col3:
@@ -581,22 +669,26 @@ else:
         
         **En yüksek skora sahip paket önerilir**
         
-        **Mağaza dağılımını inceleyin**
+        **Tüm paket boyutlarını görebilirsiniz**
+        
+        **18 farklı paket testi (3-20)**
         """)
     
     st.markdown("---")
     st.markdown("## 🎯 Örnek Senaryo")
     
     st.markdown("""
-    **Durum:** Bir ürün için 3 farklı paket boyutu değerlendiriliyor:
+    **Durum:** Bir ürün için farklı paket boyutları değerlendiriliyor (10 mağaza):
     
-    | Paket | Lojistik | Şişme | Net Skor |
-    |-------|----------|-------|----------|
-    | 2'li  | +15      | -8    | **+7**   |
-    | 3'lü  | +15      | -12   | **+3**   |
-    | 4'lü  | +15      | -18   | **-3**   |
+    | Paket | Lojistik Formül | Lojistik | Şişme | Net Skor |
+    |-------|-----------------|----------|-------|----------|
+    | 3'lü  | (1/3)×3×10      | +10.0    | -8.5  | **+1.5** |
+    | 4'lü  | (1/4)×3×10      | +7.5     | -12.0 | **-4.5** |
+    | 5'li  | (1/5)×3×10      | +6.0     | -15.5 | **-9.5** |
     
-    **Sonuç:** 2'li paket önerilir çünkü en yüksek net skora sahip!
+    **Sonuç:** 3'lü paket önerilir çünkü en yüksek net skora sahip!
+    
+    **Not:** Küçük paketler daha fazla lojistik tasarruf sağlar ama şişme de daha az olur.
     """)
 
 # ============================================
@@ -605,7 +697,10 @@ else:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 20px;'>
-    <p>📦 Prepack Optimizasyonu | Retail Analytics Platform v2.0</p>
+    <p>📦 Prepack Optimizasyonu | Retail Analytics Platform v3.0</p>
     <p>English Home & EVE Kozmetik için özel geliştirilmiştir</p>
+    <p style='font-size: 0.8em; margin-top: 10px;'>
+        ✨ Yeni: 3-20 paket aralığı | Gelişmiş formüller | Detaylı raporlama
+    </p>
 </div>
 """, unsafe_allow_html=True)
