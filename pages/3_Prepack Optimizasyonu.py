@@ -79,6 +79,26 @@ Tarih,Mağaza,Ürün,Satış,Stok
 # YARDIMCI FONKSİYONLAR
 # ============================================
 
+def csv_oku(file):
+    """CSV dosyasını farklı encoding ve delimiter'larla okumayı dene"""
+    encodings = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-9']
+    delimiters = [',', ';', '\t', '|']
+    
+    for encoding in encodings:
+        for delimiter in delimiters:
+            try:
+                file.seek(0)  # Dosya pointerını başa al
+                df = pd.read_csv(file, encoding=encoding, delimiter=delimiter)
+                
+                # Başarılı okuma kontrolü
+                if len(df.columns) > 1 and len(df) > 0:
+                    st.success(f"✅ Dosya başarıyla okundu! (Encoding: {encoding}, Delimiter: '{delimiter}')")
+                    return df
+            except Exception:
+                continue
+    
+    return None
+
 def ornek_veri_olustur():
     """Örnek test verisi oluştur"""
     tarihler = pd.date_range(start='2024-01-01', end='2024-10-25', freq='D')
@@ -257,40 +277,94 @@ with col3:
     if uploaded_file and st.button("🚀 Analizi Başlat", type="primary", use_container_width=True):
         with st.spinner("⏳ Analiz yapılıyor..."):
             try:
-                df = pd.read_csv(uploaded_file)
-                sonuclar = analiz_yap(
-                    df, 
-                    paket_boyutlari, 
-                    sisme_katsayi, 
-                    lojistik_katsayi, 
-                    analiz_periyodu
-                )
-                st.session_state['analiz_sonuclari'] = sonuclar
-                st.session_state['analiz_df'] = df
-                st.success("✅ Analiz tamamlandı!")
+                df = csv_oku(uploaded_file)
+                
+                if df is None:
+                    st.error("❌ CSV dosyası okunamadı!")
+                elif paket_boyutlari is None or len(paket_boyutlari) == 0:
+                    st.error("❌ Lütfen en az bir paket boyutu seçin!")
+                else:
+                    sonuclar = analiz_yap(
+                        df, 
+                        paket_boyutlari, 
+                        sisme_katsayi, 
+                        lojistik_katsayi, 
+                        analiz_periyodu
+                    )
+                    st.session_state['analiz_sonuclari'] = sonuclar
+                    st.session_state['analiz_df'] = df
+                    st.success("✅ Analiz tamamlandı!")
             except Exception as e:
-                st.error(f"❌ Hata oluştu: {str(e)}")
+                st.error(f"❌ Analiz hatası: {str(e)}")
+                st.exception(e)  # Detaylı hata bilgisi
 
 # Veri önizleme
 if uploaded_file is not None:
     try:
-        df = pd.read_csv(uploaded_file)
+        df = csv_oku(uploaded_file)
         
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("📊 Toplam Satır", f"{len(df):,}")
-        with col2:
-            st.metric("🏪 Mağaza Sayısı", len(df['Mağaza'].unique()) if 'Mağaza' in df.columns else 0)
-        with col3:
-            st.metric("📦 Ürün Sayısı", len(df['Ürün'].unique()) if 'Ürün' in df.columns else 0)
-        with col4:
-            st.metric("📅 Veri Aralığı", f"{len(df['Tarih'].unique())} gün" if 'Tarih' in df.columns else "N/A")
-        
-        with st.expander("🔍 Veri Önizleme (İlk 10 Satır)"):
-            st.dataframe(df.head(10), use_container_width=True)
+        if df is None:
+            st.error("❌ CSV dosyası okunamadı. Lütfen dosya formatını kontrol edin.")
+            st.info("""
+            **Olası çözümler:**
+            - Dosyanın UTF-8 encoding ile kaydedildiğinden emin olun
+            - Excel'den CSV olarak kaydederken 'CSV UTF-8 (Virgülle ayrılmış)' seçeneğini kullanın
+            - Kolon ayırıcısının virgül (,) olduğundan emin olun
+            - Dosyanın boş olmadığını kontrol edin
+            """)
+        else:
+            # Kolon kontrolü
+            gerekli_kolonlar = ['Tarih', 'Mağaza', 'Ürün', 'Satış', 'Stok']
+            mevcut_kolonlar = df.columns.tolist()
+            
+            # Kolon isimlerini küçük harfe çevirerek kontrol et
+            kolon_map = {}
+            for col in mevcut_kolonlar:
+                col_lower = col.lower().strip()
+                if 'tarih' in col_lower or 'date' in col_lower:
+                    kolon_map[col] = 'Tarih'
+                elif 'mağaza' in col_lower or 'magaza' in col_lower or 'store' in col_lower:
+                    kolon_map[col] = 'Mağaza'
+                elif 'ürün' in col_lower or 'urun' in col_lower or 'product' in col_lower:
+                    kolon_map[col] = 'Ürün'
+                elif 'satış' in col_lower or 'satis' in col_lower or 'sales' in col_lower:
+                    kolon_map[col] = 'Satış'
+                elif 'stok' in col_lower or 'stock' in col_lower:
+                    kolon_map[col] = 'Stok'
+            
+            if len(kolon_map) < 5:
+                st.warning("⚠️ Bazı kolonlar bulunamadı. Mevcut kolonlar:")
+                st.write(mevcut_kolonlar)
+                st.info("Beklenen kolonlar: Tarih, Mağaza, Ürün, Satış, Stok")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📊 Toplam Satır", f"{len(df):,}")
+            with col2:
+                magaza_col = [v for k, v in kolon_map.items() if v == 'Mağaza']
+                if magaza_col and magaza_col[0] in df.columns:
+                    st.metric("🏪 Mağaza Sayısı", len(df[magaza_col[0]].unique()))
+                else:
+                    st.metric("🏪 Mağaza Sayısı", "N/A")
+            with col3:
+                urun_col = [v for k, v in kolon_map.items() if v == 'Ürün']
+                if urun_col and urun_col[0] in df.columns:
+                    st.metric("📦 Ürün Sayısı", len(df[urun_col[0]].unique()))
+                else:
+                    st.metric("📦 Ürün Sayısı", "N/A")
+            with col4:
+                tarih_col = [v for k, v in kolon_map.items() if v == 'Tarih']
+                if tarih_col and tarih_col[0] in df.columns:
+                    st.metric("📅 Veri Aralığı", f"{len(df[tarih_col[0]].unique())} gün")
+                else:
+                    st.metric("📅 Veri Aralığı", "N/A")
+            
+            with st.expander("🔍 Veri Önizleme (İlk 10 Satır)"):
+                st.dataframe(df.head(10), use_container_width=True)
     
     except Exception as e:
-        st.error(f"❌ Veri okuma hatası: {str(e)}")
+        st.error(f"❌ Beklenmeyen hata: {str(e)}")
+        st.info("Lütfen destek için hata mesajını kaydedin.")
 
 # ============================================
 # SONUÇLARI GÖSTER
