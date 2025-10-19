@@ -300,9 +300,9 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 'sisme_kat': sisme_kat
             })
         
-        # En iyi paketi bul
+        # En iyi paketi bul - 0'a en yakın net skor
         if paket_sonuclari:
-            en_iyi_paket = max(paket_sonuclari, key=lambda x: x['net_skor'])
+            en_iyi_paket = min(paket_sonuclari, key=lambda x: abs(x['net_skor']))
             
             sonuclar.append({
                 'urun': urun,
