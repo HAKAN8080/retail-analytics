@@ -24,7 +24,7 @@ with col1:
     st.markdown("""
     ### 👋 Hoş Geldiniz!
     
-    Bu platform, perakende operasyonlarınızı optimize etmek için iki güçlü analiz modülü sunar:
+    Bu platform, perakende operasyonlarınızı optimize etmek için üç güçlü analiz modülü sunar:
     """)
     
     # Modül 1: Lost Sales
@@ -61,6 +61,25 @@ with col1:
     - Sevkiyat planlaması
     - Stok dağıtım optimizasyonu
     - Bütçe yönetimi
+    """)
+    
+    # Modül 3: Prepack Optimizasyonu
+    st.markdown("""
+    #### 📦 Prepack Optimizasyonu
+    
+    **Özellikler:**
+    - 📊 **Paket Büyüklüğü Analizi**: 2'li, 3'lü, 4'lü, 5'li, 6'lı paket simülasyonu
+    - 💰 **Maliyet Optimizasyonu**: Şişme vs lojistik tasarruf dengesi
+    - 📈 **Mağaza Segmentasyonu**: Satış hacmine göre mağaza grupları
+    - 🎯 **Net Skor Hesaplama**: Optimum paket boyutu belirleme
+    - 📅 **Periyodik Analiz**: Haftalık veya iki haftalık bazda
+    - 📊 **Görsel Karşılaştırma**: İnteraktif grafiklerle karar desteği
+    
+    **Kullanım Alanları:**
+    - Paket büyüklüğü optimizasyonu
+    - Lojistik maliyet azaltma
+    - Stok şişme kontrolü
+    - Bedensiz ürün yönetimi (English Home & EVE Kozmetik)
     """)
 
 with col2:
@@ -107,14 +126,14 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(
         label="Toplam Modül",
-        value="2",
-        delta="Lost Sales + Sevkiyat"
+        value="3",
+        delta="Lost Sales + Sevkiyat + Prepack"
     )
 
 with col2:
     st.metric(
         label="Analiz Özellikleri",
-        value="15+",
+        value="20+",
         delta="Detaylı analizler"
     )
 
@@ -138,7 +157,7 @@ with col4:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; padding: 20px;'>
-    <p>Retail Analytics Platform v1.0</p>
+    <p>Retail Analytics Platform v2.0</p>
     <p>Perakende operasyonlarınızı optimize edin 🚀</p>
 </div>
 """, unsafe_allow_html=True)
