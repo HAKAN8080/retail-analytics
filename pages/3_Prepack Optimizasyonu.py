@@ -1,4 +1,42 @@
-import streamlit as st
+st.markdown("""
+    **Durum:** Bir ürün mağazalarda satılıyor, analiz periyodu: 2 Haftalık
+    
+    | Paket | 15 adet | 10 adet | 5 adet | 3 adet | 1 adet | 0 adet | Karar |
+    |-------|---------|---------|--------|--------|--------|--------|--------|
+    | 3'lü  | **5**   | **8**   | 12     | 15     | 8      | 2      | **⭐ SEÇ** |
+    | 4'lü  | 3       | 6       | 14     | 16     | 9      | 2      | |
+    | 5'li  | 2       | 5       | 15     | 17     | 9      | 2      | |
+    
+    **Sonuç:** 3'lü paket önerilir çünkü:
+    - ✅ **EN FAZLA** 15 adet satış mağazası (5 mağaza)
+    - ✅ **EN FAZLA** 10 adet satış mağazası (8 mağaza)
+    - ✅ Yüksek satış yapan mağaza sayısı maksimum
+    - ✅ Küçük paket → Az şişme + Fazla lojistik tasarruf
+    
+    **Mantık:** 
+    - Önce en yüksek satış adetine bakılır (20+, 20, 19, ...)
+    - Hangi pakette o kategoride en fazla mağaza varsa seçilir
+    - Eşitlik durumunda bir sonraki satış adetine bakılır
+    """)
+    
+    st.info("""
+    💡 **Neden bu mantık?**
+    
+    **Örnek:** Ortalama 8.5 adet satış
+    - 3'lü paket → 9 adet gider → 0.5 şişme ✅
+    - 5'li paket → 10 adet gider → 1.5 şişme
+    - 10'lu paket → 10 adet gider → 1.5 şişme
+    
+    **Her satış adedi ayrı görünür:**
+    - 0 adet: X mağaza (satış yok)
+    - 1 adet: Y mağaza (çok düşük)
+    - 2 adet: Z mağaza
+    - ...
+    - 15 adet: A mağaza (yüksek satış)
+    - 20+ adet: B mağaza (çok yüksek satış)
+    
+    Bu sayede hangi mağazalarda ne kadar satış olduğunu tam olarak görürsünüz!
+    """)|import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -95,9 +133,14 @@ Lojistik Tasarruf -
 
 **Seçim Kriteri:**
 ```
-|Net Skor - 0| 
-→ En küçük olan seçilir
-(0'a en yakın = ideal denge)
+Öncelik sırası:
+1. 20+ satış mağaza sayısı ↑
+2. 20 satış mağaza sayısı ↑
+3. 19 satış mağaza sayısı ↑
+4. ... (18, 17, 16, ...)
+5. 1 satış mağaza sayısı ↑
+6. 0 satış mağaza sayısı ↑
+7. |Net Skor - 0| ↓ (son)
 ```
 """)
 
@@ -232,7 +275,9 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
         for paket_boyutu in paket_boyutlari:
             toplam_sisme = 0
             magaza_sayisi = 0
-            dagitimlar = {'0': 0, '1-2': 0, '3-4': 0, '5-6': 0, '7+': 0}
+            # 0'dan 20'ye kadar + 20+ kategorisi
+            satis_dagilimi = {i: 0 for i in range(21)}  # 0,1,2,...,20
+            satis_dagilimi['20+'] = 0
             magaza_detaylari = []
             
             # Her mağaza için
@@ -257,17 +302,12 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 # Ortalama satış
                 ortalama_satis = toplam_satis / periyod_sayisi
                 
-                # Dağılıma ekle
-                if ortalama_satis == 0:
-                    dagitimlar['0'] += 1
-                elif ortalama_satis <= 2:
-                    dagitimlar['1-2'] += 1
-                elif ortalama_satis <= 4:
-                    dagitimlar['3-4'] += 1
-                elif ortalama_satis <= 6:
-                    dagitimlar['5-6'] += 1
+                # Tam sayıya yuvarla ve dağılıma ekle
+                ortalama_satis_tam = int(round(ortalama_satis))
+                if ortalama_satis_tam <= 20:
+                    satis_dagilimi[ortalama_satis_tam] += 1
                 else:
-                    dagitimlar['7+'] += 1
+                    satis_dagilimi['20+'] += 1
                 
                 # Şişme hesapla - YENİ FORMÜL
                 ihtiyac = ortalama_satis
@@ -301,27 +341,30 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 'sisme_maliyeti': round(sisme_maliyeti, 1),
                 'net_skor': round(net_skor, 1),
                 'magaza_sayisi': magaza_sayisi,
-                'dagitimlar': dagitimlar,
+                'satis_dagilimi': satis_dagilimi,  # 0,1,2,...,20,20+
                 'magaza_detaylari': magaza_detaylari,
-                'lojistik_kat': lojistik_kat,  # Katsayıları kaydet
+                'lojistik_kat': lojistik_kat,
                 'sisme_kat': sisme_kat
             })
         
-        # En iyi paketi bul - ÇOK KRİTERLİ ÖNCELK
-        # 1. Öncelik: 7+ mağaza sayısı (en yüksek)
-        # 2. Öncelik: 5-6 mağaza sayısı
-        # 3. Öncelik: 3-4 mağaza sayısı
-        # 4. Öncelik: 1-2 mağaza sayısı
-        # 5. Son öncelik: Net skoru 0'a yakınlık
+        # En iyi paketi bul - EN YÜKSEK SATIŞ ADEDİNDEN BAŞLAYARAK
         if paket_sonuclari:
             def paket_oncelik_skoru(paket):
-                return (
-                    paket['dagitimlar']['7+'] * 100000000,    # En yüksek öncelik
-                    paket['dagitimlar']['5-6'] * 1000000,      # 2. öncelik
-                    paket['dagitimlar']['3-4'] * 10000,        # 3. öncelik
-                    paket['dagitimlar']['1-2'] * 100,          # 4. öncelik
-                    -abs(paket['net_skor'])                    # Son öncelik (0'a yakınlık)
-                )
+                satis_dagilimi = paket['satis_dagilimi']
+                skor_listesi = []
+                
+                # 20+ önce
+                skor_listesi.append(satis_dagilimi.get('20+', 0))
+                
+                # Sonra 20'den 0'a kadar
+                for i in range(20, -1, -1):
+                    skor_listesi.append(satis_dagilimi.get(i, 0))
+                
+                # Net skor en son
+                skor_listesi.append(-abs(paket['net_skor']))
+                
+                return tuple(skor_listesi)
+            
             en_iyi_paket = max(paket_sonuclari, key=paket_oncelik_skoru)
             
             sonuclar.append({
@@ -458,18 +501,24 @@ if 'analiz_sonuclari' in st.session_state:
         ozet_data = []
         for paket_sonuc in sonuc['paket_sonuclari']:
             en_iyi = "⭐" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
-            ozet_data.append({
+            
+            # Temel bilgiler
+            row = {
                 '': en_iyi,
-                'Paket': f"{paket_sonuc['paket_boyutu']}'lü",
-                '7+ adet': paket_sonuc['dagitimlar']['7+'],
-                '5-6 adet': paket_sonuc['dagitimlar']['5-6'],
-                '3-4 adet': paket_sonuc['dagitimlar']['3-4'],
-                '1-2 adet': paket_sonuc['dagitimlar']['1-2'],
-                '0 adet': paket_sonuc['dagitimlar']['0'],
-                'Net Skor': round(paket_sonuc['net_skor'], 2),
-                'Lojistik': round(paket_sonuc['lojistik_tasarruf'], 2),
-                'Şişme': round(paket_sonuc['toplam_sisme'], 2)
-            })
+                'Paket': f"{paket_sonuc['paket_boyutu']}'lü"
+            }
+            
+            # 20+'dan 0'a kadar tüm satış adetleri
+            row['20+'] = paket_sonuc['satis_dagilimi'].get('20+', 0)
+            for i in range(20, -1, -1):
+                row[f'{i}'] = paket_sonuc['satis_dagilimi'].get(i, 0)
+            
+            # Diğer metrikler
+            row['Net Skor'] = round(paket_sonuc['net_skor'], 2)
+            row['Lojistik'] = round(paket_sonuc['lojistik_tasarruf'], 2)
+            row['Şişme'] = round(paket_sonuc['toplam_sisme'], 2)
+            
+            ozet_data.append(row)
         
         ozet_df = pd.DataFrame(ozet_data)
         
@@ -490,12 +539,28 @@ if 'analiz_sonuclari' in st.session_state:
         
         # Seçim açıklaması
         en_iyi = sonuc['en_iyi_paket']
+        dag = en_iyi['satis_dagilimi']
+        
+        # En yüksek satış kategorilerini bul
+        yuksek_kategoriler = []
+        if dag.get('20+', 0) > 0:
+            yuksek_kategoriler.append(f"20+ adet: {dag['20+']} mağaza")
+        for i in range(20, -1, -1):
+            if dag.get(i, 0) > 0:
+                yuksek_kategoriler.append(f"{i} adet: {dag[i]} mağaza")
+                if len(yuksek_kategoriler) >= 5:  # İlk 5 kategoriyi göster
+                    break
+        
+        aciklama = "\n".join([f"- {k}" for k in yuksek_kategoriler[:5]])
+        
         st.success(f"""
-        **✅ {en_iyi['paket_boyutu']}'lü paket seçildi çünkü:**
-        - 🥇 7+ satış: {en_iyi['dagitimlar']['7+']} mağaza
-        - 🥈 5-6 satış: {en_iyi['dagitimlar']['5-6']} mağaza  
-        - 🥉 3-4 satış: {en_iyi['dagitimlar']['3-4']} mağaza
-        - Net Skor: {en_iyi['net_skor']:.2f} (Lojistik: {en_iyi['lojistik_tasarruf']:.2f} - Şişme: {en_iyi['toplam_sisme']:.2f})
+**✅ {en_iyi['paket_boyutu']}'lü paket seçildi çünkü:**
+
+**En yüksek satış kategorileri:**
+{aciklama}
+
+**Metrikler:**
+- Net Skor: {en_iyi['net_skor']:.2f} (Lojistik: {en_iyi['lojistik_tasarruf']:.2f} - Şişme: {en_iyi['toplam_sisme']:.2f})
         """)
         
         st.markdown("---")
@@ -508,21 +573,26 @@ if 'analiz_sonuclari' in st.session_state:
     for sonuc in sonuclar:
         for paket_sonuc in sonuc['paket_sonuclari']:
             en_iyi = "✓" if paket_sonuc['paket_boyutu'] == sonuc['en_iyi_paket']['paket_boyutu'] else ""
-            tum_sonuclar.append({
+            
+            row = {
                 'Ürün Kodu': sonuc['urun'],
                 'En İyi': en_iyi,
-                'Paket Boyutu': paket_sonuc['paket_boyutu'],
-                'Net Skor': round(paket_sonuc['net_skor'], 2),
-                'Lojistik Tasarruf': round(paket_sonuc['lojistik_tasarruf'], 2),
-                'Şişme Miktarı': round(paket_sonuc['toplam_sisme'], 2),
-                'Şişme Maliyeti': round(paket_sonuc['sisme_maliyeti'], 2),
-                'Mağaza Sayısı': paket_sonuc['magaza_sayisi'],
-                '0 adet': paket_sonuc['dagitimlar']['0'],
-                '1-2 adet': paket_sonuc['dagitimlar']['1-2'],
-                '3-4 adet': paket_sonuc['dagitimlar']['3-4'],
-                '5-6 adet': paket_sonuc['dagitimlar']['5-6'],
-                '7+ adet': paket_sonuc['dagitimlar']['7+']
-            })
+                'Paket Boyutu': paket_sonuc['paket_boyutu']
+            }
+            
+            # Tüm satış kategorileri
+            row['20+ adet'] = paket_sonuc['satis_dagilimi'].get('20+', 0)
+            for i in range(20, -1, -1):
+                row[f'{i} adet'] = paket_sonuc['satis_dagilimi'].get(i, 0)
+            
+            # Metrikler
+            row['Net Skor'] = round(paket_sonuc['net_skor'], 2)
+            row['Lojistik Tasarruf'] = round(paket_sonuc['lojistik_tasarruf'], 2)
+            row['Şişme Miktarı'] = round(paket_sonuc['toplam_sisme'], 2)
+            row['Şişme Maliyeti'] = round(paket_sonuc['sisme_maliyeti'], 2)
+            row['Toplam Mağaza'] = paket_sonuc['magaza_sayisi']
+            
+            tum_sonuclar.append(row)
     
     rapor_df = pd.DataFrame(tum_sonuclar)
     csv = rapor_df.to_csv(index=False, encoding='utf-8-sig')
@@ -596,16 +666,29 @@ if 'analiz_sonuclari' in st.session_state:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Mağaza dağılımı - LİSTE FORMAT
+        # Mağaza dağılımı - LİSTE FORMAT (TÜM SATIŞLAR)
         st.markdown("**📊 Mağaza Satış Dağılımı (Önerilen Paket)**")
         
         dag_data = []
-        for aralik, sayi in sonuc['en_iyi_paket']['dagitimlar'].items():
+        dag = sonuc['en_iyi_paket']['satis_dagilimi']
+        toplam_magaza = sonuc['en_iyi_paket']['magaza_sayisi']
+        
+        # 20+ önce
+        if dag.get('20+', 0) > 0:
             dag_data.append({
-                'Satış Aralığı (adet/periyod)': aralik,
-                'Mağaza Sayısı': sayi,
-                'Oran (%)': round(sayi / sonuc['en_iyi_paket']['magaza_sayisi'] * 100, 1) if sonuc['en_iyi_paket']['magaza_sayisi'] > 0 else 0
+                'Satış Adedi (periyot)': '20+',
+                'Mağaza Sayısı': dag['20+'],
+                'Oran (%)': round(dag['20+'] / toplam_magaza * 100, 1) if toplam_magaza > 0 else 0
             })
+        
+        # 20'den 0'a kadar - sadece 0'dan büyük olanları göster
+        for i in range(20, -1, -1):
+            if dag.get(i, 0) > 0:
+                dag_data.append({
+                    'Satış Adedi (periyot)': str(i),
+                    'Mağaza Sayısı': dag[i],
+                    'Oran (%)': round(dag[i] / toplam_magaza * 100, 1) if toplam_magaza > 0 else 0
+                })
         
         dag_df = pd.DataFrame(dag_data)
         st.dataframe(dag_df, use_container_width=True, hide_index=True)
@@ -695,22 +778,20 @@ else:
         
         **Seçim Kriterleri (Öncelik Sırası):**
         
-        🥇 **7+ adet satış yapan mağaza sayısı**
+        🥇 **20+ adet satış yapan mağaza sayısı**
            - En yüksek öncelik
-           - Hangi pakette en çok mağaza 7+ adet satıyor?
         
-        🥈 **5-6 adet satış yapan mağaza sayısı**
-           - 2. öncelik (7+ eşitse)
+        🥈 **20, 19, 18, ... adet satış yapan mağaza sayısı**
+           - Yüksekten düşüğe sırayla
         
-        🥉 **3-4 adet satış yapan mağaza sayısı**
-           - 3. öncelik (5-6 da eşitse)
-        
-        4️⃣ **1-2 adet satış yapan mağaza sayısı**
-           - 4. öncelik
-        
-        5️⃣ **Net Skor 0'a yakınlık**
+        🥉 **Net Skor 0'a yakınlık**
            - Son öncelik (tüm kategoriler eşitse)
-           - Lojistik vs Şişme dengesi
+        
+        **Mağaza Dağılımı:**
+        - Seçilen periyoda göre (Haftalık/2 Hafta)
+        - Her mağazanın ortalama satışı hesaplanır
+        - 0, 1, 2, 3, ..., 20, 20+ kategorilerine ayrılır
+        - Her kategori için mağaza sayısı gösterilir
         
         **Avantajlar:**
         - ✅ Küçük paket = Az şişme
@@ -763,10 +844,10 @@ else:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 20px;'>
-    <p>📦 Prepack Optimizasyonu | Retail Analytics Platform v3.0</p>
+    <p>📦 Prepack Optimizasyonu | Retail Analytics Platform v5.0</p>
     <p>English Home & EVE Kozmetik için özel geliştirilmiştir</p>
     <p style='font-size: 0.8em; margin-top: 10px;'>
-        ✨ Yeni: 3-20 paket aralığı | Gelişmiş formüller | Detaylı raporlama
+        ✨ Yeni: Detaylı satış dağılımı (0-20+) | Hassas önceliklendirme | Tam şeffaflık
     </p>
 </div>
 """, unsafe_allow_html=True)
