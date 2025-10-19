@@ -14,6 +14,6 @@ st.markdown("""
 
 Sol menüden bir modül seçerek başlayabilirsiniz:
 
-- 📉 **Lost Sales Analizi**
-- 🚚 **Sevkiyat Yönetimi**
+-  **Lost Sales Analizi**
+-  **Sevkiyat Yönetimi**
 """)
