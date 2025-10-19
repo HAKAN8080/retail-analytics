@@ -62,14 +62,14 @@ st.sidebar.markdown("### 📊 Veri Formatı")
 st.sidebar.info("""
 **CSV Kolon Yapısı:**
 - `Tarih`: 2024-01-01 formatında
-- `Mağaza`: Mağaza adı/kodu
-- `Ürün`: Ürün adı/kodu
-- `Satış`: Satış miktarı (adet)
-- `Stok`: Stok miktarı (adet)
+- `magaza_kod`: Mağaza kodu
+- `urun_kod`: Ürün kodu
+- `satis`: Satış miktarı (adet)
+- `stok`: Stok miktarı (adet)
 
 **Örnek:**
 ```
-Tarih,Mağaza,Ürün,Satış,Stok
+Tarih,magaza_kod,urun_kod,satis,stok
 2024-01-01,MGZ001,URN001,5,20
 2024-01-01,MGZ002,URN001,2,15
 ```
@@ -81,7 +81,7 @@ Tarih,Mağaza,Ürün,Satış,Stok
 
 def csv_oku(file):
     """CSV dosyasını farklı encoding ve delimiter'larla okumayı dene"""
-    encodings = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252', 'iso-8859-9']
+    encodings = ['utf-8-sig', 'utf-8', 'latin1', 'cp1252', 'iso-8859-9', 'windows-1254']
     delimiters = [',', ';', '\t', '|']
     
     for encoding in encodings:
@@ -92,6 +92,8 @@ def csv_oku(file):
                 
                 # Başarılı okuma kontrolü
                 if len(df.columns) > 1 and len(df) > 0:
+                    # Kolon isimlerini temizle
+                    df.columns = df.columns.str.strip()
                     st.success(f"✅ Dosya başarıyla okundu! (Encoding: {encoding}, Delimiter: '{delimiter}')")
                     return df
             except Exception:
@@ -99,20 +101,54 @@ def csv_oku(file):
     
     return None
 
+def kolon_normalize(df):
+    """Kolon isimlerini normalize et ve eşleştir"""
+    import unicodedata
+    
+    def temizle(text):
+        """Türkçe karakterleri ve özel karakterleri temizle"""
+        if not isinstance(text, str):
+            return text
+        # Unicode normalizasyonu
+        text = unicodedata.normalize('NFKD', text)
+        # ASCII'ye çevir
+        text = text.encode('ascii', 'ignore').decode('ascii')
+        # Küçük harfe çevir ve boşlukları temizle
+        text = text.lower().strip()
+        return text
+    
+    kolon_map = {}
+    for col in df.columns:
+        col_clean = temizle(col)
+        
+        # Eşleştirme - yeni kolon isimleri
+        if any(x in col_clean for x in ['tarih', 'date']):
+            kolon_map[col] = 'Tarih'
+        elif any(x in col_clean for x in ['magaza', 'store', 'magazakod', 'magazakodu']):
+            kolon_map[col] = 'magaza_kod'
+        elif any(x in col_clean for x in ['urun', 'product', 'urunkod', 'urunkodu']):
+            kolon_map[col] = 'urun_kod'
+        elif any(x in col_clean for x in ['satis', 'sales']):
+            kolon_map[col] = 'satis'
+        elif any(x in col_clean for x in ['stok', 'stock']):
+            kolon_map[col] = 'stok'
+    
+    return kolon_map
+
 def ornek_veri_olustur():
     """Örnek test verisi oluştur"""
     tarihler = pd.date_range(start='2024-01-01', end='2024-10-25', freq='D')
-    magazalar = ['Mağaza A', 'Mağaza B', 'Mağaza C', 'Mağaza D', 'Mağaza E']
-    urunler = ['Ürün X', 'Ürün Y', 'Ürün Z']
+    magazalar = ['MGZ001', 'MGZ002', 'MGZ003', 'MGZ004', 'MGZ005']
+    urunler = ['URN001', 'URN002', 'URN003']
     
     data = []
     for tarih in tarihler:
         for magaza in magazalar:
             for urun in urunler:
                 # Farklı satış paternleri
-                if 'A' in magaza:
+                if magaza in ['MGZ001', 'MGZ002']:
                     satis = np.random.poisson(5)  # Yüksek satış
-                elif 'B' in magaza:
+                elif magaza == 'MGZ003':
                     satis = np.random.poisson(2)  # Orta satış
                 else:
                     satis = np.random.poisson(1)  # Düşük satış
@@ -120,10 +156,10 @@ def ornek_veri_olustur():
                 stok = np.random.randint(10, 50)
                 data.append({
                     'Tarih': tarih.strftime('%Y-%m-%d'),
-                    'Mağaza': magaza,
-                    'Ürün': urun,
-                    'Satış': satis,
-                    'Stok': stok
+                    'magaza_kod': magaza,
+                    'urun_kod': urun,
+                    'satis': satis,
+                    'stok': stok
                 })
     
     return pd.DataFrame(data)
@@ -132,31 +168,21 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
     """Ana analiz fonksiyonu"""
     
     # Tarih kolonunu datetime'a çevir
-    tarih_kolonu = None
-    for col in df.columns:
-        if col.lower() in ['tarih', 'date', 'tarİh']:
-            tarih_kolonu = col
-            break
-    
-    if tarih_kolonu:
-        df[tarih_kolonu] = pd.to_datetime(df[tarih_kolonu])
+    if 'Tarih' in df.columns:
+        df['Tarih'] = pd.to_datetime(df['Tarih'])
     
     # Kolon isimlerini normalize et
-    kolon_map = {}
-    for col in df.columns:
-        col_lower = col.lower()
-        if 'ürün' in col_lower or 'urun' in col_lower or 'product' in col_lower:
-            kolon_map[col] = 'Ürün'
-        elif 'mağaza' in col_lower or 'magaza' in col_lower or 'store' in col_lower:
-            kolon_map[col] = 'Mağaza'
-        elif 'satış' in col_lower or 'satis' in col_lower or 'sales' in col_lower:
-            kolon_map[col] = 'Satış'
-        elif 'stok' in col_lower or 'stock' in col_lower:
-            kolon_map[col] = 'Stok'
-        elif 'tarih' in col_lower or 'date' in col_lower:
-            kolon_map[col] = 'Tarih'
-    
+    kolon_map = kolon_normalize(df)
     df = df.rename(columns=kolon_map)
+    
+    # Gerekli kolonları kontrol et
+    gerekli_kolonlar = ['Tarih', 'magaza_kod', 'urun_kod', 'satis', 'stok']
+    eksik_kolonlar = [k for k in gerekli_kolonlar if k not in df.columns]
+    
+    if eksik_kolonlar:
+        st.error(f"❌ Eksik kolonlar: {', '.join(eksik_kolonlar)}")
+        st.info(f"Mevcut kolonlar: {', '.join(df.columns.tolist())}")
+        return []
     
     # Periyod günü hesapla
     periyod_gun = 7 if periyod == "Haftalık" else 14
@@ -164,8 +190,8 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
     sonuclar = []
     
     # Her ürün için analiz
-    for urun in df['Ürün'].unique():
-        urun_df = df[df['Ürün'] == urun]
+    for urun in df['urun_kod'].unique():
+        urun_df = df[df['urun_kod'] == urun]
         
         paket_sonuclari = []
         
@@ -176,11 +202,11 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
             magaza_detaylari = []
             
             # Her mağaza için
-            for magaza in urun_df['Mağaza'].unique():
-                magaza_df = urun_df[urun_df['Mağaza'] == magaza]
+            for magaza in urun_df['magaza_kod'].unique():
+                magaza_df = urun_df[urun_df['magaza_kod'] == magaza]
                 
                 # Toplam satış ve periyod sayısı
-                toplam_satis = magaza_df['Satış'].sum()
+                toplam_satis = magaza_df['satis'].sum()
                 
                 if 'Tarih' in magaza_df.columns:
                     gun_sayisi = (magaza_df['Tarih'].max() - magaza_df['Tarih'].min()).days + 1
@@ -213,7 +239,7 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
                 magaza_sayisi += 1
                 
                 magaza_detaylari.append({
-                    'magaza': magaza,
+                    'magaza_kod': magaza,
                     'ortalama_satis': round(ortalama_satis, 2),
                     'ihtiyac': int(ihtiyac),
                     'gonderilecek': int(gonderilecek),
@@ -237,13 +263,14 @@ def analiz_yap(df, paket_boyutlari, sisme_kat, lojistik_kat, periyod):
             })
         
         # En iyi paketi bul
-        en_iyi_paket = max(paket_sonuclari, key=lambda x: x['net_skor'])
-        
-        sonuclar.append({
-            'urun': urun,
-            'paket_sonuclari': paket_sonuclari,
-            'en_iyi_paket': en_iyi_paket
-        })
+        if paket_sonuclari:
+            en_iyi_paket = max(paket_sonuclari, key=lambda x: x['net_skor'])
+            
+            sonuclar.append({
+                'urun': urun,
+                'paket_sonuclari': paket_sonuclari,
+                'en_iyi_paket': en_iyi_paket
+            })
     
     return sonuclar
 
@@ -258,7 +285,7 @@ with col1:
     uploaded_file = st.file_uploader(
         "📁 CSV Dosyası Yükleyin",
         type=['csv'],
-        help="Tarih, Mağaza, Ürün, Satış, Stok kolonlarını içeren CSV dosyası"
+        help="Tarih, magaza_kod, urun_kod, satis, stok kolonlarını içeren CSV dosyası"
     )
 
 with col2:
@@ -314,48 +341,38 @@ if uploaded_file is not None:
             """)
         else:
             # Kolon kontrolü
-            gerekli_kolonlar = ['Tarih', 'Mağaza', 'Ürün', 'Satış', 'Stok']
-            mevcut_kolonlar = df.columns.tolist()
+            kolon_map = kolon_normalize(df)
+            df_normalized = df.rename(columns=kolon_map)
             
-            # Kolon isimlerini küçük harfe çevirerek kontrol et
-            kolon_map = {}
-            for col in mevcut_kolonlar:
-                col_lower = col.lower().strip()
-                if 'tarih' in col_lower or 'date' in col_lower:
-                    kolon_map[col] = 'Tarih'
-                elif 'mağaza' in col_lower or 'magaza' in col_lower or 'store' in col_lower:
-                    kolon_map[col] = 'Mağaza'
-                elif 'ürün' in col_lower or 'urun' in col_lower or 'product' in col_lower:
-                    kolon_map[col] = 'Ürün'
-                elif 'satış' in col_lower or 'satis' in col_lower or 'sales' in col_lower:
-                    kolon_map[col] = 'Satış'
-                elif 'stok' in col_lower or 'stock' in col_lower:
-                    kolon_map[col] = 'Stok'
+            gerekli_kolonlar = ['Tarih', 'magaza_kod', 'urun_kod', 'satis', 'stok']
+            eksik_kolonlar = [k for k in gerekli_kolonlar if k not in df_normalized.columns]
             
-            if len(kolon_map) < 5:
-                st.warning("⚠️ Bazı kolonlar bulunamadı. Mevcut kolonlar:")
-                st.write(mevcut_kolonlar)
-                st.info("Beklenen kolonlar: Tarih, Mağaza, Ürün, Satış, Stok")
+            if eksik_kolonlar:
+                st.warning(f"⚠️ Eksik kolonlar: {', '.join(eksik_kolonlar)}")
+                st.info(f"""
+                **Mevcut kolonlar:** {', '.join(df.columns.tolist())}
+                
+                **Beklenen kolonlar:** Tarih, magaza_kod, urun_kod, satis, stok
+                
+                Kolon eşleştirme otomatik yapılacak, ancak tam eşleşme bulunamadı.
+                """)
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("📊 Toplam Satır", f"{len(df):,}")
             with col2:
-                magaza_col = [v for k, v in kolon_map.items() if v == 'Mağaza']
-                if magaza_col and magaza_col[0] in df.columns:
-                    st.metric("🏪 Mağaza Sayısı", len(df[magaza_col[0]].unique()))
+                if 'magaza_kod' in df_normalized.columns:
+                    st.metric("🏪 Mağaza Sayısı", len(df_normalized['magaza_kod'].unique()))
                 else:
                     st.metric("🏪 Mağaza Sayısı", "N/A")
             with col3:
-                urun_col = [v for k, v in kolon_map.items() if v == 'Ürün']
-                if urun_col and urun_col[0] in df.columns:
-                    st.metric("📦 Ürün Sayısı", len(df[urun_col[0]].unique()))
+                if 'urun_kod' in df_normalized.columns:
+                    st.metric("📦 Ürün Sayısı", len(df_normalized['urun_kod'].unique()))
                 else:
                     st.metric("📦 Ürün Sayısı", "N/A")
             with col4:
-                tarih_col = [v for k, v in kolon_map.items() if v == 'Tarih']
-                if tarih_col and tarih_col[0] in df.columns:
-                    st.metric("📅 Veri Aralığı", f"{len(df[tarih_col[0]].unique())} gün")
+                if 'Tarih' in df_normalized.columns:
+                    st.metric("📅 Veri Aralığı", f"{len(df_normalized['Tarih'].unique())} gün")
                 else:
                     st.metric("📅 Veri Aralığı", "N/A")
             
@@ -380,7 +397,7 @@ if 'analiz_sonuclari' in st.session_state:
     ozet_data = []
     for sonuc in sonuclar:
         ozet_data.append({
-            'Ürün': sonuc['urun'],
+            'Ürün Kodu': sonuc['urun'],
             'Önerilen Paket': f"{sonuc['en_iyi_paket']['paket_boyutu']}'lü",
             'Net Skor': sonuc['en_iyi_paket']['net_skor'],
             'Toplam Şişme': sonuc['en_iyi_paket']['toplam_sisme'],
@@ -523,16 +540,17 @@ else:
         ### 1️⃣ Veri Hazırlama
         
         **Gerekli Kolonlar:**
-        - `Tarih`: Satış tarihi
-        - `Mağaza`: Mağaza kodu/adı
-        - `Ürün`: Ürün kodu/adı
-        - `Satış`: Satış adedi
-        - `Stok`: Stok adedi
+        - `Tarih`: Satış tarihi (YYYY-MM-DD)
+        - `magaza_kod`: Mağaza kodu
+        - `urun_kod`: Ürün kodu
+        - `satis`: Satış adedi (sayısal)
+        - `stok`: Stok adedi (sayısal)
         
         **Öneriler:**
         - 2024 yılı başından güncel tarihe kadar veri
         - En az 1 ay, ideal 3+ ay veri
-        - Tutarlı format
+        - Kolon isimleri tam olmalı
+        - Türkçe karakter kullanmayın
         """)
     
     with col2:
