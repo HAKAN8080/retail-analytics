@@ -79,7 +79,6 @@ with col1:
     - Paket büyüklüğü optimizasyonu
     - Lojistik maliyet azaltma
     - Stok şişme kontrolü
-    - Bedensiz ürün yönetimi (English Home & EVE Kozmetik)
     """)
 
 with col2:
