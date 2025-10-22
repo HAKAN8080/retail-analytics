@@ -12,6 +12,31 @@ st.set_page_config(
 )
 
 # ============================================
+# SIDEBAR ÖZELLEŞTIRME (BÜYÜK HARF & BOLD)
+# ============================================
+st.markdown("""
+<style>
+    /* Sidebar sayfa linklerini büyük harf ve bold yap */
+    [data-testid="stSidebarNav"] li a {
+        text-transform: uppercase !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
+    
+    /* Aktif sayfayı daha belirgin yap */
+    [data-testid="stSidebarNav"] li a[aria-current="page"] {
+        background-color: rgba(151, 166, 195, 0.15) !important;
+        color: #ff4b4b !important;
+    }
+    
+    /* Hover efekti */
+    [data-testid="stSidebarNav"] li a:hover {
+        background-color: rgba(151, 166, 195, 0.1) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # ANA SAYFA
 # ============================================
 st.title("📊 Retail Analytics Platform")
