@@ -32,6 +32,10 @@ if 'sevkiyat_sonuc' not in st.session_state:
     st.session_state.sevkiyat_sonuc = None
 if 'alim_siparis_sonuc' not in st.session_state:
     st.session_state.alim_siparis_sonuc = None
+if 'po_yasak' not in st.session_state:
+    st.session_state.po_yasak = None
+if 'po_detay_kpi' not in st.session_state:
+    st.session_state.po_detay_kpi = None
 
 # Sidebar menü 
 st.sidebar.title("💵 Alım Sipariş (Purchase Order)")
@@ -46,6 +50,51 @@ menu = st.sidebar.radio(
 if menu == "🏠 Ana Sayfa":
     st.title("💵 Alım Sipariş (Purchase Order) Sistemi")
     st.markdown("---")
+    
+    # VERİ KONTROLÜ - ÖNEMLİ!
+    required_data = {
+        "Anlık Stok/Satış": st.session_state.anlik_stok_satis,
+        "Depo Stok": st.session_state.depo_stok,
+        "KPI": st.session_state.kpi
+    }
+    
+    missing_data = [name for name, data in required_data.items() if data is None]
+    
+    if missing_data:
+        st.error("❌ Gerekli veriler yüklenmemiş!")
+        st.warning(f"**Eksik veriler:** {', '.join(missing_data)}")
+        
+        st.info("""
+        **👉 Lütfen önce veri yükleme sayfasından CSV dosyalarınızı yükleyin.**
+        
+        Gerekli dosyalar:
+        - Anlık Stok/Satış
+        - Depo Stok
+        - KPI
+        - Ürün Master (opsiyonel ama önerilir)
+        - Mağaza Master (opsiyonel ama önerilir)
+        """)
+        
+        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", use_container_width=True):
+            st.switch_page("pages/0_Veri_Yukleme.py")
+        
+        st.stop()
+    
+    # Sevkiyat kontrolü (opsiyonel)
+    if st.session_state.sevkiyat_sonuc is None:
+        st.warning("""
+        ⚠️ **Sevkiyat hesaplaması yapılmamış!**
+        
+        Alım sipariş hesaplaması için sevkiyat sonuçları kullanılır (min sevkiyat miktarı için).
+        Sevkiyat yapmadan da devam edebilirsiniz, ancak sonuçlar daha az optimize olabilir.
+        """)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚚 Sevkiyat Hesaplamaya Git", use_container_width=True):
+                st.switch_page("pages/2_Sevkiyat.py")
+        with col2:
+            st.info("veya aşağıdaki bilgileri okuyun")
     
     st.markdown("""
     ### 🎯 Alım Sipariş Sistemi Hakkında
@@ -170,8 +219,12 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     missing_data = [name for name, data in required_data.items() if data is None]
     
     if missing_data:
-        st.warning(f"⚠️ Eksik veriler: {', '.join(missing_data)}")
-        st.info("Lütfen önce 'Sevkiyat' sayfasından 'Veri Yükleme' bölümünden gerekli verileri yükleyin.")
+        st.error(f"❌ Eksik veriler: {', '.join(missing_data)}")
+        st.info("👉 Lütfen önce veri yükleme sayfasından gerekli verileri yükleyin.")
+        
+        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary"):
+            st.switch_page("pages/0_Veri_Yukleme.py")
+        
         st.stop()
     
     # Depo stok kontrolü
