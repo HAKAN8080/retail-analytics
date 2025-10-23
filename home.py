@@ -49,6 +49,8 @@ menu = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🚀 Hızlı Erişim")
 
+st.sidebar.page_link("pages/0_Veri_Yukleme.py", label="📤 Veri Yükleme", icon="📂")
+st.sidebar.markdown("---")
 st.sidebar.page_link("pages/1_Lost_Sales.py", label="📉 Lost Sales", icon="📊")
 st.sidebar.page_link("pages/2_Sevkiyat.py", label="🚚 Sevkiyat Planlama", icon="📦")
 st.sidebar.page_link("pages/3_Prepack.py", label="📦 Prepack Optimizasyon", icon="📦")
