@@ -53,7 +53,7 @@ st.sidebar.page_link("pages/0_Veri_Yukleme.py", label="📤 Veri Yükleme", icon
 st.sidebar.markdown("---")
 st.sidebar.page_link("pages/1_Lost_Sales.py", label="📉 Lost Sales", icon="📊")
 st.sidebar.page_link("pages/2_Sevkiyat.py", label="🚚 Sevkiyat Planlama", icon="📦")
-st.sidebar.page_link("pages/3_Prepack.py", label="📦 Prepack Optimizasyon", icon="📦")
+st.sidebar.page_link("pages/3_Prepack Optimizasyonu.py", label="📦 Prepack Optimizasyon", icon="📦")
 st.sidebar.page_link("pages/4_PO.py", label="💵 Alım Sipariş (PO)", icon="🛒")
 
 st.sidebar.markdown("---")
