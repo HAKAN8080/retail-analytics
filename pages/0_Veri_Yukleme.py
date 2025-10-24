@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import time
+import io
+import zipfile
 
 # Sayfa konfigürasyonu
 st.set_page_config(
@@ -45,12 +47,10 @@ st.info("""
 
 st.markdown("---")
 
-# Örnek CSV'ler indirme bölümü
-with st.expander("📥 Örnek CSV'leri İndir", expanded=False):
-    st.info("Tüm örnek CSV dosyalarını aşağıdan indirebilirsiniz.")
-    
-    example_csvs = {
-        'urun_master.csv': pd.DataFrame({
+# Örnek CSV'ler
+example_csvs = {
+    'urun_master.csv': {
+        'data': pd.DataFrame({
             'urun_kod': ['U001', 'U002', 'U003'],
             'urun_ad': ['Ürün A', 'Ürün B', 'Ürün C'],
             'satici_kod': ['S001', 'S002', 'S001'],
@@ -74,7 +74,11 @@ with st.expander("📥 Örnek CSV'leri İndir", expanded=False):
             'paket_ici': [6, 12, 3],
             'olcu_birimi': ['Adet', 'Adet', 'Kg']
         }),
-        'magaza_master.csv': pd.DataFrame({
+        'aciklama': 'Ürün bilgileri ve kategorileri',
+        'icon': '📦'
+    },
+    'magaza_master.csv': {
+        'data': pd.DataFrame({
             'magaza_kod': ['M001', 'M002', 'M003'],
             'magaza_ad': ['Mağaza A', 'Mağaza B', 'Mağaza C'],
             'il': ['İstanbul', 'Ankara', 'İzmir'],
@@ -85,18 +89,30 @@ with st.expander("📥 Örnek CSV'leri İndir", expanded=False):
             'bs': ['BS1', 'BS2', 'BS1'],
             'depo_kod': ['D001', 'D001', 'D002']
         }),
-        'yasak.csv': pd.DataFrame({
+        'aciklama': 'Mağaza bilgileri ve özellikleri',
+        'icon': '🏪'
+    },
+    'yasak.csv': {
+        'data': pd.DataFrame({
             'urun_kod': ['U001', 'U002'],
             'magaza_kod': ['M002', 'M001'],
             'yasak_durum': [1, 1]
         }),
-        'depo_stok.csv': pd.DataFrame({
+        'aciklama': 'Ürün-mağaza yasak eşleştirmeleri',
+        'icon': '🚫'
+    },
+    'depo_stok.csv': {
+        'data': pd.DataFrame({
             'depo_kod': ['D001', 'D001', 'D002'],
             'depo_ad': ['Depo Merkez', 'Depo Merkez', 'Depo Bölge'],
             'urun_kod': ['U001', 'U002', 'U001'],
             'stok': [1000, 1500, 800]
         }),
-        'anlik_stok_satis.csv': pd.DataFrame({
+        'aciklama': 'Depo bazında stok miktarları',
+        'icon': '📦'
+    },
+    'anlik_stok_satis.csv': {
+        'data': pd.DataFrame({
             'magaza_kod': ['M001', 'M001', 'M002'],
             'urun_kod': ['U001', 'U002', 'U001'],
             'stok': [100, 150, 120],
@@ -105,7 +121,11 @@ with st.expander("📥 Örnek CSV'leri İndir", expanded=False):
             'ciro': [5000, 6000, 5500],
             'smm': [2.0, 3.75, 2.67]
         }),
-        'haftalik_trend.csv': pd.DataFrame({
+        'aciklama': 'Mağaza-ürün bazında anlık durum',
+        'icon': '📊'
+    },
+    'haftalik_trend.csv': {
+        'data': pd.DataFrame({
             'klasman_kod': ['K1', 'K1', 'K2'],
             'marka_kod': ['M001', 'M001', 'M002'],
             'yil': [2025, 2025, 2025],
@@ -116,34 +136,106 @@ with st.expander("📥 Örnek CSV'leri İndir", expanded=False):
             'smm': [5.0, 4.52, 8.33],
             'iftutar': [1000000, 950000, 1500000]
         }),
-        'kpi.csv': pd.DataFrame({
+        'aciklama': 'Haftalık satış trend verileri',
+        'icon': '📈'
+    },
+    'kpi.csv': {
+        'data': pd.DataFrame({
             'mg_id': ['MG1', 'MG2', 'MG3'],
             'min_deger': [0, 100, 500],
             'max_deger': [99, 499, 999],
             'forward_cover': [1.5, 2.0, 2.5]
         }),
-        'po_yasak.csv': pd.DataFrame({
+        'aciklama': 'Mal grubu bazında KPI hedefleri',
+        'icon': '🎯'
+    },
+    'po_yasak.csv': {
+        'data': pd.DataFrame({
             'urun_kodu': ['U001', 'U002', 'U003'],
             'yasak_durum': [1, 0, 1],
             'acik_siparis': [100, 0, 250]
         }),
-        'po_detay_kpi.csv': pd.DataFrame({
+        'aciklama': 'PO yasak ürünler ve açık siparişler',
+        'icon': '🚫'
+    },
+    'po_detay_kpi.csv': {
+        'data': pd.DataFrame({
             'marka_kod': ['M001', 'M002', 'M003'],
             'mg_kod': ['MG1', 'MG2', 'MG1'],
             'cover_hedef': [12.0, 15.0, 10.0],
             'bkar_hedef': [25.0, 30.0, 20.0]
-        })
+        }),
+        'aciklama': 'Marka-mal grubu KPI hedefleri',
+        'icon': '🎯'
     }
+}
+
+# Örnek CSV'ler indirme bölümü
+with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
+    st.info("Sistemde kullanılacak veri formatlarının örnek dosyalarını aşağıdan indirebilirsiniz.")
     
-    cols = st.columns(4)
-    for idx, (filename, df) in enumerate(example_csvs.items()):
-        with cols[idx % 4]:
+    # Tümünü İndir butonu
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        # ZIP dosyası oluştur
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for filename, file_info in example_csvs.items():
+                csv_data = file_info['data'].to_csv(index=False, encoding='utf-8-sig')
+                zip_file.writestr(filename, csv_data)
+        
+        st.download_button(
+            label="📦 Tümünü İndir (ZIP)",
+            data=zip_buffer.getvalue(),
+            file_name="ornek_csv_dosyalari.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
+        )
+    
+    st.markdown("---")
+    
+    # Tablo formatında gösterim
+    table_data = []
+    for filename, file_info in example_csvs.items():
+        table_data.append({
+            'Icon': file_info['icon'],
+            'Dosya Adı': filename,
+            'Açıklama': file_info['aciklama'],
+            'Satır': len(file_info['data']),
+            'Kolon': len(file_info['data'].columns)
+        })
+    
+    table_df = pd.DataFrame(table_data)
+    
+    # Tabloyu göster
+    st.dataframe(
+        table_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Icon": st.column_config.TextColumn("", width="small"),
+            "Dosya Adı": st.column_config.TextColumn("Dosya Adı", width="medium"),
+            "Açıklama": st.column_config.TextColumn("Açıklama", width="large"),
+            "Satır": st.column_config.NumberColumn("Satır", width="small"),
+            "Kolon": st.column_config.NumberColumn("Kolon", width="small")
+        }
+    )
+    
+    st.markdown("---")
+    st.markdown("**📥 Tekli İndirme:**")
+    
+    # Grid düzeni için tekli indirme butonları
+    cols = st.columns(3)
+    for idx, (filename, file_info) in enumerate(example_csvs.items()):
+        with cols[idx % 3]:
             st.download_button(
-                label=f"📥 {filename}",
-                data=df.to_csv(index=False, encoding='utf-8-sig'),
+                label=f"{file_info['icon']} {filename}",
+                data=file_info['data'].to_csv(index=False, encoding='utf-8-sig'),
                 file_name=filename,
                 mime="text/csv",
-                key=f"download_{filename}"
+                key=f"download_{filename}",
+                use_container_width=True
             )
 
 st.markdown("---")
