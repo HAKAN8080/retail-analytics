@@ -41,7 +41,7 @@ if 'po_detay_kpi' not in st.session_state:
 st.sidebar.title("💵 Alım Sipariş (Purchase Order)")
 menu = st.sidebar.radio(
     "Menü",
-    ["🏠 Ana Sayfa", "💵 Alım Sipariş Hesaplama", "📊 Alım Sipariş Raporları"]
+    ["🏠 Ana Sayfa", "💵 Alım Sipariş Hesaplama", "📊 Alım Sipariş Raporları", "📦 Depo Bazlı Sipariş"]
 )
 
 # ============================================
@@ -51,11 +51,18 @@ if menu == "🏠 Ana Sayfa":
     st.title("💵 Alım Sipariş (Purchase Order) Sistemi")
     st.markdown("---")
     
-    # VERİ KONTROLÜ - ÖNEMLİ!
+    # VERİ KONTROLÜ
     required_data = {
         "Anlık Stok/Satış": st.session_state.anlik_stok_satis,
         "Depo Stok": st.session_state.depo_stok,
         "KPI": st.session_state.kpi
+    }
+    
+    optional_data = {
+        "PO Yasak": st.session_state.po_yasak,
+        "PO Detay KPI": st.session_state.po_detay_kpi,
+        "Ürün Master": st.session_state.urun_master,
+        "Mağaza Master": st.session_state.magaza_master
     }
     
     missing_data = [name for name, data in required_data.items() if data is None]
@@ -67,12 +74,15 @@ if menu == "🏠 Ana Sayfa":
         st.info("""
         **👉 Lütfen önce veri yükleme sayfasından CSV dosyalarınızı yükleyin.**
         
-        Gerekli dosyalar:
+        **Zorunlu dosyalar:**
         - Anlık Stok/Satış
         - Depo Stok
         - KPI
-        - Ürün Master (opsiyonel ama önerilir)
-        - Mağaza Master (opsiyonel ama önerilir)
+        
+        **Opsiyonel dosyalar (önerilir):**
+        - Ürün Master (koli bilgisi, durum, ithal bilgisi için)
+        - PO Yasak (yasak ürünler ve açık siparişler için)
+        - PO Detay KPI (marka/MG bazında özel hedefler için)
         """)
         
         if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", use_container_width=True):
@@ -80,127 +90,72 @@ if menu == "🏠 Ana Sayfa":
         
         st.stop()
     
-    # Sevkiyat kontrolü (opsiyonel)
-    if st.session_state.sevkiyat_sonuc is None:
-        st.warning("""
-        ⚠️ **Sevkiyat hesaplaması yapılmamış!**
-        
-        Alım sipariş hesaplaması için sevkiyat sonuçları kullanılır (min sevkiyat miktarı için).
-        Sevkiyat yapmadan da devam edebilirsiniz, ancak sonuçlar daha az optimize olabilir.
-        """)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🚚 Sevkiyat Hesaplamaya Git", use_container_width=True):
-                st.switch_page("pages/2_Sevkiyat.py")
-        with col2:
-            st.info("veya aşağıdaki bilgileri okuyun")
-    
-    st.markdown("""
-    ### 🎯 Alım Sipariş Sistemi Hakkında
-    
-    Bu sistem, depodan mağazalara yapılan sevkiyat sonrasında **tedarikçiden alınması gereken ürün miktarlarını** hesaplar.
-    
-    **Hesaplama Mantığı:**
-    1. Cover < X olan ürünler (düşük stok seviyesi)
-    2. Brüt Kar Marjı > %Y olan ürünler (karlı ürünler)
-    3. Satış trendine göre genişletme katsayısı
-    4. Forward cover hedefi
-    5. Minimum sevkiyat miktarı
-    
-    **Formül:**
-    ```
-    Alım İhtiyacı = [(Satış × Genişletme × (Forward Cover + 2)] - [Stok + Yol + Depo Stok] + Min Sevkiyat
-    ```
-    """)
-    
-    st.markdown("---")
-    
-    st.markdown("### 📋 İşlem Adımları")
+    # Opsiyonel veri durumu
+    st.markdown("### 📊 Veri Durumu")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.info("""
-        **1️⃣ Veri Hazırlığı** (Sevkiyat sayfasından)
-        - Veri Yükleme
-        - Segmentasyon
-        - Sevkiyat Hesaplama
-        """)
-        
-        st.success("""
-        **2️⃣ Alım Sipariş Hesaplama**
-        - Filtreleri ayarlama
-        - Cover segment matrix
-        - Hesaplama çalıştırma
-        """)
+        st.markdown("**Zorunlu Veriler:**")
+        for name, data in required_data.items():
+            if data is not None:
+                st.success(f"✅ {name}")
+            else:
+                st.error(f"❌ {name}")
     
     with col2:
-        st.success("""
-        **3️⃣ Sonuçları İnceleme**
-        - Ürün bazında analiz
-        - Segment analizi
-        - Top performans raporları
-        """)
-        
-        st.info("""
-        **4️⃣ Export**
-        - CSV indirme
-        - Excel export
-        - Tedarikçiye gönderim
-        """)
+        st.markdown("**Opsiyonel Veriler:**")
+        for name, data in optional_data.items():
+            if data is not None:
+                st.success(f"✅ {name}")
+            else:
+                st.warning(f"⚠️ {name}")
     
     st.markdown("---")
     
-    # Veri durumu kontrolü
-    st.subheader("📊 Veri Durumu")
+    st.markdown("""
+    ### 🎯 Yenilikler ve Özellikler
     
-    col1, col2, col3, col4 = st.columns(4)
+    **🆕 Gelişmiş Özellikler:**
     
-    with col1:
-        if st.session_state.anlik_stok_satis is not None:
-            st.success("✅ Anlık Stok/Satış")
-        else:
-            st.error("❌ Anlık Stok/Satış")
+    1. **📋 PO Yasak Kontrolü**
+       - Yasak ürünleri otomatik filtreleme
+       - Açık sipariş miktarlarını düşme
     
-    with col2:
-        if st.session_state.depo_stok is not None:
-            st.success("✅ Depo Stok")
-        else:
-            st.error("❌ Depo Stok")
+    2. **🎯 Detaylı KPI Hedefleri**
+       - Marka + Mal Grubu bazında özel cover ve marj hedefleri
+       - Dinamik hedef yönetimi
     
-    with col3:
-        if st.session_state.kpi is not None:
-            st.success("✅ KPI")
-        else:
-            st.error("❌ KPI")
+    3. **📦 Koli Bazında Sipariş**
+       - Otomatik koli yuvarlaması
+       - Adet ve koli bazında gösterim
     
-    with col4:
-        if st.session_state.sevkiyat_sonuc is not None:
-            st.success("✅ Sevkiyat Hesabı")
-        else:
-            st.warning("⚠️ Sevkiyat Hesabı")
+    4. **✅ Ürün Durumu Kontrolü**
+       - Pasif ürünleri otomatik çıkarma
+       - İthal ürünler için farklı forward cover
+    
+    5. **🏪 Depo Bazlı Çıktı**
+       - Her depo için ayrı sipariş listesi
+       - Tedarikçi bazında gruplama
+    """)
     
     st.markdown("---")
     
-    if st.session_state.alim_siparis_sonuc is not None:
-        st.success("✅ Alım sipariş hesaplaması mevcut!")
-        
-        result = st.session_state.alim_siparis_sonuc
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            toplam_alim = result['alim_siparis'].sum()
-            st.metric("📦 Toplam Alım Sipariş", f"{toplam_alim:,.0f}")
-        
-        with col2:
-            alim_sku = (result['alim_siparis'] > 0).sum()
-            st.metric("🏷️ Alım Gereken SKU", f"{alim_sku}")
-        
-        with col3:
-            if alim_sku > 0:
-                ort_alim = toplam_alim / alim_sku
-                st.metric("📊 Ort. Alım/SKU", f"{ort_alim:,.0f}")
+    st.markdown("""
+    ### 📐 Güncellenmiş Formül
+```
+    Net İhtiyaç = Brüt İhtiyaç - Açık Sipariş
+    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 2)] - [Mevcut Stoklar] + Min Sevkiyat
+    
+    Forward Cover Düzeltmesi:
+    - İthal ürünler için: FC × 1.2
+    - Yerli ürünler için: FC × 1.0
+    
+    Koli Yuvarlaması:
+    Koli Sayısı = YUKARI_YUVARLA(Net İhtiyaç / Koli İçi)
+    Final Miktar = Koli Sayısı × Koli İçi
+```
+    """)
 
 # ============================================
 # 💵 ALIM SİPARİŞ HESAPLAMA
@@ -221,25 +176,43 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     if missing_data:
         st.error(f"❌ Eksik veriler: {', '.join(missing_data)}")
         st.info("👉 Lütfen önce veri yükleme sayfasından gerekli verileri yükleyin.")
-        
-        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary"):
-            st.switch_page("pages/0_Veri_Yukleme.py")
-        
-        st.stop()
-    
-    # Depo stok kontrolü
-    if len(st.session_state.depo_stok) == 0:
-        st.error("❌ Depo Stok verisi boş! Lütfen depo_stok.csv dosyasını yükleyin.")
         st.stop()
     
     st.success("✅ Tüm gerekli veriler hazır!")
+    
+    # Opsiyonel veri bilgisi
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.session_state.po_yasak is not None:
+            st.info("✅ PO Yasak aktif")
+        else:
+            st.warning("⚠️ PO Yasak yok")
+    
+    with col2:
+        if st.session_state.po_detay_kpi is not None:
+            st.info("✅ Detay KPI aktif")
+        else:
+            st.warning("⚠️ Detay KPI yok")
+    
+    with col3:
+        if st.session_state.urun_master is not None:
+            st.info("✅ Ürün Master aktif")
+        else:
+            st.warning("⚠️ Ürün Master yok")
+    
+    with col4:
+        if st.session_state.sevkiyat_sonuc is not None:
+            st.info("✅ Sevkiyat var")
+        else:
+            st.warning("⚠️ Sevkiyat yok")
     
     st.markdown("---")
     
     # Filtreler
     st.subheader("🎯 Hesaplama Filtreleri")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         cover_threshold = st.number_input(
@@ -248,7 +221,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
             max_value=100,
             value=12,
             step=1,
-            help="Örnek: 12 girersek Cover < 12 olan ürünler hesaplanır"
+            help="Sadece cover değeri X'ten küçük ürünler hesaplanır"
         )
     
     with col2:
@@ -258,21 +231,45 @@ elif menu == "💵 Alım Sipariş Hesaplama":
             max_value=100.0,
             value=10.0,
             step=0.5,
-            help="Negatif değer girebilirsiniz. Örnek: 10 girersek Marj > %10 olanlar hesaplanır"
+            help="Sadece kar marjı %Y'den büyük ürünler hesaplanır"
+        )
+    
+    with col3:
+        use_detail_kpi = st.checkbox(
+            "🎯 Detay KPI Kullan",
+            value=st.session_state.po_detay_kpi is not None,
+            disabled=st.session_state.po_detay_kpi is None,
+            help="Marka+MG bazında özel hedefler kullanılır"
+        )
+    
+    # İthal ürün faktörü
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        ithal_factor = st.number_input(
+            "İthal Ürün FC Çarpanı",
+            min_value=1.0,
+            max_value=2.0,
+            value=1.2,
+            step=0.05,
+            help="İthal ürünler için forward cover bu katsayı ile çarpılır"
+        )
+    
+    with col2:
+        round_to_koli = st.checkbox(
+            "📦 Koli Yuvarlaması Yap",
+            value=True,
+            help="Sipariş miktarlarını koli adedine yuvarla"
         )
     
     st.markdown("---")
     
-    # 5. Matris - Cover Segment Katsayıları
+    # Cover Segment Matrix
     st.subheader("📊 Cover Segment Genişletme Katsayıları")
     
-    # Segmentasyon parametrelerini al
     product_ranges = st.session_state.segmentation_params['product_ranges']
-    
-    # Cover segmentlerini oluştur
     cover_segments = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
     
-    # Segment sıralama fonksiyonu
     def sort_segments(segments):
         def get_sort_key(seg):
             try:
@@ -284,32 +281,10 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     cover_segments_sorted = sort_segments(cover_segments)
     
     if 'cover_segment_matrix' not in st.session_state or st.session_state.cover_segment_matrix is None:
-        # Default katsayı tablosu
         st.session_state.cover_segment_matrix = pd.DataFrame({
             'cover_segment': cover_segments_sorted,
-            'katsayi': [1.0] * len(cover_segments_sorted)
+            'katsayi': [1.5, 1.3, 1.0, 0.8, 0.6, 0.4][:len(cover_segments_sorted)]
         })
-    else:
-        # Mevcut matrisi güncelle - yeni segmentler eklenmişse
-        existing_df = st.session_state.cover_segment_matrix.copy()
-        existing_segments = set(existing_df['cover_segment'].tolist())
-        
-        # Yeni segmentleri ekle
-        for seg in cover_segments_sorted:
-            if seg not in existing_segments:
-                new_row = pd.DataFrame({'cover_segment': [seg], 'katsayi': [1.0]})
-                existing_df = pd.concat([existing_df, new_row], ignore_index=True)
-        
-        # Sadece mevcut segmentleri tut
-        existing_df = existing_df[existing_df['cover_segment'].isin(cover_segments_sorted)]
-        
-        # Sırala
-        existing_df['sort_key'] = existing_df['cover_segment'].apply(
-            lambda x: int(x.split('-')[0]) if x.split('-')[0].isdigit() else 9999
-        )
-        existing_df = existing_df.sort_values('sort_key').drop('sort_key', axis=1).reset_index(drop=True)
-        
-        st.session_state.cover_segment_matrix = existing_df
     
     edited_cover_matrix = st.data_editor(
         st.session_state.cover_segment_matrix,
@@ -339,6 +314,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     
     st.markdown("---")
     
+    # HESAPLAMA
     if st.button("🚀 Alım Sipariş Hesapla", type="primary", use_container_width=True):
         try:
             with st.spinner("📊 Hesaplama yapılıyor..."):
@@ -349,11 +325,15 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 kpi_df = st.session_state.kpi.copy()
                 cover_matrix = st.session_state.cover_segment_matrix.copy()
                 
-                st.write("**📊 Debug: Veri boyutları**")
-                st.write(f"- Anlık Stok/Satış: {len(anlik_df):,} satır")
-                st.write(f"- Depo Stok: {len(depo_df):,} satır")
-                st.write(f"- KPI: {len(kpi_df)} satır")
-                st.write(f"- Cover Segment Matrix: {len(cover_matrix)} segment")
+                # Debug bilgileri
+                st.write("**📊 Veri Durumu:**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Anlık Stok/Satış", f"{len(anlik_df):,} satır")
+                with col2:
+                    st.metric("Depo Stok", f"{len(depo_df):,} satır")
+                with col3:
+                    st.metric("KPI", f"{len(kpi_df)} satır")
                 
                 # Veri tiplerini düzelt
                 anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
@@ -361,7 +341,37 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     lambda x: str(int(float(x))) if '.' in str(x) else str(x)
                 )
                 
-                # 2. ÜRÜN BAZINDA TOPLAMA
+                # 2. ÜRÜN MASTER VARSA EKLE
+                if st.session_state.urun_master is not None:
+                    urun_master = st.session_state.urun_master.copy()
+                    urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
+                    
+                    # Gerekli kolonları seç
+                    master_cols = ['urun_kod', 'urun_ad']
+                    if 'satici_kod' in urun_master.columns:
+                        master_cols.append('satici_kod')
+                    if 'satici_ad' in urun_master.columns:
+                        master_cols.append('satici_ad')
+                    if 'mg' in urun_master.columns:
+                        master_cols.append('mg')
+                    if 'mg_ad' in urun_master.columns:
+                        master_cols.append('mg_ad')
+                    if 'marka_kod' in urun_master.columns:
+                        master_cols.append('marka_kod')
+                    if 'marka_ad' in urun_master.columns:
+                        master_cols.append('marka_ad')
+                    if 'durum' in urun_master.columns:
+                        master_cols.append('durum')
+                    if 'ithal' in urun_master.columns:
+                        master_cols.append('ithal')
+                    if 'koli_ici' in urun_master.columns:
+                        master_cols.append('koli_ici')
+                    
+                    urun_master_subset = urun_master[master_cols].drop_duplicates('urun_kod')
+                else:
+                    urun_master_subset = None
+                
+                # 3. ÜRÜN BAZINDA TOPLAMA
                 urun_toplam = anlik_df.groupby('urun_kod').agg({
                     'urun_kod': 'first',
                     'stok': 'sum',
@@ -371,41 +381,68 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     'smm': 'sum'
                 }).reset_index(drop=True)
                 
-                st.write(f"**🏷️ Ürün bazında toplam:** {len(urun_toplam):,} ürün")
+                st.write(f"**🏷️ Toplam ürün:** {len(urun_toplam):,}")
                 
-                # 3. DEPO STOK EKLE
+                # Ürün master'ı ekle
+                if urun_master_subset is not None:
+                    urun_toplam = urun_toplam.merge(urun_master_subset, on='urun_kod', how='left')
+                    
+                    # Durum kontrolü - Pasif ürünleri çıkar
+                    if 'durum' in urun_toplam.columns:
+                        aktif_sayisi = len(urun_toplam)
+                        urun_toplam = urun_toplam[urun_toplam['durum'] != 'Pasif']
+                        pasif_sayisi = aktif_sayisi - len(urun_toplam)
+                        if pasif_sayisi > 0:
+                            st.info(f"ℹ️ {pasif_sayisi} pasif ürün çıkarıldı")
+                
+                # 4. DEPO STOK EKLE
                 depo_toplam = depo_df.groupby('urun_kod')['stok'].sum().reset_index()
                 depo_toplam.columns = ['urun_kod', 'depo_stok']
-                
-                st.write(f"**📦 Depo stok:** {len(depo_toplam):,} ürün, Toplam: {depo_toplam['depo_stok'].sum():,.0f}")
                 
                 urun_toplam = urun_toplam.merge(depo_toplam, on='urun_kod', how='left')
                 urun_toplam['depo_stok'] = urun_toplam['depo_stok'].fillna(0)
                 
-                # 4. BRÜT KAR VE MARJ HESAPLA
-                st.write("**💰 SMM ve Ciro kontrol (ilk 5 ürün):**")
-                sample = urun_toplam[['urun_kod', 'satis', 'ciro', 'smm']].head(5)
-                st.dataframe(sample)
+                # 5. PO YASAK KONTROLÜ
+                if st.session_state.po_yasak is not None:
+                    po_yasak = st.session_state.po_yasak.copy()
+                    po_yasak['urun_kodu'] = po_yasak['urun_kodu'].astype(str)
+                    
+                    urun_toplam = urun_toplam.merge(
+                        po_yasak[['urun_kodu', 'yasak_durum', 'acik_siparis']],
+                        left_on='urun_kod',
+                        right_on='urun_kodu',
+                        how='left'
+                    )
+                    
+                    urun_toplam['yasak_durum'] = urun_toplam['yasak_durum'].fillna(0)
+                    urun_toplam['acik_siparis'] = urun_toplam['acik_siparis'].fillna(0)
+                    
+                    # Yasak ürünleri çıkar
+                    yasak_sayisi = (urun_toplam['yasak_durum'] == 1).sum()
+                    urun_toplam = urun_toplam[urun_toplam['yasak_durum'] != 1]
+                    
+                    if yasak_sayisi > 0:
+                        st.warning(f"⚠️ {yasak_sayisi} yasak ürün çıkarıldı")
+                else:
+                    urun_toplam['acik_siparis'] = 0
                 
+                # 6. BRÜT KAR VE MARJ HESAPLA
                 ortalama_smm = urun_toplam['smm'].mean()
                 ortalama_ciro = urun_toplam['ciro'].mean()
                 
                 if ortalama_smm < ortalama_ciro * 0.1:
-                    st.warning("⚠️ SMM birim maliyet olarak algılandı. Toplam maliyet = SMM × Satış")
                     urun_toplam['toplam_smm'] = urun_toplam['smm'] * urun_toplam['satis']
                 else:
                     urun_toplam['toplam_smm'] = urun_toplam['smm']
                 
                 urun_toplam['brut_kar'] = urun_toplam['ciro'] - urun_toplam['toplam_smm']
-                
-                # Brüt kar marjı
                 urun_toplam['brut_kar_marji'] = np.where(
                     urun_toplam['ciro'] > 0,
                     (urun_toplam['brut_kar'] / urun_toplam['ciro'] * 100),
                     0
                 )
                 
-                # 5. COVER HESAPLA
+                # 7. COVER HESAPLA
                 urun_toplam['toplam_stok'] = (
                     urun_toplam['stok'] + 
                     urun_toplam['yol'] + 
@@ -418,7 +455,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     999
                 )
                 
-                # 6. COVER SEGMENT ATAMASI
+                # 8. COVER SEGMENT ATAMASI
                 product_ranges = st.session_state.segmentation_params['product_ranges']
                 product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
                 
@@ -431,10 +468,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 
                 urun_toplam['cover_segment'] = urun_toplam['cover_segment'].astype(str)
                 
-                st.write(f"**🎯 Debug: Cover segment dağılımı:**")
-                st.write(urun_toplam['cover_segment'].value_counts().sort_index())
-                
-                # 7. GENİŞLETME KATSAYISINI EKLE
+                # 9. GENİŞLETME KATSAYISI
                 urun_toplam = urun_toplam.merge(
                     cover_matrix.rename(columns={'katsayi': 'genlestirme_katsayisi'}),
                     on='cover_segment',
@@ -442,11 +476,53 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 )
                 urun_toplam['genlestirme_katsayisi'] = urun_toplam['genlestirme_katsayisi'].fillna(1.0)
                 
-                # 8. FORWARD COVER VE MIN SEVK EKLE
+                # 10. FORWARD COVER
                 default_fc = kpi_df['forward_cover'].mean()
                 urun_toplam['forward_cover'] = default_fc
                 
-                # Min sevk adeti
+                # Detay KPI varsa kullan
+                if use_detail_kpi and st.session_state.po_detay_kpi is not None:
+                    detay_kpi = st.session_state.po_detay_kpi.copy()
+                    
+                    # Marka ve MG kodları varsa join yap
+                    if 'marka_kod' in urun_toplam.columns and 'mg' in urun_toplam.columns:
+                        # MG kodu düzeltmesi
+                        if 'mg_kod' in detay_kpi.columns:
+                            detay_kpi.rename(columns={'mg_kod': 'mg'}, inplace=True)
+                        
+                        urun_toplam = urun_toplam.merge(
+                            detay_kpi[['marka_kod', 'mg', 'cover_hedef', 'bkar_hedef']],
+                            on=['marka_kod', 'mg'],
+                            how='left'
+                        )
+                        
+                        # Özel hedefler varsa kullan
+                        urun_toplam['target_cover'] = urun_toplam['cover_hedef'].fillna(cover_threshold)
+                        urun_toplam['target_margin'] = urun_toplam['bkar_hedef'].fillna(margin_threshold)
+                        
+                        detay_sayisi = urun_toplam['cover_hedef'].notna().sum()
+                        if detay_sayisi > 0:
+                            st.info(f"ℹ️ {detay_sayisi} ürün için özel hedefler uygulandı")
+                    else:
+                        urun_toplam['target_cover'] = cover_threshold
+                        urun_toplam['target_margin'] = margin_threshold
+                else:
+                    urun_toplam['target_cover'] = cover_threshold
+                    urun_toplam['target_margin'] = margin_threshold
+                
+                # İthal ürün faktörü
+                if 'ithal' in urun_toplam.columns:
+                    urun_toplam['forward_cover'] = np.where(
+                        urun_toplam['ithal'] == 1,
+                        urun_toplam['forward_cover'] * ithal_factor,
+                        urun_toplam['forward_cover']
+                    )
+                    
+                    ithal_sayisi = (urun_toplam['ithal'] == 1).sum()
+                    if ithal_sayisi > 0:
+                        st.info(f"ℹ️ {ithal_sayisi} ithal ürün için FC × {ithal_factor} uygulandı")
+                
+                # 11. MIN SEVK EKLE
                 if st.session_state.sevkiyat_sonuc is not None:
                     sevk_df = st.session_state.sevkiyat_sonuc.copy()
                     sevk_df['urun_kod'] = sevk_df['urun_kod'].astype(str)
@@ -460,18 +536,16 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 
                 urun_toplam['min_sevk_adeti'] = urun_toplam['min_sevk_adeti'].fillna(0)
                 
-                # 9. FİLTRELERİ UYGULA
+                # 12. FİLTRELERİ UYGULA
                 urun_toplam['filtre_uygun'] = (
-                    (urun_toplam['cover'] < cover_threshold) &
-                    (urun_toplam['brut_kar_marji'] > margin_threshold)
+                    (urun_toplam['cover'] < urun_toplam['target_cover']) &
+                    (urun_toplam['brut_kar_marji'] > urun_toplam['target_margin'])
                 )
                 
                 filtre_sayisi = urun_toplam['filtre_uygun'].sum()
-                st.write(f"**✅ Filtreye uygun ürün:** {filtre_sayisi}")
-                st.write(f"   - Cover < {cover_threshold}: {(urun_toplam['cover'] < cover_threshold).sum()}")
-                st.write(f"   - Brüt Kar Marjı > {margin_threshold}%: {(urun_toplam['brut_kar_marji'] > margin_threshold).sum()}")
+                st.write(f"**✅ Filtreye uygun:** {filtre_sayisi} ürün")
                 
-                # 10. ALIM SİPARİŞ HESAPLA
+                # 13. ALIM SİPARİŞ HESAPLA
                 urun_toplam['talep'] = (
                     urun_toplam['satis'] * 
                     urun_toplam['genlestirme_katsayisi'] * 
@@ -484,167 +558,157 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     urun_toplam['depo_stok']
                 )
                 
-                urun_toplam['alim_siparis_hesap'] = (
-                    urun_toplam['talep'] - urun_toplam['mevcut_stok']
+                # Brüt ihtiyaç
+                urun_toplam['brut_ihtiyac'] = (
+                    urun_toplam['talep'] - urun_toplam['mevcut_stok'] + urun_toplam['min_sevk_adeti']
                 )
                 
-                # Filtreye uygunsa ve pozitifse min_sevk ekle
-                urun_toplam['alim_siparis'] = urun_toplam.apply(
-                    lambda row: (
-                        max(0, row['alim_siparis_hesap'] + row['min_sevk_adeti'])
-                        if row['filtre_uygun'] and row['alim_siparis_hesap'] > 0
-                        else 0
-                    ),
-                    axis=1
+                # Net ihtiyaç (açık siparişleri düş)
+                urun_toplam['net_ihtiyac'] = urun_toplam['brut_ihtiyac'] - urun_toplam['acik_siparis']
+                
+                # Sadece filtreye uygun ve pozitif olanlar
+                urun_toplam['alim_siparis'] = np.where(
+                    (urun_toplam['filtre_uygun']) & (urun_toplam['net_ihtiyac'] > 0),
+                    urun_toplam['net_ihtiyac'],
+                    0
                 )
                 
-                st.write(f"**📦 Alım sipariş > 0 olan ürün:** {(urun_toplam['alim_siparis'] > 0).sum()}")
-                st.write(f"**📦 Toplam alım sipariş:** {urun_toplam['alim_siparis'].sum():,.0f}")
+                # 14. KOLİ YUVARLAMASI
+                if round_to_koli and 'koli_ici' in urun_toplam.columns:
+                    urun_toplam['koli_ici'] = pd.to_numeric(urun_toplam['koli_ici'], errors='coerce').fillna(1)
+                    
+                    # Koli sayısını hesapla
+                    urun_toplam['alim_koli'] = np.where(
+                        (urun_toplam['alim_siparis'] > 0) & (urun_toplam['koli_ici'] > 0),
+                        np.ceil(urun_toplam['alim_siparis'] / urun_toplam['koli_ici']),
+                        0
+                    )
+                    
+                    # Yuvarlanmış adet
+                    urun_toplam['alim_siparis_yuvarli'] = urun_toplam['alim_koli'] * urun_toplam['koli_ici']
+                    
+                    # Orijinal ile fark
+                    yuvarlama_farki = (urun_toplam['alim_siparis_yuvarli'] - urun_toplam['alim_siparis']).sum()
+                    if yuvarlama_farki > 0:
+                        st.info(f"📦 Koli yuvarlaması ile +{yuvarlama_farki:,.0f} adet eklendi")
+                    
+                    # Yuvarlanmış değeri kullan
+                    urun_toplam['alim_siparis_final'] = urun_toplam['alim_siparis_yuvarli']
+                else:
+                    urun_toplam['alim_siparis_final'] = urun_toplam['alim_siparis']
+                    urun_toplam['alim_koli'] = 0
+                    if 'koli_ici' not in urun_toplam.columns:
+                        urun_toplam['koli_ici'] = 1
                 
-                # 11. SONUÇLARI HAZIRLA
-                sonuc_df = urun_toplam[[
-                    'urun_kod', 'cover_segment',
-                    'stok', 'yol', 'depo_stok', 'satis',
-                    'ciro', 'toplam_smm', 'brut_kar', 'brut_kar_marji',
-                    'cover', 'genlestirme_katsayisi', 'forward_cover',
-                    'min_sevk_adeti', 'filtre_uygun', 'alim_siparis'
-                ]].copy()
+                # Depo kodu ekle (varsa)
+                if 'depo_kod' in depo_df.columns:
+                    depo_urun = depo_df[['urun_kod', 'depo_kod']].drop_duplicates()
+                    urun_toplam = urun_toplam.merge(depo_urun, on='urun_kod', how='left')
                 
-                sonuc_df = sonuc_df.sort_values('alim_siparis', ascending=False).reset_index(drop=True)
-                
-                st.session_state.alim_siparis_sonuc = sonuc_df
+                # 15. SONUÇLARI KAYDET
+                st.session_state.alim_siparis_sonuc = urun_toplam.copy()
                 
                 st.success("✅ Alım sipariş hesaplaması tamamlandı!")
                 st.balloons()
                 
-                # SONUÇLAR
+                # ÖZET METRİKLER
                 st.markdown("---")
-                st.subheader("📊 Alım Sipariş Sonuçları")
+                st.subheader("📊 Sonuç Özeti")
                 
-                # Metrikler
                 col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
-                    toplam_alim = sonuc_df['alim_siparis'].sum()
-                    st.metric("📦 Toplam Alım Sipariş", f"{toplam_alim:,.0f}")
+                    toplam_alim = urun_toplam['alim_siparis_final'].sum()
+                    st.metric("📦 Toplam Alım", f"{toplam_alim:,.0f} adet")
                 
                 with col2:
-                    alim_sku = (sonuc_df['alim_siparis'] > 0).sum()
+                    alim_sku = (urun_toplam['alim_siparis_final'] > 0).sum()
                     st.metric("🏷️ Alım Gereken SKU", f"{alim_sku}")
                 
                 with col3:
-                    filtre_uygun = sonuc_df['filtre_uygun'].sum()
-                    st.metric("✅ Filtreye Uygun", f"{filtre_uygun}")
+                    if 'alim_koli' in urun_toplam.columns:
+                        toplam_koli = urun_toplam['alim_koli'].sum()
+                        st.metric("📦 Toplam Koli", f"{toplam_koli:,.0f}")
                 
                 with col4:
-                    if alim_sku > 0:
-                        ort_alim = toplam_alim / alim_sku
-                        st.metric("📊 Ort. Alım/SKU", f"{ort_alim:,.0f}")
-                    else:
-                        st.metric("📊 Ort. Alım/SKU", "0")
+                    if 'acik_siparis' in urun_toplam.columns:
+                        toplam_acik = urun_toplam['acik_siparis'].sum()
+                        st.metric("📋 Açık Sipariş", f"{toplam_acik:,.0f}")
                 
+                # DETAYLI TABLO
                 st.markdown("---")
+                st.subheader("📋 Alım Sipariş Detayı")
                 
-                # Cover Segment bazında özet
-                st.subheader("🎯 Cover Segment Bazında Analiz")
+                # Sadece pozitif olanları göster
+                pozitif_df = urun_toplam[urun_toplam['alim_siparis_final'] > 0].copy()
                 
-                if (sonuc_df['alim_siparis'] > 0).sum() > 0:
-                    cover_dist = sonuc_df[sonuc_df['alim_siparis'] > 0].groupby('cover_segment').agg({
-                        'urun_kod': 'count',
-                        'alim_siparis': 'sum'
-                    }).reset_index()
-                    cover_dist.columns = ['Cover Segment', 'Ürün Sayısı', 'Toplam Alım']
+                if len(pozitif_df) > 0:
+                    # Gösterilecek kolonları seç
+                    display_cols = ['urun_kod']
                     
-                    # Sırala
-                    cover_dist['sort_key'] = cover_dist['Cover Segment'].apply(
-                        lambda x: int(x.split('-')[0]) if x.split('-')[0].isdigit() else 9999
-                    )
-                    cover_dist = cover_dist.sort_values('sort_key').drop('sort_key', axis=1)
+                    if 'urun_ad' in pozitif_df.columns:
+                        display_cols.append('urun_ad')
                     
-                    st.dataframe(cover_dist, use_container_width=True)
-                
-                st.markdown("---")
-                
-                # Detaylı tablo
-                st.subheader("📋 Detaylı Alım Sipariş Tablosu")
-                
-                show_all = st.checkbox("Tüm ürünleri göster (alım sipariş=0 dahil)", value=False)
-                
-                if show_all:
-                    display_df = sonuc_df
-                else:
-                    display_df = sonuc_df[sonuc_df['alim_siparis'] > 0]
-                
-                st.write(f"**Gösterilen ürün sayısı:** {len(display_df)}")
-                
-                if len(display_df) > 0:
+                    display_cols.extend(['cover_segment', 'cover', 'brut_kar_marji', 
+                                        'satis', 'toplam_stok'])
+                    
+                    if 'acik_siparis' in pozitif_df.columns:
+                        display_cols.append('acik_siparis')
+                    
+                    display_cols.append('alim_siparis_final')
+                    
+                    if 'koli_ici' in pozitif_df.columns:
+                        display_cols.extend(['koli_ici', 'alim_koli'])
+                    
+                    if 'satici_kod' in pozitif_df.columns:
+                        display_cols.append('satici_kod')
+                    
+                    if 'depo_kod' in pozitif_df.columns:
+                        display_cols.append('depo_kod')
+                    
+                    display_df = pozitif_df[display_cols].sort_values('alim_siparis_final', ascending=False)
+                    
+                    # Format için sütun isimleri
+                    format_dict = {
+                        'cover': '{:.2f}',
+                        'brut_kar_marji': '{:.2f}%',
+                        'satis': '{:,.0f}',
+                        'toplam_stok': '{:,.0f}',
+                        'acik_siparis': '{:,.0f}',
+                        'alim_siparis_final': '{:,.0f}',
+                        'koli_ici': '{:.0f}',
+                        'alim_koli': '{:,.0f}'
+                    }
+                    
+                    # Sadece mevcut sütunları formatla
+                    format_dict = {k: v for k, v in format_dict.items() if k in display_df.columns}
+                    
                     st.dataframe(
-                        display_df.style.format({
-                            'stok': '{:,.0f}',
-                            'yol': '{:,.0f}',
-                            'depo_stok': '{:,.0f}',
-                            'satis': '{:,.0f}',
-                            'ciro': '{:,.2f}',
-                            'toplam_smm': '{:,.2f}',
-                            'brut_kar': '{:,.2f}',
-                            'brut_kar_marji': '{:.2f}%',
-                            'cover': '{:.2f}',
-                            'genlestirme_katsayisi': '{:.2f}',
-                            'forward_cover': '{:.2f}',
-                            'min_sevk_adeti': '{:,.0f}',
-                            'alim_siparis': '{:,.0f}'
-                        }),
+                        display_df.style.format(format_dict),
                         use_container_width=True,
-                        height=500
+                        height=400
                     )
                     
+                    # Export butonları
                     st.markdown("---")
+                    col1, col2 = st.columns(2)
                     
-                    # Top 10
-                    st.subheader("🏆 En Yüksek Alım Siparişli 10 Ürün")
+                    with col1:
+                        csv_data = display_df.to_csv(index=False, encoding='utf-8-sig')
+                        st.download_button(
+                            label="📥 CSV İndir",
+                            data=csv_data,
+                            file_name=f"alim_siparis_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.csv",
+                            mime="text/csv",
+                            use_container_width=True
+                        )
                     
-                    top_10 = display_df.nlargest(10, 'alim_siparis')[[
-                        'urun_kod', 'cover_segment', 'cover',
-                        'brut_kar_marji', 'satis', 'alim_siparis'
-                    ]]
-                    
-                    st.dataframe(
-                        top_10.style.format({
-                            'cover': '{:.2f}',
-                            'brut_kar_marji': '{:.2f}%',
-                            'satis': '{:,.0f}',
-                            'alim_siparis': '{:,.0f}'
-                        }),
-                        use_container_width=True
-                    )
+                    with col2:
+                        if st.button("📊 Depo Bazlı Görünüme Git", use_container_width=True):
+                            st.switch_page("pages/4_PO.py")  # Aynı sayfada menü değiştir
+                
                 else:
-                    st.info("ℹ️ Filtreye uygun ürün bulunamadı. Filtre değerlerini ayarlayın.")
-                
-                st.markdown("---")
-                
-                # Export
-                st.subheader("📥 Sonuçları Dışa Aktar")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.download_button(
-                        label="📥 CSV İndir (Tümü)",
-                        data=sonuc_df.to_csv(index=False, encoding='utf-8-sig'),
-                        file_name="alim_siparis_tum.csv",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
-                
-                with col2:
-                    alim_var = sonuc_df[sonuc_df['alim_siparis'] > 0]
-                    st.download_button(
-                        label="📥 CSV İndir (Alım>0)",
-                        data=alim_var.to_csv(index=False, encoding='utf-8-sig'),
-                        file_name="alim_siparis_pozitif.csv",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
+                    st.warning("⚠️ Filtrelere uygun ürün bulunamadı!")
         
         except Exception as e:
             st.error(f"❌ Hata oluştu: {str(e)}")
@@ -665,8 +729,14 @@ elif menu == "📊 Alım Sipariş Raporları":
     
     sonuc_df = st.session_state.alim_siparis_sonuc.copy()
     
-    # Sadece alım sipariş > 0 olanlar
-    alim_df = sonuc_df[sonuc_df['alim_siparis'] > 0].copy()
+    # Final sütunu varsa kullan, yoksa normal alim_siparis kullan
+    if 'alim_siparis_final' in sonuc_df.columns:
+        alim_column = 'alim_siparis_final'
+    else:
+        alim_column = 'alim_siparis'
+    
+    # Sadece alım > 0 olanlar
+    alim_df = sonuc_df[sonuc_df[alim_column] > 0].copy()
     
     if len(alim_df) == 0:
         st.info("ℹ️ Alım sipariş ihtiyacı olan ürün bulunamadı.")
@@ -678,38 +748,33 @@ elif menu == "📊 Alım Sipariş Raporları":
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("📦 Toplam Alım", f"{alim_df['alim_siparis'].sum():,.0f}")
+        st.metric("📦 Toplam Alım", f"{alim_df[alim_column].sum():,.0f}")
     
     with col2:
         st.metric("🏷️ Ürün Sayısı", f"{len(alim_df)}")
     
     with col3:
-        ort_alim = alim_df['alim_siparis'].mean()
-        st.metric("📊 Ortalama Alım", f"{ort_alim:,.0f}")
+        if 'alim_koli' in alim_df.columns:
+            st.metric("📦 Toplam Koli", f"{alim_df['alim_koli'].sum():,.0f}")
     
     with col4:
-        median_alim = alim_df['alim_siparis'].median()
-        st.metric("📊 Medyan Alım", f"{median_alim:,.0f}")
+        if 'acik_siparis' in alim_df.columns:
+            acik_dusülen = alim_df['acik_siparis'].sum()
+            st.metric("📋 Açık Sipariş Düşüldü", f"{acik_dusülen:,.0f}")
     
     st.markdown("---")
     
     # Tab'lar
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🎯 Segment Analizi",
-        "💰 Karlılık Analizi",
-        "📊 Cover Analizi",
-        "🏆 Top Ürünler"
-    ])
+    tabs = ["🎯 Segment Analizi", "💰 Karlılık Analizi", "📦 Tedarikçi Analizi", "🏪 Depo Analizi"]
+    tab1, tab2, tab3, tab4 = st.tabs(tabs)
     
-    # ============================================
     # SEGMENT ANALİZİ
-    # ============================================
     with tab1:
         st.subheader("🎯 Cover Segment Bazında Analiz")
         
         segment_analiz = alim_df.groupby('cover_segment').agg({
             'urun_kod': 'count',
-            'alim_siparis': 'sum',
+            alim_column: 'sum',
             'satis': 'sum',
             'brut_kar': 'sum'
         }).reset_index()
@@ -722,9 +787,7 @@ elif menu == "📊 Alım Sipariş Raporları":
         )
         segment_analiz = segment_analiz.sort_values('sort_key').drop('sort_key', axis=1)
         
-        # Yüzdelik hesaplamalar
         segment_analiz['Alım Payı %'] = (segment_analiz['Toplam Alım'] / segment_analiz['Toplam Alım'].sum() * 100).round(2)
-        segment_analiz['Ürün Payı %'] = (segment_analiz['Ürün Sayısı'] / segment_analiz['Ürün Sayısı'].sum() * 100).round(2)
         
         st.dataframe(
             segment_analiz.style.format({
@@ -732,43 +795,25 @@ elif menu == "📊 Alım Sipariş Raporları":
                 'Toplam Alım': '{:,.0f}',
                 'Toplam Satış': '{:,.0f}',
                 'Toplam Brüt Kar': '{:,.2f}',
-                'Alım Payı %': '{:.1f}%',
-                'Ürün Payı %': '{:.1f}%'
+                'Alım Payı %': '{:.1f}%'
             }),
             use_container_width=True
         )
-        
-        st.markdown("---")
-        
-        # Grafikler
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**Segment Bazında Alım Dağılımı**")
-            segment_chart = segment_analiz.set_index('Cover Segment')[['Toplam Alım']]
-            st.bar_chart(segment_chart)
-        
-        with col2:
-            st.write("**Segment Bazında Ürün Dağılımı**")
-            urun_chart = segment_analiz.set_index('Cover Segment')[['Ürün Sayısı']]
-            st.bar_chart(urun_chart)
     
-    # ============================================
     # KARLILIK ANALİZİ
-    # ============================================
     with tab2:
-        st.subheader("💰 Karlılık Analizi")
+        st.subheader("💰 Kar Marjı Bazında Analiz")
         
-        # Marj aralıklarına göre gruplama
+        # Marj kategorileri
         alim_df['marj_kategori'] = pd.cut(
             alim_df['brut_kar_marji'],
-            bins=[-np.inf, 0, 10, 20, 30, np.inf],
-            labels=['Negatif', '%0-10', '%10-20', '%20-30', '%30+']
+            bins=[-np.inf, 0, 10, 20, 30, 50, np.inf],
+            labels=['Negatif', '%0-10', '%10-20', '%20-30', '%30-50', '%50+']
         )
         
         marj_analiz = alim_df.groupby('marj_kategori').agg({
             'urun_kod': 'count',
-            'alim_siparis': 'sum',
+            alim_column: 'sum',
             'brut_kar': 'sum'
         }).reset_index()
         
@@ -782,162 +827,281 @@ elif menu == "📊 Alım Sipariş Raporları":
             }),
             use_container_width=True
         )
-        
-        st.markdown("---")
-        
-        # En karlı 20 ürün
-        st.subheader("🏆 En Yüksek Brüt Kara Sahip 20 Ürün")
-        
-        top_kar = alim_df.nlargest(20, 'brut_kar')[[
-            'urun_kod', 'cover_segment', 'brut_kar', 'brut_kar_marji', 'alim_siparis'
-        ]]
-        
-        st.dataframe(
-            top_kar.style.format({
-                'brut_kar': '{:,.2f}',
-                'brut_kar_marji': '{:.2f}%',
-                'alim_siparis': '{:,.0f}'
-            }),
-            use_container_width=True
-        )
     
-    # ============================================
-    # COVER ANALİZİ
-    # ============================================
+    # TEDARİKÇİ ANALİZİ
     with tab3:
-        st.subheader("📊 Cover Dağılımı Analizi")
-        
-        # Cover aralıklarına göre histogram
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.write("**Cover Dağılımı**")
-            cover_hist = alim_df['cover'].value_counts(bins=20).sort_index()
-            st.bar_chart(cover_hist)
-        
-        with col2:
-            st.write("**Cover İstatistikleri**")
-            st.metric("Ortalama Cover", f"{alim_df['cover'].mean():.2f}")
-            st.metric("Medyan Cover", f"{alim_df['cover'].median():.2f}")
-            st.metric("Min Cover", f"{alim_df['cover'].min():.2f}")
-            st.metric("Max Cover", f"{alim_df['cover'].max():.2f}")
-        
-        st.markdown("---")
-        
-        # En düşük cover'a sahip ürünler
-        st.subheader("⚠️ En Düşük Cover'a Sahip 20 Ürün (Acil Alım Gerekli)")
-        
-        low_cover = alim_df.nsmallest(20, 'cover')[[
-            'urun_kod', 'cover', 'satis', 'stok', 'depo_stok', 'alim_siparis'
-        ]]
-        
-        st.dataframe(
-            low_cover.style.format({
-                'cover': '{:.2f}',
-                'satis': '{:,.0f}',
-                'stok': '{:,.0f}',
-                'depo_stok': '{:,.0f}',
-                'alim_siparis': '{:,.0f}'
-            }),
-            use_container_width=True
+        if 'satici_kod' in alim_df.columns:
+            st.subheader("📦 Tedarikçi Bazında Analiz")
+            
+            tedarikci_analiz = alim_df.groupby(['satici_kod']).agg({
+                'urun_kod': 'count',
+                alim_column: 'sum'
+            }).reset_index()
+            
+            if 'satici_ad' in alim_df.columns:
+                satici_map = alim_df[['satici_kod', 'satici_ad']].drop_duplicates()
+                tedarikci_analiz = tedarikci_analiz.merge(satici_map, on='satici_kod', how='left')
+            
+            tedarikci_analiz.columns = ['Tedarikçi Kod'] + (['Tedarikçi Ad'] if 'satici_ad' in alim_df.columns else []) + ['Ürün Sayısı', 'Toplam Alım']
+            tedarikci_analiz = tedarikci_analiz.sort_values('Toplam Alım', ascending=False)
+            
+            # Koli bilgisi varsa ekle
+            if 'alim_koli' in alim_df.columns:
+                koli_analiz = alim_df.groupby(['satici_kod'])['alim_koli'].sum().reset_index()
+                tedarikci_analiz = tedarikci_analiz.merge(koli_analiz, on='satici_kod', how='left')
+                tedarikci_analiz.rename(columns={'alim_koli': 'Toplam Koli'}, inplace=True)
+            
+            st.dataframe(
+                tedarikci_analiz.style.format({
+                    'Ürün Sayısı': '{:.0f}',
+                    'Toplam Alım': '{:,.0f}',
+                    'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in tedarikci_analiz.columns else None
+                }),
+                use_container_width=True
+            )
+        else:
+            st.info("ℹ️ Tedarikçi bilgisi bulunamadı (Ürün Master'da satici_kod yok)")
+    
+    # DEPO ANALİZİ
+    with tab4:
+        if 'depo_kod' in alim_df.columns:
+            st.subheader("🏪 Depo Bazında Analiz")
+            
+            depo_analiz = alim_df.groupby(['depo_kod']).agg({
+                'urun_kod': 'count',
+                alim_column: 'sum'
+            }).reset_index()
+            
+            depo_analiz.columns = ['Depo Kod', 'Ürün Sayısı', 'Toplam Alım']
+            
+            # Koli bilgisi varsa ekle
+            if 'alim_koli' in alim_df.columns:
+                depo_koli = alim_df.groupby(['depo_kod'])['alim_koli'].sum().reset_index()
+                depo_analiz = depo_analiz.merge(depo_koli, on='depo_kod', how='left')
+                depo_analiz.rename(columns={'alim_koli': 'Toplam Koli'}, inplace=True)
+            
+            depo_analiz = depo_analiz.sort_values('Toplam Alım', ascending=False)
+            
+            st.dataframe(
+                depo_analiz.style.format({
+                    'Ürün Sayısı': '{:.0f}',
+                    'Toplam Alım': '{:,.0f}',
+                    'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in depo_analiz.columns else None
+                }),
+                use_container_width=True
+            )
+        else:
+            st.info("ℹ️ Depo bilgisi bulunamadı")
+
+# ============================================
+# 📦 DEPO BAZLI SİPARİŞ
+# ============================================
+elif menu == "📦 Depo Bazlı Sipariş":
+    st.title("📦 Depo Bazlı Sipariş Listeleri")
+    st.markdown("---")
+    
+    if st.session_state.alim_siparis_sonuc is None:
+        st.warning("⚠️ Henüz alım sipariş hesaplaması yapılmadı!")
+        st.info("Lütfen önce 'Alım Sipariş Hesaplama' menüsünden hesaplama yapın.")
+        st.stop()
+    
+    sonuc_df = st.session_state.alim_siparis_sonuc.copy()
+    
+    # Final sütunu varsa kullan
+    if 'alim_siparis_final' in sonuc_df.columns:
+        alim_column = 'alim_siparis_final'
+    else:
+        alim_column = 'alim_siparis'
+    
+    # Pozitif alımları filtrele
+    alim_df = sonuc_df[sonuc_df[alim_column] > 0].copy()
+    
+    if len(alim_df) == 0:
+        st.info("ℹ️ Alım sipariş ihtiyacı olan ürün bulunamadı.")
+        st.stop()
+    
+    # Depo kodu yoksa default ata
+    if 'depo_kod' not in alim_df.columns:
+        alim_df['depo_kod'] = 'D001'
+        st.info("ℹ️ Depo kodu bulunamadı, tüm siparişler D001 olarak gösteriliyor")
+    
+    # Depo seçimi
+    depo_listesi = sorted(alim_df['depo_kod'].dropna().unique())
+    
+    col1, col2 = st.columns([2, 3])
+    with col1:
+        selected_depo = st.selectbox(
+            "📍 Depo Seçin",
+            options=['Tümü'] + depo_listesi,
+            key="depo_select"
         )
     
-    # ============================================
-    # TOP ÜRÜNLER
-    # ============================================
-    with tab4:
-        st.subheader("🏆 Top Performans Ürünleri")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**En Yüksek Alım Miktarı - Top 15**")
-            top_alim = alim_df.nlargest(15, 'alim_siparis')[[
-                'urun_kod', 'cover_segment', 'alim_siparis', 'satis'
-            ]]
-            st.dataframe(
-                top_alim.style.format({
-                    'alim_siparis': '{:,.0f}',
-                    'satis': '{:,.0f}'
-                }),
-                use_container_width=True
-            )
-        
-        with col2:
-            st.write("**En Yüksek Satış - Top 15**")
-            top_satis = alim_df.nlargest(15, 'satis')[[
-                'urun_kod', 'cover_segment', 'satis', 'alim_siparis'
-            ]]
-            st.dataframe(
-                top_satis.style.format({
-                    'satis': '{:,.0f}',
-                    'alim_siparis': '{:,.0f}'
-                }),
-                use_container_width=True
-            )
-        
-        st.markdown("---")
-        
-        # Ürün master varsa ek bilgiler
-        if st.session_state.urun_master is not None:
-            st.subheader("📦 Ürün Detayları")
-            
-            urun_master = st.session_state.urun_master.copy()
-            urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
-            
-            alim_detay = alim_df.merge(
-                urun_master[['urun_kod', 'urun_ad', 'marka_ad', 'mg_ad']],
-                on='urun_kod',
-                how='left'
-            )
-            
-            # Marka bazında analiz
-            st.write("**Marka Bazında Alım Dağılımı**")
-            marka_analiz = alim_detay.groupby('marka_ad').agg({
-                'urun_kod': 'count',
-                'alim_siparis': 'sum'
-            }).reset_index()
-            marka_analiz.columns = ['Marka', 'Ürün Sayısı', 'Toplam Alım']
-            marka_analiz = marka_analiz.sort_values('Toplam Alım', ascending=False).head(10)
-            
-            st.dataframe(
-                marka_analiz.style.format({
-                    'Ürün Sayısı': '{:.0f}',
-                    'Toplam Alım': '{:,.0f}'
-                }),
-                use_container_width=True
-            )
+    # Seçili depoya göre filtrele
+    if selected_depo != 'Tümü':
+        display_df = alim_df[alim_df['depo_kod'] == selected_depo].copy()
+        st.subheader(f"📦 {selected_depo} Deposu Sipariş Listesi")
+    else:
+        display_df = alim_df.copy()
+        st.subheader("📦 Tüm Depolar Sipariş Listesi")
+    
+    # Özet metrikler
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        toplam_adet = display_df[alim_column].sum()
+        st.metric("📦 Toplam Adet", f"{toplam_adet:,.0f}")
+    
+    with col2:
+        urun_sayisi = len(display_df)
+        st.metric("🏷️ Ürün Sayısı", f"{urun_sayisi}")
+    
+    with col3:
+        if 'alim_koli' in display_df.columns:
+            toplam_koli = display_df['alim_koli'].sum()
+            st.metric("📦 Toplam Koli", f"{toplam_koli:,.0f}")
+    
+    with col4:
+        if 'satici_kod' in display_df.columns:
+            tedarikci_sayisi = display_df['satici_kod'].nunique()
+            st.metric("👥 Tedarikçi Sayısı", f"{tedarikci_sayisi}")
     
     st.markdown("---")
     
-    # Export butonları
-    st.subheader("📥 Raporları İndir")
+    # Tedarikçi filtresi (varsa)
+    if 'satici_kod' in display_df.columns:
+        col1, col2 = st.columns([2, 3])
+        with col1:
+            tedarikci_list = ['Tümü'] + sorted(display_df['satici_kod'].dropna().unique())
+            selected_tedarikci = st.selectbox(
+                "👥 Tedarikçi Filtresi",
+                options=tedarikci_list,
+                key="tedarikci_filter"
+            )
+        
+        if selected_tedarikci != 'Tümü':
+            display_df = display_df[display_df['satici_kod'] == selected_tedarikci]
+            st.info(f"Filtre: {selected_tedarikci}")
+    
+    # Detaylı tablo
+    st.subheader("📋 Sipariş Detayı")
+    
+    # Gösterilecek sütunları belirle
+    display_cols = ['urun_kod']
+    
+    if 'urun_ad' in display_df.columns:
+        display_cols.append('urun_ad')
+    
+    if 'satici_kod' in display_df.columns:
+        display_cols.append('satici_kod')
+    
+    if 'satici_ad' in display_df.columns:
+        display_cols.append('satici_ad')
+    
+    display_cols.append(alim_column)
+    
+    if 'koli_ici' in display_df.columns:
+        display_cols.append('koli_ici')
+    
+    if 'alim_koli' in display_df.columns:
+        display_cols.append('alim_koli')
+    
+    display_cols.extend(['cover', 'brut_kar_marji', 'satis'])
+    
+    if 'depo_kod' in display_df.columns and selected_depo == 'Tümü':
+        display_cols.append('depo_kod')
+    
+    # Sadece mevcut sütunları göster
+    display_cols = [col for col in display_cols if col in display_df.columns]
+    
+    final_df = display_df[display_cols].sort_values(alim_column, ascending=False)
+    
+    # Sütun isimlerini düzenle
+    column_rename = {
+        'urun_kod': 'Ürün Kodu',
+        'urun_ad': 'Ürün Adı',
+        'satici_kod': 'Tedarikçi Kod',
+        'satici_ad': 'Tedarikçi',
+        alim_column: 'Alım (Adet)',
+        'koli_ici': 'Koli İçi',
+        'alim_koli': 'Alım (Koli)',
+        'cover': 'Cover',
+        'brut_kar_marji': 'Kar Marjı %',
+        'satis': 'Satış',
+        'depo_kod': 'Depo'
+    }
+    
+    final_df = final_df.rename(columns=column_rename)
+    
+    # Formatla ve göster
+    format_dict = {
+        'Alım (Adet)': '{:,.0f}',
+        'Koli İçi': '{:.0f}',
+        'Alım (Koli)': '{:,.0f}',
+        'Cover': '{:.2f}',
+        'Kar Marjı %': '{:.2f}%',
+        'Satış': '{:,.0f}'
+    }
+    
+    # Sadece mevcut sütunları formatla
+    format_dict = {k: v for k, v in format_dict.items() if k in final_df.columns}
+    
+    st.dataframe(
+        final_df.style.format(format_dict),
+        use_container_width=True,
+        height=500
+    )
+    
+    # Export
+    st.markdown("---")
+    st.subheader("📥 Dışa Aktar")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
+        # Mevcut görünümü indir
+        csv_data = final_df.to_csv(index=False, encoding='utf-8-sig')
+        filename = f"siparis_{selected_depo}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.csv"
+        
         st.download_button(
-            label="📥 Alım Sipariş Detayı",
-            data=alim_df.to_csv(index=False, encoding='utf-8-sig'),
-            file_name="alim_siparis_detay.csv",
+            label="📥 Bu Listeyi İndir (CSV)",
+            data=csv_data,
+            file_name=filename,
             mime="text/csv",
             use_container_width=True
         )
     
     with col2:
-        st.download_button(
-            label="📥 Segment Analizi",
-            data=segment_analiz.to_csv(index=False, encoding='utf-8-sig'),
-            file_name="segment_analizi.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+        # Özet rapor
+        if 'satici_kod' in display_df.columns:
+            ozet_df = display_df.groupby(['satici_kod']).agg({
+                alim_column: 'sum',
+                'urun_kod': 'count'
+            }).reset_index()
+            
+            if 'alim_koli' in display_df.columns:
+                koli_ozet = display_df.groupby(['satici_kod'])['alim_koli'].sum().reset_index()
+                ozet_df = ozet_df.merge(koli_ozet, on='satici_kod', how='left')
+            
+            ozet_df.columns = ['Tedarikçi'] + ['Toplam Adet', 'SKU Sayısı'] + (['Toplam Koli'] if 'alim_koli' in display_df.columns else [])
+            
+            csv_ozet = ozet_df.to_csv(index=False, encoding='utf-8-sig')
+            
+            st.download_button(
+                label="📥 Özet Rapor (CSV)",
+                data=csv_ozet,
+                file_name=f"ozet_{selected_depo}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
     
     with col3:
-        st.download_button(
-            label="📥 Karlılık Analizi",
-            data=marj_analiz.to_csv(index=False, encoding='utf-8-sig'),
-            file_name="karlilik_analizi.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+        # Tüm depoları indir
+        if selected_depo != 'Tümü':
+            tum_csv = alim_df.to_csv(index=False, encoding='utf-8-sig')
+            st.download_button(
+                label="📥 Tüm Depolar (CSV)",
+                data=tum_csv,
+                file_name=f"tum_depolar_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
