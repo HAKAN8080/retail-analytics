@@ -142,10 +142,12 @@ if menu == "🏠 Ana Sayfa":
     st.markdown("---")
     
     st.markdown("""
-    ### 📐 Güncellenmiş Formül
+    ### 📐 Güncellenmiş Formül (DÜZELTİLDİ ✅)
 ```
     Net İhtiyaç = Brüt İhtiyaç - Açık Sipariş
-    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 2)] - [Mevcut Stoklar] + Min Sevkiyat
+    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 2)] - [Mevcut Stoklar] + Karşılanamayan Min İhtiyaç
+    
+    Karşılanamayan Min İhtiyaç = MAX(0, Min Gerekli Stok - Mevcut Stoklar)
     
     Forward Cover Düzeltmesi:
     - İthal ürünler için: FC × 1.2
@@ -155,6 +157,9 @@ if menu == "🏠 Ana Sayfa":
     Koli Sayısı = YUKARI_YUVARLA(Net İhtiyaç / Koli İçi)
     Final Miktar = Koli Sayısı × Koli İçi
 ```
+    
+    **⚠️ ÖNEMLİ DÜZELTME:** 
+    Min sevkiyat artık direkt eklenmek yerine, sadece karşılanamayan minimum ihtiyaç kadar ekleniyor!
     """)
 
 # ============================================
@@ -522,19 +527,51 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     if ithal_sayisi > 0:
                         st.info(f"ℹ️ {ithal_sayisi} ithal ürün için FC × {ithal_factor} uygulandı")
                 
-                # 11. MIN SEVK EKLE
+                # 11. MIN SEVK EKLE (KARŞILANAMAYAN MİNİMUM İHTİYAÇ) ✅ DÜZELTİLDİ
                 if st.session_state.sevkiyat_sonuc is not None:
                     sevk_df = st.session_state.sevkiyat_sonuc.copy()
                     sevk_df['urun_kod'] = sevk_df['urun_kod'].astype(str)
                     
+                    # Minimum gerekli stok seviyesi
                     min_sevk = sevk_df.groupby('urun_kod')['sevkiyat_miktari'].sum().reset_index()
-                    min_sevk.columns = ['urun_kod', 'min_sevk_adeti']
+                    min_sevk.columns = ['urun_kod', 'min_gerekli_stok']
                     
                     urun_toplam = urun_toplam.merge(min_sevk, on='urun_kod', how='left')
+                    urun_toplam['min_gerekli_stok'] = urun_toplam['min_gerekli_stok'].fillna(0)
+                    
+                    # Mevcut stokları hesapla (cover hesabında kullanılan toplam_stok)
+                    urun_toplam['mevcut_stok'] = urun_toplam['toplam_stok']
+                    
+                    # Karşılanamayan minimum ihtiyacı hesapla
+                    # Sadece mevcut stokların minimum gerekli stoku karşılayamadığı miktar
+                    urun_toplam['karsilanamayan_min'] = np.maximum(
+                        0,
+                        urun_toplam['min_gerekli_stok'] - urun_toplam['mevcut_stok']
+                    )
+                    
+                    # Debug bilgisi için min_sevk_adeti kolonunu da koruyalım
+                    urun_toplam['min_sevk_adeti'] = urun_toplam['min_gerekli_stok']
+                    
+                    # Karşılanamayan miktar bilgisini göster
+                    karsilanamayan_toplam = urun_toplam['karsilanamayan_min'].sum()
+                    min_gerekli_toplam = urun_toplam['min_gerekli_stok'].sum()
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("📦 Min Gerekli Stok", f"{min_gerekli_toplam:,.0f} adet")
+                    with col2:
+                        st.metric("📊 Mevcut Stoklar", f"{urun_toplam['mevcut_stok'].sum():,.0f} adet")
+                    with col3:
+                        st.metric("❗ Karşılanamayan", f"{karsilanamayan_toplam:,.0f} adet")
+                    
+                    if karsilanamayan_toplam > 0:
+                        karsilanamayan_yuzde = (karsilanamayan_toplam / min_gerekli_toplam * 100) if min_gerekli_toplam > 0 else 0
+                        st.info(f"📦 Toplam minimum ihtiyacın %{karsilanamayan_yuzde:.1f}'i karşılanamıyor ve siparişe eklenecek")
                 else:
+                    urun_toplam['min_gerekli_stok'] = 0
+                    urun_toplam['karsilanamayan_min'] = 0
                     urun_toplam['min_sevk_adeti'] = 0
-                
-                urun_toplam['min_sevk_adeti'] = urun_toplam['min_sevk_adeti'].fillna(0)
+                    urun_toplam['mevcut_stok'] = urun_toplam['toplam_stok']
                 
                 # 12. FİLTRELERİ UYGULA
                 urun_toplam['filtre_uygun'] = (
@@ -545,23 +582,42 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 filtre_sayisi = urun_toplam['filtre_uygun'].sum()
                 st.write(f"**✅ Filtreye uygun:** {filtre_sayisi} ürün")
                 
-                # 13. ALIM SİPARİŞ HESAPLA
+                # 13. ALIM SİPARİŞ HESAPLA (DÜZELTİLMİŞ FORMÜL) ✅
                 urun_toplam['talep'] = (
                     urun_toplam['satis'] * 
                     urun_toplam['genlestirme_katsayisi'] * 
                     (urun_toplam['forward_cover'] + 2)
                 )
                 
-                urun_toplam['mevcut_stok'] = (
-                    urun_toplam['stok'] + 
-                    urun_toplam['yol'] + 
-                    urun_toplam['depo_stok']
+                # Brüt ihtiyaç - DÜZELTİLMİŞ FORMÜL
+                urun_toplam['brut_ihtiyac'] = (
+                    urun_toplam['talep'] - 
+                    urun_toplam['mevcut_stok'] + 
+                    urun_toplam['karsilanamayan_min']  # ✅ Sadece karşılanamayan miktar ekleniyor
                 )
                 
-                # Brüt ihtiyaç
-                urun_toplam['brut_ihtiyac'] = (
-                    urun_toplam['talep'] - urun_toplam['mevcut_stok'] + urun_toplam['min_sevk_adeti']
-                )
+                # ESKİ VE YENİ HESAPLAMA KARŞILAŞTIRMASI (DEBUG)
+                if st.session_state.sevkiyat_sonuc is not None:
+                    # Eski formülle hesaplama (karşılaştırma için)
+                    urun_toplam['brut_ihtiyac_eski'] = (
+                        urun_toplam['talep'] - 
+                        urun_toplam['mevcut_stok'] + 
+                        urun_toplam['min_sevk_adeti']  # Eski: tüm min sevkiyat eklenirdi
+                    )
+                    
+                    fark_toplam = (urun_toplam['brut_ihtiyac_eski'] - urun_toplam['brut_ihtiyac']).sum()
+                    if fark_toplam > 0:
+                        st.success(f"✅ Yeni formül ile {fark_toplam:,.0f} adet gereksiz sipariş önlendi!")
+                        
+                        with st.expander("📊 Formül Karşılaştırması"):
+                            karsilastirma_df = urun_toplam[
+                                (urun_toplam['min_gerekli_stok'] > 0) & 
+                                (urun_toplam['karsilanamayan_min'] < urun_toplam['min_sevk_adeti'])
+                            ][['urun_kod', 'mevcut_stok', 'min_gerekli_stok', 'karsilanamayan_min', 'brut_ihtiyac_eski', 'brut_ihtiyac']].head(10)
+                            
+                            if len(karsilastirma_df) > 0:
+                                karsilastirma_df['tasarruf'] = karsilastirma_df['brut_ihtiyac_eski'] - karsilastirma_df['brut_ihtiyac']
+                                st.dataframe(karsilastirma_df, use_container_width=True)
                 
                 # Net ihtiyaç (açık siparişleri düş)
                 urun_toplam['net_ihtiyac'] = urun_toplam['brut_ihtiyac'] - urun_toplam['acik_siparis']
@@ -652,6 +708,13 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     display_cols.extend(['cover_segment', 'cover', 'brut_kar_marji', 
                                         'satis', 'toplam_stok'])
                     
+                    # Yeni eklenen kolonlar
+                    if 'min_gerekli_stok' in pozitif_df.columns:
+                        display_cols.append('min_gerekli_stok')
+                    
+                    if 'karsilanamayan_min' in pozitif_df.columns:
+                        display_cols.append('karsilanamayan_min')
+                    
                     if 'acik_siparis' in pozitif_df.columns:
                         display_cols.append('acik_siparis')
                     
@@ -674,6 +737,8 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                         'brut_kar_marji': '{:.2f}%',
                         'satis': '{:,.0f}',
                         'toplam_stok': '{:,.0f}',
+                        'min_gerekli_stok': '{:,.0f}',
+                        'karsilanamayan_min': '{:,.0f}',
                         'acik_siparis': '{:,.0f}',
                         'alim_siparis_final': '{:,.0f}',
                         'koli_ici': '{:.0f}',
@@ -761,6 +826,26 @@ elif menu == "📊 Alım Sipariş Raporları":
         if 'acik_siparis' in alim_df.columns:
             acik_dusülen = alim_df['acik_siparis'].sum()
             st.metric("📋 Açık Sipariş Düşüldü", f"{acik_dusülen:,.0f}")
+    
+    # Yeni formül metrikleri
+    if 'karsilanamayan_min' in alim_df.columns:
+        st.markdown("---")
+        st.subheader("📊 Min İhtiyaç Analizi")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            min_gerekli = alim_df['min_gerekli_stok'].sum() if 'min_gerekli_stok' in alim_df.columns else 0
+            st.metric("📦 Toplam Min Gerekli", f"{min_gerekli:,.0f}")
+        
+        with col2:
+            karsilanamayan = alim_df['karsilanamayan_min'].sum()
+            st.metric("❗ Karşılanamayan", f"{karsilanamayan:,.0f}")
+        
+        with col3:
+            if min_gerekli > 0:
+                karsilanma_orani = ((min_gerekli - karsilanamayan) / min_gerekli * 100)
+                st.metric("✅ Karşılanma Oranı", f"%{karsilanma_orani:.1f}")
     
     st.markdown("---")
     
@@ -1005,6 +1090,10 @@ elif menu == "📦 Depo Bazlı Sipariş":
     if 'alim_koli' in display_df.columns:
         display_cols.append('alim_koli')
     
+    # Yeni eklenen kolonlar
+    if 'karsilanamayan_min' in display_df.columns:
+        display_cols.append('karsilanamayan_min')
+    
     display_cols.extend(['cover', 'brut_kar_marji', 'satis'])
     
     if 'depo_kod' in display_df.columns and selected_depo == 'Tümü':
@@ -1024,6 +1113,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
         alim_column: 'Alım (Adet)',
         'koli_ici': 'Koli İçi',
         'alim_koli': 'Alım (Koli)',
+        'karsilanamayan_min': 'Karşılanamayan Min',
         'cover': 'Cover',
         'brut_kar_marji': 'Kar Marjı %',
         'satis': 'Satış',
@@ -1037,6 +1127,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
         'Alım (Adet)': '{:,.0f}',
         'Koli İçi': '{:.0f}',
         'Alım (Koli)': '{:,.0f}',
+        'Karşılanamayan Min': '{:,.0f}',
         'Cover': '{:.2f}',
         'Kar Marjı %': '{:.2f}%',
         'Satış': '{:,.0f}'
