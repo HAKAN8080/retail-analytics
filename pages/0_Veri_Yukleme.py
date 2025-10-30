@@ -318,7 +318,7 @@ data_definitions = {
     }
 }
 
-# ÇOKLU DOSYA YÜKLEME
+# ÇOKLU DOSYA YÜKLEME bölümünü güncelle
 st.subheader("📤 Çoklu Dosya Yükleme")
 
 uploaded_files = st.file_uploader(
@@ -331,20 +331,32 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     st.write(f"**{len(uploaded_files)} dosya seçildi**")
     
+    # DEBUG: Seçilen dosyaları göster
+    st.write("**DEBUG - Seçilen dosyalar:**", [file.name for file in uploaded_files])
+    
     if st.button("🚀 Tüm Dosyaları Yükle", type="primary", use_container_width=True):
         upload_results = []
         
         for uploaded_file in uploaded_files:
             filename = uploaded_file.name.lower()
+            st.write(f"**DEBUG - İşlenen dosya:** {uploaded_file.name}")
             
             # Dosya adından veri tipini bul
             matched_key = None
             for key, definition in data_definitions.items():
+                # DEBUG: Her kontrolü göster
+                check1 = key in filename
+                check2 = definition['name'].lower().replace(' ', '_') in filename
+                st.write(f"  DEBUG - {key}: '{key}' in '{filename}' = {check1}")
+                st.write(f"  DEBUG - {key}: '{definition['name'].lower().replace(' ', '_')}' in '{filename}' = {check2}")
+                
                 if key in filename or definition['name'].lower().replace(' ', '_') in filename:
                     matched_key = key
+                    st.write(f"  DEBUG - Eşleşme bulundu: {matched_key}")
                     break
             
             if not matched_key:
+                st.write(f"  DEBUG - Eşleşme bulunamadı!")
                 upload_results.append({
                     'Dosya': uploaded_file.name,
                     'Veri Tipi': '❓ Bilinmiyor',
@@ -354,15 +366,21 @@ if uploaded_files:
                 continue
             
             definition = data_definitions[matched_key]
+            st.write(f"  DEBUG - Tanım: {definition['name']}")
             
             try:
                 df = pd.read_csv(uploaded_file)
+                st.write(f"  DEBUG - CSV okundu: {len(df)} satır, {len(df.columns)} kolon")
+                st.write(f"  DEBUG - Kolonlar: {list(df.columns)}")
                 
                 # Kolon kontrolü
                 existing_cols = set(df.columns)
                 required_cols = set(definition['columns'])
                 missing_cols = required_cols - existing_cols
                 extra_cols = existing_cols - required_cols
+                
+                st.write(f"  DEBUG - Eksik kolonlar: {missing_cols}")
+                st.write(f"  DEBUG - Fazla kolonlar: {extra_cols}")
                 
                 if missing_cols:
                     upload_results.append({
@@ -387,13 +405,16 @@ if uploaded_files:
                         'Durum': '✅ Başarılı',
                         'Detay': detay
                     })
+                    
+                    st.write(f"  DEBUG - Başarıyla yüklendi: {definition['state_key']}")
             
             except Exception as e:
+                st.write(f"  DEBUG - HATA: {str(e)}")
                 upload_results.append({
                     'Dosya': uploaded_file.name,
                     'Veri Tipi': f"{definition['icon']} {definition['name']}",
                     'Durum': '❌ Hata',
-                    'Detay': str(e)[:50]
+                    'Detay': str(e)
                 })
         
         # Sonuçları göster
@@ -422,7 +443,6 @@ if uploaded_files:
         time.sleep(1)
         st.rerun()
 
-st.markdown("---")
 
 # VERİ DURUMU TABLOSU
 st.subheader("📊 Veri Yükleme Durumu")
@@ -579,3 +599,4 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
