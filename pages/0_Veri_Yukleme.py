@@ -4,6 +4,11 @@ import time
 import io
 import zipfile
 
+
+if 'upload_errors' not in st.session_state:
+    st.session_state.upload_errors = {}
+
+
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Veri Yükleme",
@@ -699,6 +704,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
 
 
