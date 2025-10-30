@@ -330,31 +330,28 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
     st.write(f"**{len(uploaded_files)} dosya seçildi**")
-    
-    # DEBUG: Seçilen dosyaları göster
     st.write("**DEBUG - Seçilen dosyalar:**", [file.name for file in uploaded_files])
-    
+
     if st.button("🚀 Tüm Dosyaları Yükle", type="primary", use_container_width=True):
         upload_results = []
-        
+
         for uploaded_file in uploaded_files:
-            filename = uploaded_file.name.lower()
+            filename = uploaded_file.name.lower().strip()
             st.write(f"**DEBUG - İşlenen dosya:** {uploaded_file.name}")
-            
-            # Dosya adından veri tipini bul
+
+            # 🔍 Daha toleranslı eşleştirme
             matched_key = None
             for key, definition in data_definitions.items():
-                # DEBUG: Her kontrolü göster
-                check1 = key in filename
-                check2 = definition['name'].lower().replace(' ', '_') in filename
-                st.write(f"  DEBUG - {key}: '{key}' in '{filename}' = {check1}")
-                st.write(f"  DEBUG - {key}: '{definition['name'].lower().replace(' ', '_')}' in '{filename}' = {check2}")
-                
-                if key in filename or definition['name'].lower().replace(' ', '_') in filename:
+                name_variants = [
+                    key,
+                    definition['name'].lower().replace(' ', '_'),
+                    definition['name'].lower().replace(' ', ''),
+                ]
+                if any(nv in filename for nv in name_variants):
                     matched_key = key
                     st.write(f"  DEBUG - Eşleşme bulundu: {matched_key}")
                     break
-            
+
             if not matched_key:
                 st.write(f"  DEBUG - Eşleşme bulunamadı!")
                 upload_results.append({
@@ -364,24 +361,38 @@ if uploaded_files:
                     'Detay': 'Dosya adı tanımlı veri tiplerine uymuyor'
                 })
                 continue
-            
+
             definition = data_definitions[matched_key]
             st.write(f"  DEBUG - Tanım: {definition['name']}")
-            
+
             try:
-                df = pd.read_csv(uploaded_file)
+                # 📥 CSV okuma (UTF-8 fallback)
+                try:
+                    df = pd.read_csv(uploaded_file, encoding='utf-8-sig')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(uploaded_file, encoding='latin1')
+
+                # 🧹 Kolon adlarını temizle
+                df.columns = (
+                    df.columns
+                    .astype(str)
+                    .str.strip()
+                    .str.replace('\ufeff', '', regex=False)
+                    .str.lower()
+                )
+
                 st.write(f"  DEBUG - CSV okundu: {len(df)} satır, {len(df.columns)} kolon")
                 st.write(f"  DEBUG - Kolonlar: {list(df.columns)}")
-                
-                # Kolon kontrolü
+
+                # ✅ Kolon kontrolü
                 existing_cols = set(df.columns)
-                required_cols = set(definition['columns'])
+                required_cols = set([c.lower() for c in definition['columns']])
                 missing_cols = required_cols - existing_cols
                 extra_cols = existing_cols - required_cols
-                
+
                 st.write(f"  DEBUG - Eksik kolonlar: {missing_cols}")
                 st.write(f"  DEBUG - Fazla kolonlar: {extra_cols}")
-                
+
                 if missing_cols:
                     upload_results.append({
                         'Dosya': uploaded_file.name,
@@ -390,24 +401,24 @@ if uploaded_files:
                         'Detay': f"Eksik kolonlar: {', '.join(list(missing_cols)[:3])}"
                     })
                 else:
-                    # Sadece gerekli kolonları al
-                    df_clean = df[definition['columns']].copy()
+                    # 🔄 Kolon sırasını koru, sadece gerekli olanları al
+                    df_clean = df[[c.lower() for c in definition['columns'] if c.lower() in df.columns]].copy()
                     st.session_state[definition['state_key']] = df_clean
-                    
+
                     modules_str = ', '.join(definition['modules'])
                     detay = f"✅ {len(df_clean):,} satır → Kullanıldığı modüller: {modules_str}"
                     if extra_cols:
                         detay += f" (fazla kolonlar kaldırıldı)"
-                    
+
                     upload_results.append({
                         'Dosya': uploaded_file.name,
                         'Veri Tipi': f"{definition['icon']} {definition['name']}",
                         'Durum': '✅ Başarılı',
                         'Detay': detay
                     })
-                    
+
                     st.write(f"  DEBUG - Başarıyla yüklendi: {definition['state_key']}")
-            
+
             except Exception as e:
                 st.write(f"  DEBUG - HATA: {str(e)}")
                 upload_results.append({
@@ -416,13 +427,13 @@ if uploaded_files:
                     'Durum': '❌ Hata',
                     'Detay': str(e)
                 })
-        
-        # Sonuçları göster
+
+        # 📋 Sonuçları göster
         st.markdown("---")
         st.subheader("📋 Yükleme Sonuçları")
-        
+
         results_df = pd.DataFrame(upload_results)
-        
+
         def highlight_upload_results(row):
             if '✅ Başarılı' in row['Durum']:
                 return ['background-color: #d4edda'] * len(row)
@@ -430,18 +441,19 @@ if uploaded_files:
                 return ['background-color: #f8d7da'] * len(row)
             else:
                 return ['background-color: #fff3cd'] * len(row)
-        
+
         st.dataframe(
             results_df.style.apply(highlight_upload_results, axis=1),
             use_container_width=True,
             hide_index=True
         )
-        
+
         success_count = sum(1 for r in upload_results if '✅ Başarılı' in r['Durum'])
         st.success(f"✅ {success_count} / {len(upload_results)} dosya başarıyla yüklendi!")
-        
+
         time.sleep(1)
         st.rerun()
+
 
 
 # VERİ DURUMU TABLOSU
@@ -599,4 +611,5 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
