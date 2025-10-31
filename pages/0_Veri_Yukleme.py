@@ -45,42 +45,79 @@ st.info("""
 - 📉 Lost Sales Analizi
 """)
 
+# CSV ayarları için bilgilendirme
+st.warning("""
+⚠️ **CSV Formatı Hakkında:**
+- CSV dosyalarınızda ayraç olarak **noktalı virgül (;)** kullanılmaktadır
+- String alanlardaki virgüller otomatik olarak işlenir
+- Encoding: UTF-8 with BOM
+""")
+
 st.markdown("---")
 
-# Örnek CSV'ler
+# CSV okuma fonksiyonu - virgül sorunu için özelleştirilmiş
+def read_csv_safe(file):
+    """CSV dosyasını güvenli bir şekilde okur, virgül sorununu çözer"""
+    try:
+        # Önce noktalı virgül ile dene
+        df = pd.read_csv(
+            file, 
+            sep=';', 
+            encoding='utf-8-sig',
+            quoting=1,  # QUOTE_ALL: Tüm alanları tırnak içine al
+            on_bad_lines='warn'
+        )
+        return df, ';'
+    except:
+        try:
+            # Noktalı virgül çalışmazsa normal virgül dene
+            file.seek(0)  # Dosyayı başa sar
+            df = pd.read_csv(
+                file, 
+                sep=',', 
+                encoding='utf-8-sig',
+                quoting=1,
+                on_bad_lines='warn'
+            )
+            return df, ','
+        except Exception as e:
+            raise Exception(f"CSV okuma hatası: {str(e)}")
+
+# CSV yazma fonksiyonu
+def write_csv_safe(df):
+    """DataFrame'i güvenli bir şekilde CSV'ye çevirir"""
+    return df.to_csv(
+        index=False, 
+        sep=';', 
+        encoding='utf-8-sig',
+        quoting=1  # Tüm alanları tırnak içine al
+    )
+
+# Örnek CSV'ler - GÜNCELLENEN URUN_MASTER
 example_csvs = {
     'urun_master.csv': {
         'data': pd.DataFrame({
             'urun_kod': ['U001', 'U002', 'U003'],
-            'urun_ad': ['Ürün A', 'Ürün B', 'Ürün C'],
             'satici_kod': ['S001', 'S002', 'S001'],
-            'satici_ad': ['Satıcı 1', 'Satıcı 2', 'Satıcı 1'],
             'kategori_kod': ['K001', 'K002', 'K001'],
-            'kategori_ad': ['Kategori 1', 'Kategori 2', 'Kategori 1'],
             'umg': ['UMG1', 'UMG2', 'UMG1'],
-            'umg_ad': ['Üst Mal Grubu 1', 'Üst Mal Grubu 2', 'Üst Mal Grubu 1'],
             'mg': ['MG1', 'MG2', 'MG1'],
-            'mg_ad': ['Mal Grubu 1', 'Mal Grubu 2', 'Mal Grubu 1'],
             'marka_kod': ['M001', 'M002', 'M001'],
-            'marka_ad': ['Marka A', 'Marka B', 'Marka A'],
             'klasman_kod': ['K1', 'K2', 'K1'],
-            'klasman_ad': ['Klasman A', 'Klasman B', 'Klasman A'],
-            'nitelik': ['Nitelik 1', 'Nitelik 2', 'Nitelik 1'],
+            'nitelik': ['Nitelik 1, özellik A', 'Nitelik 2, özellik B', 'Nitelik 1, özellik C'],
             'durum': ['Aktif', 'Aktif', 'Pasif'],
             'ithal': [1, 0, 1],
-            'ithal_ad': ['İthal', 'Yerli', 'İthal'],
-            'tanim': ['Tanım 1', 'Tanım 2', 'Tanım 3'],
+            'olcu_birimi': ['Adet', 'Adet', 'Kg'],
             'koli_ici': [12, 24, 6],
-            'paket_ici': [6, 12, 3],
-            'olcu_birimi': ['Adet', 'Adet', 'Kg']
+            'paket_ici': [6, 12, 3]
         }),
-        'aciklama': 'Ürün bilgileri ve kategorileri',
+        'aciklama': 'Ürün bilgileri (sadeleştirilmiş)',
         'icon': '📦'
     },
     'magaza_master.csv': {
         'data': pd.DataFrame({
             'magaza_kod': ['M001', 'M002', 'M003'],
-            'magaza_ad': ['Mağaza A', 'Mağaza B', 'Mağaza C'],
+            'magaza_ad': ['Mağaza A, İstanbul', 'Mağaza B, Ankara', 'Mağaza C, İzmir'],
             'il': ['İstanbul', 'Ankara', 'İzmir'],
             'bolge': ['Marmara', 'İç Anadolu', 'Ege'],
             'tip': ['Hipermarket', 'Süpermarket', 'Hipermarket'],
@@ -104,7 +141,7 @@ example_csvs = {
     'depo_stok.csv': {
         'data': pd.DataFrame({
             'depo_kod': ['D001', 'D001', 'D002'],
-            'depo_ad': ['Depo Merkez', 'Depo Merkez', 'Depo Bölge'],
+            'depo_ad': ['Depo Merkez, Gebze', 'Depo Merkez, Gebze', 'Depo Bölge, Ankara'],
             'urun_kod': ['U001', 'U002', 'U001'],
             'stok': [1000, 1500, 800]
         }),
@@ -181,7 +218,7 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for filename, file_info in example_csvs.items():
-                csv_data = file_info['data'].to_csv(index=False, encoding='utf-8-sig')
+                csv_data = write_csv_safe(file_info['data'])
                 zip_file.writestr(filename, csv_data)
         
         st.download_button(
@@ -231,7 +268,7 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
         with cols[idx % 3]:
             st.download_button(
                 label=f"{file_info['icon']} {filename}",
-                data=file_info['data'].to_csv(index=False, encoding='utf-8-sig'),
+                data=write_csv_safe(file_info['data']),
                 file_name=filename,
                 mime="text/csv",
                 key=f"download_{filename}",
@@ -240,17 +277,17 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
 
 st.markdown("---")
 
-# Veri tanımları
+# Veri tanımları - GÜNCELLENEN URUN_MASTER
 data_definitions = {
     'urun_master': {
         'name': 'Ürün Master',
         'required': True,
-        'columns': ['urun_kod', 'urun_ad', 'satici_kod', 'satici_ad', 'kategori_kod', 'kategori_ad', 
-                   'umg', 'umg_ad', 'mg', 'mg_ad', 'marka_kod', 'marka_ad', 'klasman_kod', 'klasman_ad',
-                   'nitelik', 'durum', 'ithal', 'ithal_ad', 'tanim', 'koli_ici', 'paket_ici', 'olcu_birimi'],
+        'columns': ['urun_kod', 'satici_kod', 'kategori_kod', 'umg', 'mg', 'marka_kod', 
+                   'klasman_kod', 'nitelik', 'durum', 'ithal', 'olcu_birimi', 'koli_ici', 'paket_ici'],
         'state_key': 'urun_master',
         'icon': '📦',
-        'modules': ['Sevkiyat', 'PO', 'Prepack']
+        'modules': ['Sevkiyat', 'PO', 'Prepack'],
+        'description': '⚠️ Sadece kod alanları kullanılır, ad alanları artık gerekmemektedir'
     },
     'magaza_master': {
         'name': 'Mağaza Master',
@@ -321,6 +358,23 @@ data_definitions = {
 # ÇOKLU DOSYA YÜKLEME
 st.subheader("📤 Çoklu Dosya Yükleme")
 
+# Separator seçimi
+col1, col2 = st.columns([2, 1])
+with col2:
+    separator_option = st.selectbox(
+        "CSV Ayracı:",
+        options=['Otomatik Algıla', 'Noktalı Virgül (;)', 'Virgül (,)', 'Tab (\\t)'],
+        help="CSV dosyanızdaki alan ayracını seçin"
+    )
+    
+    separator_map = {
+        'Otomatik Algıla': 'auto',
+        'Noktalı Virgül (;)': ';',
+        'Virgül (,)': ',',
+        'Tab (\\t)': '\t'
+    }
+    selected_separator = separator_map[separator_option]
+
 uploaded_files = st.file_uploader(
     "CSV dosyalarını seçin (birden fazla seçebilirsiniz)",
     type=['csv'],
@@ -356,7 +410,19 @@ if uploaded_files:
             definition = data_definitions[matched_key]
             
             try:
-                df = pd.read_csv(uploaded_file)
+                # CSV okuma - güvenli yöntem
+                if selected_separator == 'auto':
+                    df, used_sep = read_csv_safe(uploaded_file)
+                    sep_info = f" (Kullanılan: '{used_sep}')"
+                else:
+                    df = pd.read_csv(
+                        uploaded_file,
+                        sep=selected_separator,
+                        encoding='utf-8-sig',
+                        quoting=1,
+                        on_bad_lines='warn'
+                    )
+                    sep_info = ""
                 
                 # Kolon kontrolü
                 existing_cols = set(df.columns)
@@ -374,10 +440,16 @@ if uploaded_files:
                 else:
                     # Sadece gerekli kolonları al
                     df_clean = df[definition['columns']].copy()
+                    
+                    # String kolonlardaki fazla boşlukları temizle
+                    string_columns = df_clean.select_dtypes(include=['object']).columns
+                    for col in string_columns:
+                        df_clean[col] = df_clean[col].str.strip() if df_clean[col].dtype == 'object' else df_clean[col]
+                    
                     st.session_state[definition['state_key']] = df_clean
                     
                     modules_str = ', '.join(definition['modules'])
-                    detay = f"✅ {len(df_clean):,} satır → Kullanıldığı modüller: {modules_str}"
+                    detay = f"✅ {len(df_clean):,} satır{sep_info} → Modüller: {modules_str}"
                     if extra_cols:
                         detay += f" (fazla kolonlar kaldırıldı)"
                     
@@ -458,13 +530,17 @@ for key, definition in data_definitions.items():
     # Kullanıldığı modüller
     modules_str = ', '.join(definition['modules'])
     
+    # Açıklama ekle
+    description = definition.get('description', '')
+    
     status_data.append({
         'Veri': f"{definition['icon']} {definition['name']}",
         'Zorunlu': '🔴' if definition['required'] else '🟢',
         'Durum': status,
         'Satır': f"{row_count:,}" if row_count > 0 else '-',
         'Kolon': kolon_durumu,
-        'Kullanıldığı Modüller': modules_str
+        'Kullanıldığı Modüller': modules_str,
+        'Not': description
     })
 
 status_df = pd.DataFrame(status_data)
@@ -488,8 +564,9 @@ st.dataframe(
 st.info("""
 **💡 Veri Yapısı:**
 - 🔴 Zorunlu veriler mutlaka yüklenmeli | 🟢 Opsiyonel
-- **Master'lar** diğer tablolara join için kullanılır
-- Diğer CSV'lerde sadece **kod** kolonları, **ad** kolonları master'lardan gelir
+- **urun_master** artık sadeleştirildi - sadece kod alanları kullanılıyor
+- CSV dosyalarınızda **noktalı virgül (;)** ayraç olarak önerilir
+- String alanlardaki virgüller otomatik olarak yönetilir
 - **Yasak**: yasak_durum = 1 (yasak), 0 veya yok (yasak değil)
 """)
 
@@ -556,9 +633,87 @@ if selected_data:
     st.write("**Beklenen Kolonlar:**")
     st.code(', '.join(current_def['columns']), language=None)
     
+    # Açıklama varsa göster
+    if 'description' in current_def and current_def['description']:
+        st.info(current_def['description'])
+    
     st.dataframe(data.head(20), use_container_width=True, height=300)
+    
+    # Veri kalitesi kontrolü
+    with st.expander("📊 Veri Kalitesi Raporu"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Eksik Değerler:**")
+            missing = data.isnull().sum()
+            if missing.any():
+                st.dataframe(missing[missing > 0].to_frame('Eksik Sayısı'))
+            else:
+                st.success("Eksik değer yok")
+        
+        with col2:
+            st.write("**Veri Tipleri:**")
+            dtypes = data.dtypes.to_frame('Veri Tipi')
+            st.dataframe(dtypes)
+        
+        # String kolonlarda virgül kontrolü
+        string_cols = data.select_dtypes(include=['object']).columns
+        if len(string_cols) > 0:
+            st.write("**String Kolonlarda Virgül Kontrolü:**")
+            comma_check = {}
+            for col in string_cols:
+                comma_count = data[col].astype(str).str.contains(',').sum()
+                if comma_count > 0:
+                    comma_check[col] = comma_count
+            
+            if comma_check:
+                st.warning(f"⚠️ Aşağıdaki kolonlarda virgül içeren değerler var:")
+                for col, count in comma_check.items():
+                    st.write(f"- {col}: {count} satır")
+            else:
+                st.success("✅ String kolonlarda virgül sorunu yok")
 else:
     st.info("Henüz yüklenmiş veri yok")
+
+st.markdown("---")
+
+# CSV İhracat Bölümü
+st.subheader("📤 Veri İhracat")
+
+if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k in data_definitions.keys()):
+    export_data = st.selectbox(
+        "İhraç etmek istediğiniz veriyi seçin:",
+        options=[k for k in data_definitions.keys() if st.session_state.get(data_definitions[k]['state_key']) is not None],
+        format_func=lambda x: f"{data_definitions[x]['icon']} {data_definitions[x]['name']}",
+        key="export_select"
+    )
+    
+    if export_data:
+        export_def = data_definitions[export_data]
+        export_df = st.session_state[export_def['state_key']]
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            csv_data = write_csv_safe(export_df)
+            st.download_button(
+                label=f"📥 {export_def['name']}.csv İndir (Noktalı Virgül)",
+                data=csv_data,
+                file_name=f"{export_def['name'].lower().replace(' ', '_')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            csv_data_comma = export_df.to_csv(index=False, encoding='utf-8-sig')
+            st.download_button(
+                label=f"📥 {export_def['name']}.csv İndir (Virgül)",
+                data=csv_data_comma,
+                file_name=f"{export_def['name'].lower().replace(' ', '_')}_comma.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+else:
+    st.info("İhraç edilecek veri yok")
 
 st.markdown("---")
 
