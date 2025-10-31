@@ -924,7 +924,8 @@ elif menu == "📐 Hesaplama":
                     urun_master = st.session_state.urun_master[['urun_kod', 'mg']].copy()
                     urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
                     anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
-                    urun_master['mg'] = urun_master['mg'].fillna(0).astype(float).astype(int).astype(str)
+                    urun_master['mg'] = urun_master['mg'].fillna(0).astype(float)
+                    urun_master['mg'] = urun_master['mg'].apply(lambda x: str(int(round(x))) if pd.notna(x) and x != float('inf') else '0')
                     
                     anlik_df = anlik_df.merge(urun_master, on='urun_kod', how='left')
                     
