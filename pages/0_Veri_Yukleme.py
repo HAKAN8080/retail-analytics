@@ -117,7 +117,6 @@ example_csvs = {
     'magaza_master.csv': {
         'data': pd.DataFrame({
             'magaza_kod': ['M001', 'M002', 'M003'],
-            'magaza_ad': ['Mağaza A, İstanbul', 'Mağaza B, Ankara', 'Mağaza C, İzmir'],
             'il': ['İstanbul', 'Ankara', 'İzmir'],
             'bolge': ['Marmara', 'İç Anadolu', 'Ege'],
             'tip': ['Hipermarket', 'Süpermarket', 'Hipermarket'],
@@ -126,7 +125,7 @@ example_csvs = {
             'bs': ['BS1', 'BS2', 'BS1'],
             'depo_kod': ['D001', 'D001', 'D002']
         }),
-        'aciklama': 'Mağaza bilgileri ve özellikleri',
+        'aciklama': 'Mağaza bilgileri (sadeleştirilmiş)',
         'icon': '🏪'
     },
     'yasak.csv': {
@@ -141,11 +140,10 @@ example_csvs = {
     'depo_stok.csv': {
         'data': pd.DataFrame({
             'depo_kod': ['D001', 'D001', 'D002'],
-            'depo_ad': ['Depo Merkez, Gebze', 'Depo Merkez, Gebze', 'Depo Bölge, Ankara'],
             'urun_kod': ['U001', 'U002', 'U001'],
             'stok': [1000, 1500, 800]
         }),
-        'aciklama': 'Depo bazında stok miktarları',
+        'aciklama': 'Depo bazında stok miktarları (sadeleştirilmiş)',
         'icon': '📦'
     },
     'anlik_stok_satis.csv': {
@@ -292,18 +290,20 @@ data_definitions = {
     'magaza_master': {
         'name': 'Mağaza Master',
         'required': True,
-        'columns': ['magaza_kod', 'magaza_ad', 'il', 'bolge', 'tip', 'adres_kod', 'sm', 'bs', 'depo_kod'],
+        'columns': ['magaza_kod', 'il', 'bolge', 'tip', 'adres_kod', 'sm', 'bs', 'depo_kod'],
         'state_key': 'magaza_master',
         'icon': '🏪',
-        'modules': ['Sevkiyat', 'PO']
+        'modules': ['Sevkiyat', 'PO'],
+        'description': '⚠️ Sadece kod alanları kullanılır, ad alanları kaldırıldı'
     },
     'depo_stok': {
         'name': 'Depo Stok',
         'required': True,
-        'columns': ['depo_kod', 'depo_ad', 'urun_kod', 'stok'],
+        'columns': ['depo_kod', 'urun_kod', 'stok'],
         'state_key': 'depo_stok',
         'icon': '📦',
-        'modules': ['Sevkiyat', 'PO']
+        'modules': ['Sevkiyat', 'PO'],
+        'description': '⚠️ Sadece kod alanları kullanılır, ad alanları kaldırıldı'
     },
     'anlik_stok_satis': {
         'name': 'Anlık Stok/Satış',
@@ -564,9 +564,9 @@ st.dataframe(
 st.info("""
 **💡 Veri Yapısı:**
 - 🔴 Zorunlu veriler mutlaka yüklenmeli | 🟢 Opsiyonel
-- **urun_master** artık sadeleştirildi - sadece kod alanları kullanılıyor
+- **TÜM ad alanları kaldırıldı** - Sadece kod alanları kullanılıyor
 - CSV dosyalarınızda **noktalı virgül (;)** ayraç olarak önerilir
-- String alanlardaki virgüller otomatik olarak yönetilir
+- String alanlardaki virgüller artık sorun yaratmayacak
 - **Yasak**: yasak_durum = 1 (yasak), 0 veya yok (yasak değil)
 """)
 
