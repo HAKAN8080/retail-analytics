@@ -346,25 +346,19 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     lambda x: str(int(float(x))) if '.' in str(x) else str(x)
                 )
                 
-                # 2. ÜRÜN MASTER VARSA EKLE
+                # 2. ÜRÜN MASTER VARSA EKLE - AD ALANLARI KALDIRILDI
                 if st.session_state.urun_master is not None:
                     urun_master = st.session_state.urun_master.copy()
                     urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
                     
-                    # Gerekli kolonları seç
-                    master_cols = ['urun_kod', 'urun_ad']
+                    # Gerekli kolonları seç - AD ALANLARI YOK
+                    master_cols = ['urun_kod']
                     if 'satici_kod' in urun_master.columns:
                         master_cols.append('satici_kod')
-                    if 'satici_ad' in urun_master.columns:
-                        master_cols.append('satici_ad')
                     if 'mg' in urun_master.columns:
                         master_cols.append('mg')
-                    if 'mg_ad' in urun_master.columns:
-                        master_cols.append('mg_ad')
                     if 'marka_kod' in urun_master.columns:
                         master_cols.append('marka_kod')
-                    if 'marka_ad' in urun_master.columns:
-                        master_cols.append('marka_ad')
                     if 'durum' in urun_master.columns:
                         master_cols.append('durum')
                     if 'ithal' in urun_master.columns:
@@ -691,7 +685,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                         toplam_acik = urun_toplam['acik_siparis'].sum()
                         st.metric("📋 Açık Sipariş", f"{toplam_acik:,.0f}")
                 
-                # DETAYLI TABLO
+                # DETAYLI TABLO - AD ALANLARI KALDIRILDI
                 st.markdown("---")
                 st.subheader("📋 Alım Sipariş Detayı")
                 
@@ -699,14 +693,9 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 pozitif_df = urun_toplam[urun_toplam['alim_siparis_final'] > 0].copy()
                 
                 if len(pozitif_df) > 0:
-                    # Gösterilecek kolonları seç
-                    display_cols = ['urun_kod']
-                    
-                    if 'urun_ad' in pozitif_df.columns:
-                        display_cols.append('urun_ad')
-                    
-                    display_cols.extend(['cover_segment', 'cover', 'brut_kar_marji', 
-                                        'satis', 'toplam_stok'])
+                    # Gösterilecek kolonları seç - AD ALANLARI YOK
+                    display_cols = ['urun_kod', 'cover_segment', 'cover', 'brut_kar_marji', 
+                                    'satis', 'toplam_stok']
                     
                     # Yeni eklenen kolonlar
                     if 'min_gerekli_stok' in pozitif_df.columns:
@@ -913,7 +902,7 @@ elif menu == "📊 Alım Sipariş Raporları":
             use_container_width=True
         )
     
-    # TEDARİKÇİ ANALİZİ
+    # TEDARİKÇİ ANALİZİ - AD ALANLARI KALDIRILDI
     with tab3:
         if 'satici_kod' in alim_df.columns:
             st.subheader("📦 Tedarikçi Bazında Analiz")
@@ -923,11 +912,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                 alim_column: 'sum'
             }).reset_index()
             
-            if 'satici_ad' in alim_df.columns:
-                satici_map = alim_df[['satici_kod', 'satici_ad']].drop_duplicates()
-                tedarikci_analiz = tedarikci_analiz.merge(satici_map, on='satici_kod', how='left')
-            
-            tedarikci_analiz.columns = ['Tedarikçi Kod'] + (['Tedarikçi Ad'] if 'satici_ad' in alim_df.columns else []) + ['Ürün Sayısı', 'Toplam Alım']
+            tedarikci_analiz.columns = ['Tedarikçi Kod', 'Ürün Sayısı', 'Toplam Alım']
             tedarikci_analiz = tedarikci_analiz.sort_values('Toplam Alım', ascending=False)
             
             # Koli bilgisi varsa ekle
@@ -979,7 +964,7 @@ elif menu == "📊 Alım Sipariş Raporları":
             st.info("ℹ️ Depo bilgisi bulunamadı")
 
 # ============================================
-# 📦 DEPO BAZLI SİPARİŞ
+# 📦 DEPO BAZLI SİPARİŞ - AD ALANLARI KALDIRILDI
 # ============================================
 elif menu == "📦 Depo Bazlı Sipariş":
     st.title("📦 Depo Bazlı Sipariş Listeleri")
@@ -1070,17 +1055,11 @@ elif menu == "📦 Depo Bazlı Sipariş":
     # Detaylı tablo
     st.subheader("📋 Sipariş Detayı")
     
-    # Gösterilecek sütunları belirle
+    # Gösterilecek sütunları belirle - AD ALANLARI YOK
     display_cols = ['urun_kod']
-    
-    if 'urun_ad' in display_df.columns:
-        display_cols.append('urun_ad')
     
     if 'satici_kod' in display_df.columns:
         display_cols.append('satici_kod')
-    
-    if 'satici_ad' in display_df.columns:
-        display_cols.append('satici_ad')
     
     display_cols.append(alim_column)
     
@@ -1107,9 +1086,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
     # Sütun isimlerini düzenle
     column_rename = {
         'urun_kod': 'Ürün Kodu',
-        'urun_ad': 'Ürün Adı',
         'satici_kod': 'Tedarikçi Kod',
-        'satici_ad': 'Tedarikçi',
         alim_column: 'Alım (Adet)',
         'koli_ici': 'Koli İçi',
         'alim_koli': 'Alım (Koli)',
