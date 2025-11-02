@@ -541,15 +541,6 @@ st.dataframe(
     hide_index=True
 )
 
-# Bilgilendirme
-st.info("""
-**💡 Veri Yapısı:**
-- 🔴 Zorunlu veriler mutlaka yüklenmeli | 🟢 Opsiyonel
-- **TÜM ad alanları kaldırıldı** - Sadece kod alanları kullanılıyor
-- CSV dosyalarınızda **noktalı virgül (;)** ayraç olarak önerilir
-- String alanlardaki virgüller artık sorun yaratmayacak
-- **Yasak**: yasak_durum = 1 (yasak), 0 veya yok (yasak değil)
-""")
 
 # Özet bilgiler
 st.markdown("---")
@@ -715,4 +706,5 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
