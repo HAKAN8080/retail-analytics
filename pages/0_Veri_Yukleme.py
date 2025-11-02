@@ -37,27 +37,9 @@ if 'po_detay_kpi' not in st.session_state:
 st.title("📤 Ortak Veri Yükleme Merkezi")
 st.markdown("---")
 
-st.info("""
-**📋 Bu sayfadan yüklenen veriler tüm modüllerde kullanılır:**
-- 🚚 Sevkiyat Planlama
-- 💵 Alım Sipariş (PO)
-- 📦 Prepack Optimizasyon
-- 📉 Lost Sales Analizi
-""")
-
-# CSV ayarları için bilgilendirme
-st.warning("""
-⚠️ **CSV Formatı Hakkında:**
-- CSV dosyalarınızda ayraç olarak **noktalı virgül (;)** kullanılmaktadır
-- String alanlardaki virgüller otomatik olarak işlenir
-- Encoding: UTF-8 with BOM
-""")
-
-st.markdown("---")
 
 # CSV okuma fonksiyonu - virgül sorunu için özelleştirilmiş
 def read_csv_safe(file):
-    """CSV dosyasını güvenli bir şekilde okur, virgül sorununu çözer"""
     try:
         # Önce noktalı virgül ile dene
         df = pd.read_csv(
@@ -85,7 +67,6 @@ def read_csv_safe(file):
 
 # CSV yazma fonksiyonu
 def write_csv_safe(df):
-    """DataFrame'i güvenli bir şekilde CSV'ye çevirir"""
     return df.to_csv(
         index=False, 
         sep=';', 
@@ -734,3 +715,4 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
