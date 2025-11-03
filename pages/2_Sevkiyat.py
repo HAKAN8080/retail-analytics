@@ -898,28 +898,40 @@ elif menu == "📐 Hesaplama":
                 magaza_agg = anlik_df.groupby('magaza_kod').agg({'stok': 'sum', 'satis': 'sum'}).reset_index()
                 magaza_agg['cover'] = magaza_agg['stok'] / magaza_agg['satis'].replace(0, 1)
                 
-                product_ranges = st.session_state.segmentation_params['product_ranges']
-                store_ranges = st.session_state.segmentation_params['store_ranges']
-                
-                product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
-                store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
-                
-                urun_agg['segment'] = pd.cut(
-                    urun_agg['cover'],
-                    bins=[r[0] for r in product_ranges] + [product_ranges[-1][1]],
-                    labels=product_labels,
-                    include_lowest=True
-                )
-                
-                magaza_agg['segment'] = pd.cut(
-                    magaza_agg['cover'],
-                    bins=[r[0] for r in store_ranges] + [store_ranges[-1][1]],
-                    labels=store_labels,
-                    include_lowest=True
-                )
-                
-                anlik_df = anlik_df.merge(urun_agg[['urun_kod', 'segment']], on='urun_kod', how='left').rename(columns={'segment': 'urun_segment'})
-                anlik_df = anlik_df.merge(magaza_agg[['magaza_kod', 'segment']], on='magaza_kod', how='left').rename(columns={'segment': 'magaza_segment'})
+                # YENİ KOD - Hedef Matris'ten gelen segmentleri kullan
+                if 'urun_segment_map' in st.session_state and 'magaza_segment_map' in st.session_state:
+                    # Hedef Matris'te kaydedilmiş segmentleri kullan
+                    anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
+                    anlik_df['magaza_kod'] = anlik_df['magaza_kod'].astype(str)
+                    
+                    anlik_df['urun_segment'] = anlik_df['urun_kod'].map(st.session_state.urun_segment_map)
+                    anlik_df['magaza_segment'] = anlik_df['magaza_kod'].map(st.session_state.magaza_segment_map)
+                else:
+                    # Hedef Matris'te kayıt yoksa, eski yöntemle segmentasyon yap
+                    st.warning("⚠️ Hedef Matris'te segment kaydı bulunamadı. Default segmentasyon kullanılıyor.")
+                    
+                    product_ranges = st.session_state.segmentation_params['product_ranges']
+                    store_ranges = st.session_state.segmentation_params['store_ranges']
+                    
+                    product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+                    store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
+                    
+                    urun_agg['segment'] = pd.cut(
+                        urun_agg['cover'],
+                        bins=[r[0] for r in product_ranges] + [product_ranges[-1][1]],
+                        labels=product_labels,
+                        include_lowest=True
+                    )
+                    
+                    magaza_agg['segment'] = pd.cut(
+                        magaza_agg['cover'],
+                        bins=[r[0] for r in store_ranges] + [store_ranges[-1][1]],
+                        labels=store_labels,
+                        include_lowest=True
+                    )
+                    
+                    anlik_df = anlik_df.merge(urun_agg[['urun_kod', 'segment']], on='urun_kod', how='left').rename(columns={'segment': 'urun_segment'})
+                    anlik_df = anlik_df.merge(magaza_agg[['magaza_kod', 'segment']], on='magaza_kod', how='left').rename(columns={'segment': 'magaza_segment'})
                 
                 anlik_df['urun_segment'] = anlik_df['urun_segment'].astype(str)
                 anlik_df['magaza_segment'] = anlik_df['magaza_segment'].astype(str)
