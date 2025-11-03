@@ -1,4 +1,28 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+
+# 🎯 STREAMLIT ARROW HATASI ÇÖZÜMÜ - TÜM DATAFRAME'LERİ KAPAT
+def disable_dataframes(data, **kwargs):
+    if isinstance(data, pd.DataFrame):
+        st.write(f"📊 Veri: {data.shape[0]} satır × {data.shape[1]} sütun")
+        st.write("📋 Sütunlar:", list(data.columns))
+        
+        # İlk 3 satırı basitçe göster
+        if st.checkbox("👀 İlk 3 satırı göster"):
+            for i in range(min(3, len(data))):
+                with st.expander(f"Satır {i+1}"):
+                    for col in data.columns:
+                        st.write(f"**{col}:** {data.iloc[i][col]}")
+        return
+    
+    # DataFrame değilse normal göster
+    st.write(data)
+
+# TÜM DATAFRAME GÖSTERİMLERİNİ DEĞİŞTİR
+st.dataframe = disable_dataframes
+st.data_editor = disable_dataframes  
+st.table = disable_dataframes
 
 # Sayfa konfigürasyonu
 st.set_page_config(
