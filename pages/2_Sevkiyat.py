@@ -3,18 +3,46 @@ import pandas as pd
 import numpy as np
 import time
 
-# DataFrame gösterimini otomatik düzelt
+# DEBUG: Hangi DataFrame'in sorun çıkardığını bul
 _original_dataframe = st.dataframe
-def fixed_dataframe(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        df = data.copy()
-        # Sadece Int64 problemlerini çöz
-        for col in df.select_dtypes(include=['Int64']).columns:
-            df[col] = df[col].astype('float64')
-        return _original_dataframe(df, **kwargs)
-    return _original_dataframe(data, **kwargs)
-st.dataframe = fixed_dataframe
 
+def debug_dataframe(data, **kwargs):
+    if isinstance(data, pd.DataFrame):
+        print("🔍 DataFrame şekli:", data.shape)
+        print("📊 DataFrame tipleri:")
+        print(data.dtypes)
+        print("❌ Problemli sütunlar:")
+        for col in data.columns:
+            if str(data[col].dtype) in ['Int64', 'string', 'boolean']:
+                print(f"  - {col}: {data[col].dtype}")
+        
+        # Tüm problemli tipleri düzelt
+        data_fixed = data.copy()
+        
+        # INT64 -> float64
+        int64_cols = data_fixed.select_dtypes(include=['Int64']).columns
+        for col in int64_cols:
+            data_fixed[col] = data_fixed[col].astype('float64')
+            print(f"✅ {col} Int64 -> float64 dönüştürüldü")
+        
+        # STRING -> object
+        string_cols = data_fixed.select_dtypes(include=['string']).columns
+        for col in string_cols:
+            data_fixed[col] = data_fixed[col].astype('object')
+            print(f"✅ {col} string -> object dönüştürüldü")
+            
+        # BOOLEAN -> bool
+        bool_cols = data_fixed.select_dtypes(include=['boolean']).columns
+        for col in bool_cols:
+            data_fixed[col] = data_fixed[col].astype('bool')
+            print(f"✅ {col} boolean -> bool dönüştürüldü")
+            
+        return _original_dataframe(data_fixed, **kwargs)
+    
+    return _original_dataframe(data, **kwargs)
+
+st.dataframe = debug_dataframe
+st.data_editor = debug_dataframe
 
 # Sayfa konfigürasyonu
 st.set_page_config(
