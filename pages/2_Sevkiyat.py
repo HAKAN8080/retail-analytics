@@ -562,7 +562,8 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        edited_sisme = edited_sisme_temp.set_index('Ürün Segmenti')
+        # DataFrame'e çevir ve index'e geri al
+        edited_sisme = pd.DataFrame(edited_sisme_temp).set_index('Ürün Segmenti')
         st.markdown("---")
         
         # ============================================
@@ -596,7 +597,8 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        edited_genlestirme = edited_genlestirme_temp.set_index('Ürün Segmenti')
+        # DataFrame'e çevir ve index'e geri al
+        edited_genlestirme = pd.DataFrame(edited_genlestirme_temp).set_index('Ürün Segmenti')
         st.markdown("---")
         
         # ============================================
@@ -630,7 +632,8 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        edited_min_oran = edited_min_oran_temp.set_index('Ürün Segmenti')
+        # DataFrame'e çevir ve index'e geri al
+        edited_min_oran = pd.DataFrame(edited_min_oran_temp).set_index('Ürün Segmenti')
         st.markdown("---")
         
         # ============================================
@@ -664,7 +667,8 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        edited_initial = edited_initial_temp.set_index('Ürün Segmenti')
+        # DataFrame'e çevir ve index'e geri al
+        edited_initial = pd.DataFrame(edited_initial_temp).set_index('Ürün Segmenti')
         st.markdown("---")
         
         # Kaydet butonu
@@ -678,7 +682,8 @@ elif menu == "🎲 Hedef Matris":
                 st.success("✅ Tüm matrisler kaydedildi!")
         with col2:
             st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
-            
+
+
 # ============================================
 # 📊 SIRALAMA
 # ============================================
