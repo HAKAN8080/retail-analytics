@@ -537,7 +537,7 @@ for _, row in status_df.iterrows():
         st.error(f"{row['Veri']} - ZORUNLU - {row['Not']}")
     else:
         st.info(f"{row['Veri']} - Opsiyonel")
-)
+
 
 
 # Özet bilgiler
@@ -712,6 +712,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", width='stretch'):
             st.switch_page("pages/4_PO.py")
+
 
 
 
