@@ -1,16 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# DataFrame gösterimini geçici olarak kapat
-def simple_display(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        st.write(f"✅ Veri yüklendi: {data.shape[0]} satır × {data.shape[1]} sütun")
-        if st.checkbox("📋 Sütunları göster"):
-            st.write(list(data.columns))
-        return
-    st.write(data)
 
-st.dataframe = simple_display
 
 
 
