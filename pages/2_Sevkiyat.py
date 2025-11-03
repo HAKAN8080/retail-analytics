@@ -834,7 +834,7 @@ elif menu == "🔢 Sıralama":
 # 🚚 HESAPLAMA 
 # ============================================
 # ============================================
-# 🚚 HESAPLAMA - %100 ÇALIŞAN
+# 🚚 HESAPLAMA - DÜZELTİLMİŞ VERSİYON
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
@@ -890,49 +890,93 @@ elif menu == "📐 Hesaplama":
                     df['urun_segment'] = '0-4'
                     df['magaza_segment'] = '0-4'
                 
-                # 4. KPI - EN GÜVENLİ VERSİYON
-                default_fc = kpi_df['forward_cover'].mean()
+                # 4. KPI - GÜVENLİ VERSİYON
+                default_fc = kpi_df['forward_cover'].mean() if 'forward_cover' in kpi_df.columns else 7.0
                 
-                # ÖNCELİKLE YENİ KOLONLARI EKLE
-                df['min_deger'] = 0
-                df['max_deger'] = 999999
+                # ÖNCE min_deger VE max_deger KOLONLARINI GÜVENLİ ŞEKİLDE EKLE
+                df['min_deger'] = 0.0
+                df['max_deger'] = 999999.0
                 
-                if st.session_state.urun_master is not None:
+                # MG bilgisini ekle - GÜVENLİ VERSİYON
+                if st.session_state.urun_master is not None and 'mg' in st.session_state.urun_master.columns:
                     try:
-                        # MG bilgisini ekle
                         urun_m = st.session_state.urun_master[['urun_kod', 'mg']].copy()
                         urun_m['urun_kod'] = urun_m['urun_kod'].astype(str)
-                        urun_m['mg'] = urun_m['mg'].fillna(0).astype(int).astype(str)
+                        urun_m['mg'] = urun_m['mg'].fillna('0').astype(str)
                         
                         df = df.merge(urun_m, on='urun_kod', how='left')
                         df['mg'] = df['mg'].fillna('0')
-                        
-                        # KPI verilerini hazırla
+                    except Exception as e:
+                        st.warning(f"⚠️ MG birleştirme hatası: {e}")
+                        df['mg'] = '0'
+                else:
+                    df['mg'] = '0'
+                
+                # KPI verilerini güvenli şekilde uygula
+                try:
+                    if not kpi_df.empty and 'mg_id' in kpi_df.columns:
                         kpi_lookup = {}
                         for _, row in kpi_df.iterrows():
                             mg_key = str(row['mg_id'])
+                            min_val = row.get('min_deger', 0)
+                            max_val = row.get('max_deger', 999999)
+                            
                             kpi_lookup[mg_key] = {
-                                'min': float(row['min_deger']),
-                                'max': float(row['max_deger'])
+                                'min': float(min_val) if pd.notna(min_val) else 0,
+                                'max': float(max_val) if pd.notna(max_val) else 999999
                             }
                         
-                        # MG bazında güncelle (loop ile)
-                        for idx, row in df.iterrows():
-                            mg = str(row['mg']) if pd.notna(row['mg']) else '0'
-                            if mg in kpi_lookup:
-                                df.at[idx, 'min_deger'] = kpi_lookup[mg]['min']
-                                df.at[idx, 'max_deger'] = kpi_lookup[mg]['max']
+                        # MG bazında güncelle
+                        for mg_val in df['mg'].unique():
+                            if mg_val in kpi_lookup:
+                                mask = df['mg'] == mg_val
+                                df.loc[mask, 'min_deger'] = kpi_lookup[mg_val]['min']
+                                df.loc[mask, 'max_deger'] = kpi_lookup[mg_val]['max']
                                 
-                    except Exception as e:
-                        st.warning(f"⚠️ KPI atlandı: {e}")
+                except Exception as e:
+                    st.warning(f"⚠️ KPI atama hatası: {e}")
+                    # Hata durumunda default değerleri kullan
+                    df['min_deger'] = 0.0
+                    df['max_deger'] = 999999.0
                 
-                # 5. MATRİS DEĞERLER
+                # 5. MATRİS DEĞERLERİ - GÜVENLİ ATAMA
+                # Önce bu kolonları oluştur
                 df['genlestirme'] = 1.0
                 df['sisme'] = 0.5
                 df['min_oran'] = 1.0
                 df['initial_katsayi'] = 1.0
                 
-                # 6. RPT/MIN/INITIAL
+                # Matris değerlerini segment bazında uygula
+                if (st.session_state.genlestirme_orani is not None and 
+                    st.session_state.sisme_orani is not None and
+                    st.session_state.min_oran is not None and
+                    st.session_state.initial_matris is not None):
+                    
+                    try:
+                        for idx, row in df.iterrows():
+                            urun_seg = str(row['urun_segment'])
+                            magaza_seg = str(row['magaza_segment'])
+                            
+                            if (urun_seg in st.session_state.genlestirme_orani.index and 
+                                magaza_seg in st.session_state.genlestirme_orani.columns):
+                                df.at[idx, 'genlestirme'] = st.session_state.genlestirme_orani.loc[urun_seg, magaza_seg]
+                            
+                            if (urun_seg in st.session_state.sisme_orani.index and 
+                                magaza_seg in st.session_state.sisme_orani.columns):
+                                df.at[idx, 'sisme'] = st.session_state.sisme_orani.loc[urun_seg, magaza_seg]
+                            
+                            if (urun_seg in st.session_state.min_oran.index and 
+                                magaza_seg in st.session_state.min_oran.columns):
+                                df.at[idx, 'min_oran'] = st.session_state.min_oran.loc[urun_seg, magaza_seg]
+                            
+                            if (urun_seg in st.session_state.initial_matris.index and 
+                                magaza_seg in st.session_state.initial_matris.columns):
+                                df.at[idx, 'initial_katsayi'] = st.session_state.initial_matris.loc[urun_seg, magaza_seg]
+                                
+                    except Exception as e:
+                        st.warning(f"⚠️ Matris değer atama hatası: {e}")
+                
+                # 6. RPT/MIN/INITIAL DURUMLARI
                 rpt = df.copy()
                 rpt['Durum'] = 'RPT'
                 
@@ -951,35 +995,64 @@ elif menu == "📐 Hesaplama":
                 result['ihtiyac_min'] = (result['min_oran'] * result['min_deger']) - (result['stok'] + result['yol'])
                 result['ihtiyac_initial'] = (result['min_deger'] * result['initial_katsayi']) - (result['stok'] + result['yol'])
                 
-                result['ihtiyac'] = 0
+                result['ihtiyac'] = 0.0
                 result.loc[result['Durum'] == 'RPT', 'ihtiyac'] = result['ihtiyac_rpt']
                 result.loc[result['Durum'] == 'Min', 'ihtiyac'] = result['ihtiyac_min']
                 result.loc[result['Durum'] == 'Initial', 'ihtiyac'] = result['ihtiyac_initial']
+                
+                # Negatif ihtiyaçları 0 yap
                 result['ihtiyac'] = result['ihtiyac'].clip(lower=0)
                 
-                # 8. DEPO EŞLEŞTIR
-                result = result.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
+                # 8. DEPO EŞLEŞTİR
+                if 'depo_kod' in magaza_df.columns:
+                    result = result.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
+                else:
+                    result['depo_kod'] = 'DEPO_01'  # Fallback değer
                 
                 # 9. YASAK KONTROL
-                if st.session_state.yasak_master is not None:
+                if (st.session_state.yasak_master is not None and 
+                    'urun_kod' in st.session_state.yasak_master.columns and
+                    'magaza_kod' in st.session_state.yasak_master.columns):
+                    
                     yasak = st.session_state.yasak_master.copy()
                     yasak['urun_kod'] = yasak['urun_kod'].astype(str)
                     yasak['magaza_kod'] = yasak['magaza_kod'].astype(str)
-                    result = result.merge(yasak[['urun_kod', 'magaza_kod', 'yasak_durum']], on=['urun_kod', 'magaza_kod'], how='left')
-                    result.loc[result['yasak_durum'] == 'Yasak', 'ihtiyac'] = 0
+                    
+                    # Sadece yasak_durum kolonu varsa kullan
+                    if 'yasak_durum' in yasak.columns:
+                        result = result.merge(
+                            yasak[['urun_kod', 'magaza_kod', 'yasak_durum']], 
+                            on=['urun_kod', 'magaza_kod'], 
+                            how='left'
+                        )
+                        result.loc[result['yasak_durum'] == 'Yasak', 'ihtiyac'] = 0
                 
-                # 10. DEPO STOK DAĞIT
+                # 10. DEPO STOK DAĞITIMI
                 result = result[result['ihtiyac'] > 0].copy()
-                result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
                 
+                # Depo stok sözlüğü oluştur
                 depo_dict = {}
                 for _, row in depo_df.iterrows():
-                    key = (str(row['depo_kod']), str(row['urun_kod']))
+                    depo_kod = str(row.get('depo_kod', 'DEPO_01'))
+                    urun_kod = str(row['urun_kod'])
+                    key = (depo_kod, urun_kod)
                     depo_dict[key] = float(row['stok'])
                 
+                # Öncelik sıralaması
+                if st.session_state.siralama_data is not None:
+                    siralama_df = st.session_state.siralama_data.copy()
+                    # Sıralama mantığı burada uygulanacak
+                    # Basit sıralama için:
+                    result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
+                else:
+                    result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
+                
+                # Sevkiyat hesapla
                 sevkiyat_list = []
                 for _, row in result.iterrows():
-                    key = (str(row['depo_kod']), str(row['urun_kod']))
+                    depo_kod = str(row.get('depo_kod', 'DEPO_01'))
+                    urun_kod = str(row['urun_kod'])
+                    key = (depo_kod, urun_kod)
                     ihtiyac = float(row['ihtiyac'])
                     
                     if key in depo_dict and depo_dict[key] > 0:
@@ -987,24 +1060,32 @@ elif menu == "📐 Hesaplama":
                         depo_dict[key] -= sevk
                         sevkiyat_list.append(sevk)
                     else:
-                        sevkiyat_list.append(0)
+                        sevkiyat_list.append(0.0)
                 
                 result['sevkiyat_miktari'] = sevkiyat_list
                 result['stok_yoklugu_satis_kaybi'] = result['ihtiyac'] - result['sevkiyat_miktari']
                 
                 # 11. SONUÇ HAZIRLA
-                final = result[[
+                final_columns = [
                     'magaza_kod', 'urun_kod', 'magaza_segment', 'urun_segment', 'Durum',
                     'stok', 'yol', 'satis', 'ihtiyac', 'sevkiyat_miktari', 'depo_kod', 'stok_yoklugu_satis_kaybi'
-                ]].rename(columns={
+                ]
+                
+                # Sadece mevcut kolonları kullan
+                available_columns = [col for col in final_columns if col in result.columns]
+                final = result[available_columns].copy()
+                
+                final = final.rename(columns={
                     'Durum': 'durum',
                     'ihtiyac': 'ihtiyac_miktari'
-                }).copy()
+                })
                 
                 # Integer dönüşüm
                 for col in ['stok', 'yol', 'satis', 'ihtiyac_miktari', 'sevkiyat_miktari', 'stok_yoklugu_satis_kaybi']:
-                    final[col] = final[col].round().astype(int)
+                    if col in final.columns:
+                        final[col] = final[col].round().fillna(0).astype(int)
                 
+                # Sıra numaraları
                 final.insert(0, 'sira_no', range(1, len(final) + 1))
                 final.insert(1, 'oncelik', range(1, len(final) + 1))
                 
@@ -1016,14 +1097,17 @@ elif menu == "📐 Hesaplama":
                 # ÖZET
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Toplam İhtiyaç", f"{final['ihtiyac_miktari'].sum():,.0f}")
+                    ihtiyac_toplam = final['ihtiyac_miktari'].sum() if 'ihtiyac_miktari' in final.columns else 0
+                    st.metric("Toplam İhtiyaç", f"{ihtiyac_toplam:,.0f}")
                 with col2:
-                    st.metric("Toplam Sevkiyat", f"{final['sevkiyat_miktari'].sum():,.0f}")
+                    sevkiyat_toplam = final['sevkiyat_miktari'].sum() if 'sevkiyat_miktari' in final.columns else 0
+                    st.metric("Toplam Sevkiyat", f"{sevkiyat_toplam:,.0f}")
                 with col3:
-                    st.metric("Satış Kaybı", f"{final['stok_yoklugu_satis_kaybi'].sum():,.0f}")
+                    kayip_toplam = final['stok_yoklugu_satis_kaybi'].sum() if 'stok_yoklugu_satis_kaybi' in final.columns else 0
+                    st.metric("Satış Kaybı", f"{kayip_toplam:,.0f}")
                 
             except Exception as e:
-                st.error(f"❌ HATA: {str(e)}")
+                st.error(f"❌ Hesaplama hatası: {str(e)}")
                 import traceback
                 st.code(traceback.format_exc())
 
