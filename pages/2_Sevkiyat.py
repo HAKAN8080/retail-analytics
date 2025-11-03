@@ -1114,6 +1114,9 @@ elif menu == "📐 Hesaplama":
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ (HARİTA EKLENDİ)
 # ============================================
+# ============================================
+# 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ (DUPLICATE KEY HATASI ÇÖZÜLDÜ)
+# ============================================
 elif menu == "📈 Raporlar":
     st.title("📈 Raporlar ve Analizler")
     st.markdown("---")
@@ -1151,7 +1154,7 @@ elif menu == "📈 Raporlar":
             # KOLON ADI DÜZELTMESİ
             sevkiyat_kolon_adi = 'sevkiyat_miktari' if 'sevkiyat_miktari' in result_df.columns else 'sevkiyat_gercek'
             ihtiyac_kolon_adi = 'ihtiyac_miktari' if 'ihtiyac_miktari' in result_df.columns else 'ihtiyac'
-            kayip_kolon_adi = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_kaybi' in result_df.columns else 'stok_yoklugu_kaybi'
+            kayip_kolon_adi = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_keybi' in result_df.columns else 'stok_yoklugu_kaybi'
             
             if sevkiyat_kolon_adi in result_df.columns:
                 st.write(f"- Sevkiyat miktarı > 0: {(result_df[sevkiyat_kolon_adi] > 0).sum()}")
@@ -1166,7 +1169,7 @@ elif menu == "📈 Raporlar":
         ])
         
         # ============================================
-        # ÜRÜN ANALİZİ - DÜZELTİLMİŞ
+        # ÜRÜN ANALİZİ - DÜZELTİLMİŞ (UNIQUE KEY'LER)
         # ============================================
         with tab1:
             st.subheader("📦 Ürün Bazında Analiz")
@@ -1243,19 +1246,21 @@ elif menu == "📈 Raporlar":
             
             st.markdown("---")
             
-            # Filtreleme seçenekleri
+            # Filtreleme seçenekleri - UNIQUE KEY'LER
             col1, col2 = st.columns(2)
             with col1:
                 min_sevkiyat = st.number_input("Min Sevkiyat Filtresi", 
                                              min_value=0, 
                                              value=0,
-                                             help="Sadece bu değerden yüksek sevkiyatı olan ürünleri göster")
+                                             help="Sadece bu değerden yüksek sevkiyatı olan ürünleri göster",
+                                             key="min_sevkiyat_filter_urun")
             
             with col2:
                 min_mağaza = st.number_input("Min Mağaza Sayısı", 
                                            min_value=0, 
                                            value=0,
-                                           help="Sadece bu sayıdan fazla mağazada bulunan ürünleri göster")
+                                           help="Sadece bu sayıdan fazla mağazada bulunan ürünleri göster",
+                                           key="min_magaza_filter_urun")
             
             # Filtrele
             filtered_urun = urun_sevkiyat[
@@ -1287,12 +1292,12 @@ elif menu == "📈 Raporlar":
                 st.subheader("🏆 En İyi Performans")
                 if len(filtered_urun) > 0:
                     best_coverage = filtered_urun.nlargest(5, 'Sevkiyat/İhtiyaç %')[['Ürün Kodu', 'Sevkiyat/İhtiyaç %']]
-                    st.dataframe(best_coverage, width='content')
+                    st.dataframe(best_coverage, width='content', key="best_coverage_table")
                 
                 st.subheader("⚠️ En Fazla Kayıp")
                 if len(filtered_urun) > 0:
                     worst_loss = filtered_urun.nlargest(5, 'Satış Kaybı')[['Ürün Kodu', 'Satış Kaybı']]
-                    st.dataframe(worst_loss, width='content')
+                    st.dataframe(worst_loss, width='content', key="worst_loss_table")
             
             st.markdown("---")
             
@@ -1303,7 +1308,7 @@ elif menu == "📈 Raporlar":
                 if len(top_10_urun) > 0:
                     st.write("**Top 10 Ürün - Sevkiyat Miktarı**")
                     grafik_df = top_10_urun.set_index('Ürün Kodu')[['Sevkiyat']]
-                    st.bar_chart(grafik_df)
+                    st.bar_chart(grafik_df, key="top10_urun_chart")
             
             with col2:
                 if len(filtered_urun) > 0:
@@ -1311,11 +1316,11 @@ elif menu == "📈 Raporlar":
                     oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
                     # Grafik etiketlerini düzelt
                     oran_dagilim.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in oran_dagilim.index]
-                    st.bar_chart(oran_dagilim)
+                    st.bar_chart(oran_dagilim, key="oran_dagilim_chart")
             
             st.markdown("---")
             
-            # İndirme butonları
+            # İndirme butonları - UNIQUE KEY'LER
             col1, col2 = st.columns(2)
             with col1:
                 st.download_button(
@@ -1323,7 +1328,8 @@ elif menu == "📈 Raporlar":
                     data=urun_sevkiyat.to_csv(index=False, encoding='utf-8-sig'),
                     file_name="urun_analizi_tum.csv",
                     mime="text/csv",
-                    width='content'
+                    use_container_width=True,
+                    key="download_all_urun"
                 )
             with col2:
                 st.download_button(
@@ -1331,11 +1337,12 @@ elif menu == "📈 Raporlar":
                     data=filtered_urun.to_csv(index=False, encoding='utf-8-sig'),
                     file_name="urun_analizi_filtreli.csv",
                     mime="text/csv",
-                    width='content'
+                    use_container_width=True,
+                    key="download_filtered_urun"
                 )
 
         # ============================================
-        # İL BAZINDA HARİTA - EKLENDİ
+        # İL BAZINDA HARİTA - DÜZELTİLMİŞ (UNIQUE KEY'LER)
         # ============================================
         with tab4:
             st.subheader("🗺️ İl Bazında Sevkiyat Haritası")
@@ -1344,11 +1351,14 @@ elif menu == "📈 Raporlar":
             try:
                 import plotly.express as px
                 import plotly.graph_objects as go
-                st.success("✅ Plotly kütüphanesi yüklü!")
+                PLOTLY_AVAILABLE = True
             except ImportError:
                 st.error("Plotly kütüphanesi yüklü değil! requirements.txt dosyasına 'plotly' ekleyin.")
-                st.stop()
+                PLOTLY_AVAILABLE = False
             
+            if not PLOTLY_AVAILABLE:
+                st.stop()
+                
             if st.session_state.magaza_master is None:
                 st.warning("⚠️ Mağaza Master verisi yüklenmemiş! Harita için il bilgisi gerekiyor.")
             else:
@@ -1468,15 +1478,16 @@ elif menu == "📈 Raporlar":
                     
                     st.info("🔍 Haritayı mouse tekerleği ile zoom in/out yapabilir, sürükleyerek hareket ettirebilirsiniz.")
                     
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="turkey_map")
                     
-                    # İl seçimi için dropdown
+                    # İl seçimi için dropdown - UNIQUE KEY
                     st.markdown("---")
                     st.subheader("🔍 İl Detayları")
                     
                     secilen_il = st.selectbox(
                         "Detayını görmek istediğiniz ili seçin:",
-                        options=il_bazinda['İl'].sort_values().tolist()
+                        options=il_bazinda['İl'].sort_values().tolist(),
+                        key="il_secim_dropdown"
                     )
                     
                     if secilen_il:
@@ -1485,13 +1496,13 @@ elif menu == "📈 Raporlar":
                         
                         col1, col2, col3, col4 = st.columns(4)
                         with col1:
-                            st.metric("Ortalama Sevkiyat/Mağaza", f"{il_detay['Ortalama Sevkiyat/Mağaza']:,.0f}")
+                            st.metric("Ortalama Sevkiyat/Mağaza", f"{il_detay['Ortalama Sevkiyat/Mağaza']:,.0f}", key="ort_sevkiyat_metric")
                         with col2:
-                            st.metric("Toplam Sevkiyat", f"{il_detay['Toplam Sevkiyat']:,.0f}")
+                            st.metric("Toplam Sevkiyat", f"{il_detay['Toplam Sevkiyat']:,.0f}", key="toplam_sevkiyat_metric")
                         with col3:
-                            st.metric("Mağaza Sayısı", f"{il_detay['Mağaza Sayısı']:,.0f}")
+                            st.metric("Mağaza Sayısı", f"{il_detay['Mağaza Sayısı']:,.0f}", key="magaza_sayisi_metric")
                         with col4:
-                            st.metric("Performans", il_detay['Performans Segmenti'])
+                            st.metric("Performans", il_detay['Performans Segmenti'], key="performans_metric")
                         
                         # Seçilen ildeki mağaza detayları - DÜZELTİLMİŞ
                         st.subheader(f"🏪 {secilen_il} İlindeki Mağaza Performansları")
@@ -1537,7 +1548,8 @@ elif menu == "📈 Raporlar":
                                         'Gerçekleşme %': '{:.1f}%'
                                     }),
                                     use_container_width=True,
-                                    height=300
+                                    height=300,
+                                    key="magaza_detay_table"
                                 )
                             else:
                                 st.info("Bu ilde mağaza verisi bulunamadı.")
@@ -1565,26 +1577,27 @@ elif menu == "📈 Raporlar":
                                 'Ort. Sevkiyat/Mağaza': '{:,.0f}',
                                 'Toplam Sevkiyat': '{:,.0f}'
                             }),
-                            use_container_width=True
+                            use_container_width=True,
+                            key="segment_ozet_table"
                         )
                     
                     with col2:
                         st.write("**Segment Dağılımı**")
                         segment_dagilim = segment_ozet.set_index('Performans Segmenti')[['İl Sayısı']]
-                        st.bar_chart(segment_dagilim)
+                        st.bar_chart(segment_dagilim, key="segment_dagilim_chart")
                     
-                    # İndirme butonu
+                    # İndirme butonu - UNIQUE KEY
                     st.download_button(
                         label="📥 İl Bazında Analiz İndir (CSV)",
                         data=il_bazinda.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="il_bazinda_analiz.csv",
                         mime="text/csv",
-                        use_container_width=True
+                        use_container_width=True,
+                        key="download_il_analiz"
                     )
                 
                 else:
                     st.warning("Harita için yeterli il verisi bulunamadı.")
-                    
 # ============================================
 # 💾 MASTER DATA OLUŞTURMA
 # ============================================
