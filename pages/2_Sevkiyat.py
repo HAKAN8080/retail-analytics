@@ -834,7 +834,7 @@ elif menu == "📐 Hesaplama":
         
         st.markdown("---")
               
-        if st.button("🚀 Sevkiyat Hesapla", type="primary", width='content', key="hesapla_btn"):
+        if st.button("🚀 Sevkiyat Hesapla", type="primary", use_container_width=True, key="hesapla_btn"):
             start_time = time.time()
            
             with st.spinner("📊 Hesaplama yapılıyor..."):
@@ -1178,7 +1178,7 @@ elif menu == "📐 Hesaplama":
                             data=csv_bytes,
                             file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                             mime='text/csv',
-                            width='content',
+                            use_container_width=True,
                             key="csv_indir_1"
                         )
                     else:
@@ -1236,67 +1236,72 @@ elif menu == "📐 Hesaplama":
         # Performans özetini göster
         st.dataframe(
             summary_df,
-            width='content',
+            use_container_width=True,
             hide_index=True
         )
 
-# ------------------------------------------
-# 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
-# ------------------------------------------
-try:
-    available_cols = result_final.columns.tolist()
-    csv_mapping = {
-        'urun_kod': 'Ürün Kodu',
-        'magaza_kod': 'Mağaza Kodu',
-        'magaza_segment': 'Mağaza Segment',
-        'urun_segment': 'Ürün Segment',
-        'satis': 'Satış',
-        'stok': 'Stok',
-        'yol': 'Yolda',
-        'ihtiyac_miktari': 'İhtiyaç Miktarı',
-        'sevkiyat_miktari': 'Sevkiyat Miktarı',
-        'durum': 'Sevkiyat Tipi'
-    }
+        # ------------------------------------------
+        # 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
+        # ------------------------------------------
+        try:
+            # Mevcut sütunları al
+            available_cols = result_final.columns.tolist()
+            
+            # Gerçek sütun isimlerini kullan
+            csv_mapping = {
+                'urun_kod': 'Ürün Kodu',
+                'magaza_kod': 'Mağaza Kodu',
+                'magaza_segment': 'Mağaza Segment',
+                'urun_segment': 'Ürün Segment', 
+                'satis': 'Satış',
+                'stok': 'Stok',
+                'yol': 'Yolda',
+                'ihtiyac_miktari': 'İhtiyaç Miktarı',
+                'sevkiyat_miktari': 'Sevkiyat Miktarı',
+                'durum': 'Sevkiyat Tipi'
+            }
+            
+            # Sadece mevcut sütunları seç
+            selected_cols = []
+            final_mapping = {}
+            
+            for original_col, turkish_name in csv_mapping.items():
+                if original_col in available_cols:
+                    selected_cols.append(original_col)
+                    final_mapping[original_col] = turkish_name
+            
+            if selected_cols:
+                detayli_df = result_final[selected_cols].copy()
+                
+                # Sütun isimlerini Türkçe'ye çevir
+                detayli_df = detayli_df.rename(columns=final_mapping)
+                
+                csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
 
-    selected_cols, final_mapping = [], {}
-    for original_col, turkish_name in csv_mapping.items():
-        if original_col in available_cols:
-            selected_cols.append(original_col)
-            final_mapping[original_col] = turkish_name
+                st.download_button(
+                    label="📥 Detaylı Sevkiyat CSV İndir",
+                    data=csv_bytes,
+                    file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime='text/csv',
+                    use_container_width=True,
+                    key="csv_indir_2"
+                )
+            else:
+                st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
 
-    if selected_cols:
-        detayli_df = result_final[selected_cols].copy()
-        detayli_df = detayli_df.rename(columns=final_mapping)
-        detayli_df = detayli_df.astype(str)  # ✅ ArrowInvalid hatasına karşı koruma
+        except Exception as e:
+            st.warning(f"CSV oluşturulurken hata oluştu: {e}")
 
-        csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
-
-        st.download_button(
-            label="📥 Detaylı Sevkiyat CSV İndir",
-            data=csv_bytes,
-            file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime='text/csv',
-            width='content',
-            key="csv_indir_2"  # benzersiz olmalı
-        )
-    else:
-        st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
-
-except Exception as e:
-    st.warning(f"CSV oluşturulurken hata oluştu: {e}")
-
-# ------------------------------------------
-# 🧾 SONUÇLARI TEMİZLE BUTONU (DÜZELTİLMİŞ)
-# ------------------------------------------
-st.markdown("---")
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if st.button("🗑️ Sonuçları Temizle", type="secondary", key="temizle_btn"):
-        st.session_state.sevkiyat_sonuc = None
-        st.success("✅ Sonuçlar temizlendi!")
-        st.rerun()
-
-
+        # ------------------------------------------
+        # 🧾 SONUÇLARI TEMİZLE BUTONU (DÜZELTİLMİŞ)
+        # ------------------------------------------
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🗑️ Sonuçları Temizle", type="secondary", key="temizle_btn"):
+                st.session_state.sevkiyat_sonuc = None
+                st.success("✅ Sonuçlar temizlendi!")
+                st.rerun()
 
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ
