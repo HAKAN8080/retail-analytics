@@ -4,6 +4,18 @@ import numpy as np
 import plotly.express as px
 from datetime import datetime
 
+# 🎯 DATAFRAME GÖSTERİMİNİ BASİTLEŞTİR
+def simple_display(data, **kwargs):
+    if isinstance(data, pd.DataFrame):
+        st.write(f"📊 Veri: {len(data)} satır × {len(data.columns)} sütun")
+        if st.checkbox("🔍 İlk 10 satırı göster"):
+            for i in range(min(10, len(data))):
+                st.write(f"**Satır {i+1}:**", dict(data.iloc[i]))
+        return
+    st.write(data)
+
+st.dataframe = simple_display
+
 # ============================================
 # SAYFA YAPILANDIRMASI
 # ============================================
@@ -1048,6 +1060,7 @@ st.markdown("""
     <p style='font-size: 0.8em;'>AR4U - Thorius</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
