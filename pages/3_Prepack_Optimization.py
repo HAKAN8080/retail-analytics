@@ -7,22 +7,35 @@ st.set_page_config(
     layout="wide"
 )
 
-# Basit navigasyon
-with st.sidebar:
-    st.page_link("app.py", label="🏠 Ana Sayfa", icon="🏠")
-    st.page_link("pages/1_Veri_Yukleme.py", label="📤 Veri Yükleme", icon="📂") 
-    st.page_link("pages/2_Lost_Sales.py", label="📈 Lost Sales", icon="📈")
-    st.page_link("pages/3_Prepack_Optimization.py", label="📦 Prepack Optimization", icon="📦")
+# Basit sidebar navigasyon
+st.sidebar.title("🔗 Navigasyon")
 
-# Sadece yapım aşamasında mesajı
+# Manuel butonlarla navigasyon
+col1, col2, col3, col4 = st.sidebar.columns(4)
+
+with col1:
+    if st.button("🏠", help="Ana Sayfa"):
+        st.switch_page("app.py")
+
+with col2:
+    if st.button("📤", help="Veri Yükleme"):
+        st.switch_page("pages/1_Veri_Yukleme.py")
+
+with col3:
+    if st.button("📈", help="Lost Sales"):
+        st.switch_page("pages/2_Lost_Sales.py")
+
+with col4:
+    if st.button("📦", help="Prepack Optimization"):
+        st.switch_page("pages/3_Prepack_Optimization.py")
+
+# Sayfa içeriği - Sadece yapım aşamasında mesajı
 st.title("📦 Prepack Optimization")
 st.markdown("---")
 
 st.info("🚧 **Yapım Aşamasında**")
 st.write("Bu sayfa şu anda geliştirme aşamasındadır. Yakında kullanıma sunulacaktır.")
 
-# İsteğe bağlı: Boşluk için biraz space
-for _ in range(10):
+# Boşluk için
+for _ in range(8):
     st.write("")
-
-
