@@ -834,7 +834,7 @@ elif menu == "📐 Hesaplama":
         
         st.markdown("---")
               
-        if st.button("🚀 Sevkiyat Hesapla", type="primary", use_container_width=True, key="hesapla_btn"):
+        if st.button("🚀 Sevkiyat Hesapla", type="primary", width='stretch', key="hesapla_btn"):
             start_time = time.time()
            
             with st.spinner("📊 Hesaplama yapılıyor..."):
@@ -850,8 +850,8 @@ elif menu == "📐 Hesaplama":
                     st.session_state.sisme_orani = pd.DataFrame(0.5, index=["0-4"], columns=["0-4"])
                 if st.session_state.genlestirme_orani is None:
                     st.session_state.genlestirme_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                if st.session_state.min_oran is None:
-                    st.session_state.min_oran = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
+                if st.session_state.min_orani is None:
+                    st.session_state.min_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
                 if st.session_state.initial_matris is None:
                     st.session_state.initial_matris = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
                 
@@ -955,7 +955,7 @@ elif menu == "📐 Hesaplama":
                     lambda row: get_matrix_value(row['magaza_segment'], row['urun_segment'], st.session_state.sisme_orani), axis=1
                 )
                 anlik_df['min_oran'] = anlik_df.apply(
-                    lambda row: get_matrix_value(row['magaza_segment'], row['urun_segment'], st.session_state.min_oran), axis=1
+                    lambda row: get_matrix_value(row['magaza_segment'], row['urun_segment'], st.session_state.min_orani), axis=1
                 )
                 anlik_df['initial_katsayi'] = anlik_df.apply(
                     lambda row: get_matrix_value(row['magaza_segment'], row['urun_segment'], st.session_state.initial_matris), axis=1
@@ -1178,7 +1178,7 @@ elif menu == "📐 Hesaplama":
                             data=csv_bytes,
                             file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                             mime='text/csv',
-                            use_container_width=True,
+                            width='stretch',
                             key="csv_indir_1"
                         )
                     else:
@@ -1236,7 +1236,7 @@ elif menu == "📐 Hesaplama":
         # Performans özetini göster
         st.dataframe(
             summary_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -1283,7 +1283,7 @@ elif menu == "📐 Hesaplama":
                     data=csv_bytes,
                     file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime='text/csv',
-                    use_container_width=True,
+                    width='stretch',
                     key="csv_indir_2"
                 )
             else:
@@ -1302,6 +1302,8 @@ elif menu == "📐 Hesaplama":
                 st.session_state.sevkiyat_sonuc = None
                 st.success("✅ Sonuçlar temizlendi!")
                 st.rerun()
+
+
 
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ
