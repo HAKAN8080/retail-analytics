@@ -1139,8 +1139,8 @@ elif menu == "📐 Hesaplama":
                 # Hesaplama tamamlandı mesajını göster
                 st.success(f"✅ Hesaplama tamamlandı! ({calculation_time:.2f} saniye)")
             
-            # -------------------------------
-# CSV İNDİRME BUTONU (DEPO_KODU EKLENMİŞ)
+    # -------------------------------
+# CSV İNDİRME BUTONU (DEPO_KOD EKLENMİŞ)
 # -------------------------------
 if st.session_state.sevkiyat_sonuc is not None:
     try:
@@ -1169,9 +1169,9 @@ if st.session_state.sevkiyat_sonuc is not None:
         if csv_cols:
             detayli_df = st.session_state.sevkiyat_sonuc[csv_cols].copy()
             
-            # DEPO_KODU EKLEME - MAĞAZA MASTER'DAN AL
+            # DEPO_KOD EKLEME - MAĞAZA MASTER'DAN AL
             if 'magaza_master' in st.session_state and not st.session_state.magaza_master.empty:
-                # Mağaza-depo mapping oluştur
+                # Mağaza-depo mapping oluştur - SÜTUN İSİMLERİ GÜNCELLENDİ
                 magaza_depo_map = st.session_state.magaza_master.set_index('magaza_kod')['depo_kod'].to_dict()
                 
                 # Her mağaza için depo kodunu ekle
@@ -1183,9 +1183,9 @@ if st.session_state.sevkiyat_sonuc is not None:
                     detayli_df['depo_kod'] = detayli_df['depo_kod'].fillna(default_depo)
             else:
                 # Mağaza master yoksa sabit değer kullan
-                detayli_df['depo_kod'] = 'BULUNAMADI'
+                detayli_df['depo_kod'] = 'MERKEZ'
             
-            # Sütun sırasını ayarla (depo_kodu başta olsun)
+            # Sütun sırasını ayarla (depo_kod başta olsun)
             sutun_sirasi = ['depo_kod'] + [col for col in detayli_df.columns if col != 'depo_kod']
             detayli_df = detayli_df[sutun_sirasi]
             
@@ -1205,112 +1205,6 @@ if st.session_state.sevkiyat_sonuc is not None:
             
     except Exception as e:
         st.warning(f"CSV oluşturulurken hata oluştu: {e}")
-
-    # Sayfa yüklendiğinde sonuçları göster (yeniden hesaplama yapılmadıysa)
-    if st.session_state.sevkiyat_sonuc is not None:
-        st.markdown("---")
-        st.subheader("📊 Mevcut Sevkiyat Sonuçları")
-        
-        result_final = st.session_state.sevkiyat_sonuc.copy()
-        
-        # Ana metrikler tablosu
-        st.markdown("### 📈 Performans Özeti")
-        
-        # Ana metrikler
-        toplam_ihtiyac = result_final['ihtiyac_miktari'].sum()
-        toplam_sevkiyat = result_final['sevkiyat_miktari'].sum()
-        toplam_kayip = result_final['stok_yoklugu_satis_kaybi'].sum()
-        sku_count = result_final[result_final['sevkiyat_miktari'] > 0]['urun_kod'].nunique()
-        magaza_count = result_final[result_final['sevkiyat_miktari'] > 0]['magaza_kod'].nunique()
-        kayip_oran = (toplam_kayip / toplam_ihtiyac * 100) if toplam_ihtiyac > 0 else 0
-        
-        # Durum bazlı sevkiyatlar
-        rpt_sevk = result_final[result_final['durum'] == 'RPT']['sevkiyat_miktari'].sum()
-        initial_sevk = result_final[result_final['durum'] == 'Initial']['sevkiyat_miktari'].sum()
-        min_sevk = result_final[result_final['durum'] == 'Min']['sevkiyat_miktari'].sum()
-        
-        # Tablo oluştur
-        summary_data = {
-            'Kategori': ['Genel', 'Genel', 'Genel', 'Genel', 'Genel', 'Genel', 'Durum', 'Durum', 'Durum'],
-            'Metrik': [
-                'Toplam İhtiyaç', 'Toplam Sevkiyat', 'Stok Kaybı', 
-                'SKU Sayısı', 'Mağaza Sayısı', 'Kayıp Oranı',
-                'RPT Sevkiyat', 'Initial Sevkiyat', 'Min Sevkiyat'
-            ],
-            'Değer': [
-                f"{toplam_ihtiyac:,.0f}",
-                f"{toplam_sevkiyat:,.0f}",
-                f"{toplam_kayip:,.0f}",
-                f"{sku_count}",
-                f"{magaza_count}",
-                f"{kayip_oran:.1f}%",
-                f"{rpt_sevk:,.0f}",
-                f"{initial_sevk:,.0f}",
-                f"{min_sevk:,.0f}"
-            ]
-        }
-        
-        summary_df = pd.DataFrame(summary_data)
-        
-        # Performans özetini göster
-        st.dataframe(
-            summary_df,
-            width='stretch',
-            hide_index=True
-        )
-
-        # ------------------------------------------
-        # 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
-        # ------------------------------------------
-        try:
-            # Mevcut sütunları al
-            available_cols = result_final.columns.tolist()
-            
-            # Gerçek sütun isimlerini kullan
-            csv_mapping = {
-                'urun_kod': 'Ürün Kodu',
-                'magaza_kod': 'Mağaza Kodu',
-                'magaza_segment': 'Mağaza Segment',
-                'urun_segment': 'Ürün Segment', 
-                'satis': 'Satış',
-                'stok': 'Stok',
-                'yol': 'Yolda',
-                'ihtiyac_miktari': 'İhtiyaç Miktarı',
-                'sevkiyat_miktari': 'Sevkiyat Miktarı',
-                'durum': 'Sevkiyat Tipi'
-            }
-            
-            # Sadece mevcut sütunları seç
-            selected_cols = []
-            final_mapping = {}
-            
-            for original_col, turkish_name in csv_mapping.items():
-                if original_col in available_cols:
-                    selected_cols.append(original_col)
-                    final_mapping[original_col] = turkish_name
-            
-            if selected_cols:
-                detayli_df = result_final[selected_cols].copy()
-                
-                # Sütun isimlerini Türkçe'ye çevir
-                detayli_df = detayli_df.rename(columns=final_mapping)
-                
-                csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
-
-                st.download_button(
-                    label="📥 Detaylı Sevkiyat CSV İndir",
-                    data=csv_bytes,
-                    file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime='text/csv',
-                    width='stretch',
-                    key="csv_indir_2"
-                )
-            else:
-                st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
-
-        except Exception as e:
-            st.warning(f"CSV oluşturulurken hata oluştu: {e}")
-
         # ------------------------------------------
         # 🧾 SONUÇLARI TEMİZLE BUTONU (DÜZELTİLMİŞ)
         # ------------------------------------------
