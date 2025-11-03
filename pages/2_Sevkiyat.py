@@ -3,66 +3,40 @@ import pandas as pd
 import numpy as np
 import time
 
-# 🎯 KESİN ÇÖZÜM - TÜM DATAFRAME'LERİ COMPLETELY RESET
-import warnings
-warnings.filterwarnings('ignore')
-
-# Streamlit'i COMPLETELY override et
+# 🎯 STREAMLIT'I TAMAMEN BYPASS ET - DATAFRAME GÖSTERME!
 _original_dataframe = st.dataframe
-_original_data_editor = st.data_editor
-_original_table = st.table
 
-def nuclear_dataframe_fix(data, **kwargs):
+def bypass_dataframe(data, **kwargs):
     if isinstance(data, pd.DataFrame):
-        # DataFrame'i COMPLETELY yeniden oluştur - EN GARANTİ YOL
-        try:
-            # 1. YOL: Dict üzerinden temizle
-            clean_data = {}
-            for col in data.columns:
-                # Her sütunu basit Python listesine çevir
-                clean_data[col] = data[col].tolist()
-            
-            df_clean = pd.DataFrame(clean_data)
-            
-            # 2. TÜM sütunları object yap
-            for col in df_clean.columns:
-                df_clean[col] = df_clean[col].astype('object')
-                
-            return _original_dataframe(df_clean, **kwargs)
-            
-        except Exception as e:
-            # 2. YOL: CSV üzerinden reset
-            try:
-                csv_str = data.to_csv(index=False)
-                from io import StringIO
-                df_clean = pd.read_csv(StringIO(csv_str))
-                return _original_dataframe(df_clean, **kwargs)
-            except:
-                # 3. YOL: String olarak göster
-                st.write("📊 Veri Önizleme:")
-                st.write(data)
-                return
+        st.write(f"📊 **DataFrame Önizleme** - {data.shape[0]} satır × {data.shape[1]} sütun")
+        
+        # 1. İlk 5 satırı basit şekilde göster
+        st.write("**İlk 5 Satır:**")
+        for i in range(min(5, len(data))):
+            row_text = " | ".join([f"{col}: {data.iloc[i][col]}" for col in data.columns])
+            st.text(f"{i+1}. {row_text}")
+        
+        # 2. DataFrame info
+        with st.expander("📋 DataFrame Bilgileri"):
+            st.write(f"**Sütunlar:** {list(data.columns)}")
+            st.write(f"**Tipler:** {dict(data.dtypes)}")
+        
+        return
     
     return _original_dataframe(data, **kwargs)
 
-# TÜM gösterim fonksiyonlarını override et
-st.dataframe = nuclear_dataframe_fix
-st.data_editor = nuclear_dataframe_fix
-st.table = nuclear_dataframe_fix
+st.dataframe = bypass_dataframe
+st.data_editor = bypass_dataframe
+st.table = bypass_dataframe
 
-# DEBUG için
-def debug_display():
-    st.sidebar.markdown("### 🐛 Debug Info")
-    if st.sidebar.button("Reset Session State"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
-    page_icon="📦",
+    page_icon="📦", 
     layout="wide"
 )
+
+# ... session state kodunuz aynı kalacak
 
 # Session state başlatma
 if 'urun_master' not in st.session_state:
