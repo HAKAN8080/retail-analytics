@@ -460,7 +460,7 @@ if uploaded_files:
                 st.success(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
             elif '❌' in row['Durum']:
                 st.error(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
-           else:
+            else:
                 st.warning(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
         
         success_count = sum(1 for r in upload_results if '✅ Başarılı' in r['Durum'])
@@ -712,6 +712,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", width='stretch'):
             st.switch_page("pages/4_PO.py")
+
 
 
 
