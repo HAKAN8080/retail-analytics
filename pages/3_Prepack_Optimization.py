@@ -1,44 +1,21 @@
 import streamlit as st
-import pandas as pd
 
-# ============================================
-# SAYFA YAPILANDIRMASI
-# ============================================
+# Sayfa konfigürasyonu
 st.set_page_config(
-    page_title="Retail Analytics Platform",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Prepack Optimization",
+    page_icon="📦",
+    layout="wide"
 )
 
-# ============================================
-# SIDEBAR ÖZELLEŞTIRME (BÜYÜK HARF & BOLD)
-# ============================================
-st.markdown("""
-<style>
-    /* Sidebar sayfa linklerini büyük harf ve bold yap */
-    [data-testid="stSidebarNav"] li a {
-        text-transform: uppercase !important;
-        font-weight: bold !important;
-        font-size: 16px !important;
-    }
-    
-    /* Aktif sayfayı daha belirgin yap */
-    [data-testid="stSidebarNav"] li a[aria-current="page"] {
-        background-color: rgba(151, 166, 195, 0.15) !important;
-        color: #ff4b4b !important;
-    }
-    
-    /* Hover efekti */
-    [data-testid="stSidebarNav"] li a:hover {
-        background-color: rgba(151, 166, 195, 0.1) !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Sidebar navigasyon - DOĞRU KULLANIM
+with st.sidebar:
+    st.page_link("app.py", label="🏠 Ana Sayfa", icon="🏠")
+    st.page_link("pages/1_Veri_Yukleme.py", label="📤 Veri Yükleme", icon="📂")
+    st.page_link("pages/2_Lost_Sales.py", label="📈 Lost Sales", icon="📈")
+    st.page_link("pages/3_Prepack_Optimization.py", label="📦 Prepack Optimization", icon="📦")
 
-# ============================================
-# SIDEBAR MENÜ
-# ============================================
+# Sayfa içeriği buraya gelecek
+st.title("📦 Prepack Optimization")
 st.sidebar.title("🏠 Ana Sayfa Menüsü")
 
 # Hızlı Erişim Linkleri
