@@ -755,8 +755,8 @@ elif menu == "🔢 Sıralama":
         
         st.info("ℹ️ Kaydetmeseniz de default sıralama kullanılacaktır.")
 
-        # ============================================
-# 🚚 HESAPLAMA - DÜZELTİLMİŞ CSV İNDİRME
+# ============================================
+# 🚚 HESAPLAMA - DÜZELTİLMİŞ
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
@@ -834,7 +834,7 @@ elif menu == "📐 Hesaplama":
         
         st.markdown("---")
               
-        if st.button("🚀 Sevkiyat Hesapla", type="primary", use_container_width=True):
+        if st.button("🚀 Sevkiyat Hesapla", type="primary", use_container_width=True, key="hesapla_btn"):
             start_time = time.time()
            
             with st.spinner("📊 Hesaplama yapılıyor..."):
@@ -1178,7 +1178,8 @@ elif menu == "📐 Hesaplama":
                             data=csv_bytes,
                             file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                             mime='text/csv',
-                            use_container_width=True
+                            use_container_width=True,
+                            key="csv_indir_1"
                         )
                     else:
                         st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
@@ -1282,7 +1283,8 @@ elif menu == "📐 Hesaplama":
                     data=csv_bytes,
                     file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime='text/csv',
-                    use_container_width=True
+                    use_container_width=True,
+                    key="csv_indir_2"
                 )
             else:
                 st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
@@ -1291,17 +1293,16 @@ elif menu == "📐 Hesaplama":
             st.warning(f"CSV oluşturulurken hata oluştu: {e}")
 
         # ------------------------------------------
-        # 🧾 SONUÇLARI TEMİZLE BUTONU
+        # 🧾 SONUÇLARI TEMİZLE BUTONU (DÜZELTİLMİŞ)
         # ------------------------------------------
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🗑️ Sonuçları Temizle", type="secondary"):
+            if st.button("🗑️ Sonuçları Temizle", type="secondary", key="temizle_btn"):
                 st.session_state.sevkiyat_sonuc = None
                 st.success("✅ Sonuçlar temizlendi!")
                 st.rerun()
-
-
+                
         
         # ------------------------------------------
                 # ------------------------------------------
