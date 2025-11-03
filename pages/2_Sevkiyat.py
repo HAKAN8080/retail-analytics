@@ -755,8 +755,8 @@ elif menu == "🔢 Sıralama":
         
         st.info("ℹ️ Kaydetmeseniz de default sıralama kullanılacaktır.")
 
-# ============================================
-# 🚚 HESAPLAMA
+        # ============================================
+# 🚚 HESAPLAMA - DÜZELTİLMİŞ CSV İNDİRME
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
@@ -1106,7 +1106,7 @@ elif menu == "📐 Hesaplama":
                 result_df_max['stok_yoklugu_kaybi'] = result_df_max['ihtiyac'] - result_df_max['sevkiyat_gercek']
                 result_df_max = result_df_max[result_df_max['ihtiyac'] > 0].copy()
                 
-                # Sonuç tablosu - AD ALANLARI KALDIRILDI
+                # Sonuç tablosu
                 result_final = result_df_max[[
                     'Oncelik', 'magaza_kod', 'urun_kod',
                     'magaza_segment', 'urun_segment', 'Durum',
@@ -1119,7 +1119,7 @@ elif menu == "📐 Hesaplama":
                     'stok_yoklugu_kaybi': 'stok_yoklugu_satis_kaybi'
                 })
                 
-                # Kolon sıralamasını düzenle - AD ALANLARI YOK
+                # Kolon sıralamasını düzenle
                 result_final = result_final[[
                     'oncelik', 'magaza_kod', 'urun_kod',
                     'magaza_segment', 'urun_segment', 'durum',
@@ -1134,40 +1134,59 @@ elif menu == "📐 Hesaplama":
                 
                 progress_bar.progress(100, text="Tamamlandı!")
                 
-                # SONUÇLARI SESSION STATE'E KAYDET - BU ÇOK ÖNEMLİ!
+                # SONUÇLARI SESSION STATE'E KAYDET
                 st.session_state.sevkiyat_sonuc = result_final.copy()
                 
-                # Hesaplama tamamlandı mesajını BURADA göster
-                st.success("✅ Hesaplama tamamlandı! Sonuçlar kaydedildi.")
+                # Hesaplama tamamlandı mesajını göster
+                st.success(f"✅ Hesaplama tamamlandı! ({calculation_time:.2f} saniye)")
             
             # -------------------------------
-            # CSV İNDİRME BUTONU (Hesaplama Sonrası)
+            # CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
             # -------------------------------
-            if 'result_df' in locals() and not result_df.empty:
+            if st.session_state.sevkiyat_sonuc is not None:
                 try:
-                    # CSV için gerekli sütunları filtrele
-                    detayli_df = result_df[[
-                        'urun_kod', 'magaza_kod', 'mağaza_grup', 'ürün_grup',
-                        'satış', 'stok', 'yol', 'ihtiyaç', 'depo_stok'
-                    ]].copy()
+                    # Mevcut sütunları kontrol et
+                    available_cols = st.session_state.sevkiyat_sonuc.columns.tolist()
+                    
+                    # CSV için gerekli sütunları filtrele - GERÇEK SÜTUN İSİMLERİNİ KULLAN
+                    csv_cols = []
+                    mapping = {
+                        'urun_kod': 'urun_kod',
+                        'magaza_kod': 'magaza_kod', 
+                        'magaza_segment': 'magaza_segment',
+                        'urun_segment': 'urun_segment',
+                        'satis': 'satis',
+                        'stok': 'stok',
+                        'yol': 'yol',
+                        'ihtiyac_miktari': 'ihtiyac_miktari',
+                        'sevkiyat_miktari': 'sevkiyat_miktari',
+                        'durum': 'durum'
+                    }
+                    
+                    for turkish_col, original_col in mapping.items():
+                        if original_col in available_cols:
+                            csv_cols.append(original_col)
+                    
+                    if csv_cols:
+                        detayli_df = st.session_state.sevkiyat_sonuc[csv_cols].copy()
+                        
+                        # CSV'yi bellek üzerinden indirilebilir hale getir
+                        csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
 
-                    # CSV'yi bellek üzerinden indirilebilir hale getir
-                    csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
-
-                    st.download_button(
-                        label="📥 Detaylı Sevkiyat CSV İndir",
-                        data=csv_bytes,
-                        file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime='text/csv',
-                        use_container_width=True
-                    )
+                        st.download_button(
+                            label="📥 Detaylı Sevkiyat CSV İndir",
+                            data=csv_bytes,
+                            file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime='text/csv',
+                            use_container_width=True
+                        )
+                    else:
+                        st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
+                        
                 except Exception as e:
                     st.warning(f"CSV oluşturulurken hata oluştu: {e}")
- 
-             
 
     # Sayfa yüklendiğinde sonuçları göster (yeniden hesaplama yapılmadıysa)
-        # Sayfa yüklendiğinde sonuçları göster (yeniden hesaplama yapılmadıysa)
     if st.session_state.sevkiyat_sonuc is not None:
         st.markdown("---")
         st.subheader("📊 Mevcut Sevkiyat Sonuçları")
@@ -1221,7 +1240,69 @@ elif menu == "📐 Hesaplama":
         )
 
         # ------------------------------------------
-        # 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU
+        # 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
+        # ------------------------------------------
+        try:
+            # Mevcut sütunları al
+            available_cols = result_final.columns.tolist()
+            
+            # Gerçek sütun isimlerini kullan
+            csv_mapping = {
+                'urun_kod': 'Ürün Kodu',
+                'magaza_kod': 'Mağaza Kodu',
+                'magaza_segment': 'Mağaza Segment',
+                'urun_segment': 'Ürün Segment', 
+                'satis': 'Satış',
+                'stok': 'Stok',
+                'yol': 'Yolda',
+                'ihtiyac_miktari': 'İhtiyaç Miktarı',
+                'sevkiyat_miktari': 'Sevkiyat Miktarı',
+                'durum': 'Sevkiyat Tipi'
+            }
+            
+            # Sadece mevcut sütunları seç
+            selected_cols = []
+            final_mapping = {}
+            
+            for original_col, turkish_name in csv_mapping.items():
+                if original_col in available_cols:
+                    selected_cols.append(original_col)
+                    final_mapping[original_col] = turkish_name
+            
+            if selected_cols:
+                detayli_df = result_final[selected_cols].copy()
+                
+                # Sütun isimlerini Türkçe'ye çevir
+                detayli_df = detayli_df.rename(columns=final_mapping)
+                
+                csv_bytes = detayli_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+
+                st.download_button(
+                    label="📥 Detaylı Sevkiyat CSV İndir",
+                    data=csv_bytes,
+                    file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime='text/csv',
+                    use_container_width=True
+                )
+            else:
+                st.warning("CSV oluşturmak için uygun sütun bulunamadı.")
+
+        except Exception as e:
+            st.warning(f"CSV oluşturulurken hata oluştu: {e}")
+
+        # ------------------------------------------
+        # 🧾 SONUÇLARI TEMİZLE BUTONU
+        # ------------------------------------------
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🗑️ Sonuçları Temizle", type="secondary"):
+                st.session_state.sevkiyat_sonuc = None
+                st.success("✅ Sonuçlar temizlendi!")
+                st.rerun()
+
+
+        
         # ------------------------------------------
                 # ------------------------------------------
         # 📥 DETAYLI SEVKİYAT CSV İNDİRME BUTONU
