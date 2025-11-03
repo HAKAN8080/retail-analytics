@@ -890,35 +890,41 @@ elif menu == "📐 Hesaplama":
                     df['urun_segment'] = '0-4'
                     df['magaza_segment'] = '0-4'
                 
-                # 4. KPI - SADECE KEYERROR DÜZELTİLDİ
+                # 4. KPI - EN GÜVENLİ VERSİYON
                 default_fc = kpi_df['forward_cover'].mean()
                 
+                # ÖNCELİKLE YENİ KOLONLARI EKLE
+                df['min_deger'] = 0
+                df['max_deger'] = 999999
+                
                 if st.session_state.urun_master is not None:
-                    urun_m = st.session_state.urun_master[['urun_kod', 'mg']].copy()
-                    urun_m['urun_kod'] = urun_m['urun_kod'].astype(str)
-                    urun_m['mg'] = urun_m['mg'].fillna(0).astype(int).astype(str)
-                    df = df.merge(urun_m, on='urun_kod', how='left')
-                    
-                    kpi_data = kpi_df[['mg_id', 'min_deger', 'max_deger']].rename(columns={'mg_id': 'mg'})
-                    kpi_data['mg'] = kpi_data['mg'].astype(str)
-                    df['mg'] = df['mg'].fillna('0').astype(str)
-                    
-                    # BURASI DEĞİŞTİ - Merge'den SONRA kolonlar ekleniyor
-                    df = df.merge(kpi_data, on='mg', how='left', suffixes=('', '_kpi'))
-                    
-                    # Eğer merge'den min_deger geldiyse kullan, yoksa 0
-                    if 'min_deger' not in df.columns:
-                        df['min_deger'] = 0
-                    else:
-                        df['min_deger'] = df['min_deger'].fillna(0)
-                    
-                    if 'max_deger' not in df.columns:
-                        df['max_deger'] = 999999
-                    else:
-                        df['max_deger'] = df['max_deger'].fillna(999999)
-                else:
-                    df['min_deger'] = 0
-                    df['max_deger'] = 999999
+                    try:
+                        # MG bilgisini ekle
+                        urun_m = st.session_state.urun_master[['urun_kod', 'mg']].copy()
+                        urun_m['urun_kod'] = urun_m['urun_kod'].astype(str)
+                        urun_m['mg'] = urun_m['mg'].fillna(0).astype(int).astype(str)
+                        
+                        df = df.merge(urun_m, on='urun_kod', how='left')
+                        df['mg'] = df['mg'].fillna('0')
+                        
+                        # KPI verilerini hazırla
+                        kpi_lookup = {}
+                        for _, row in kpi_df.iterrows():
+                            mg_key = str(row['mg_id'])
+                            kpi_lookup[mg_key] = {
+                                'min': float(row['min_deger']),
+                                'max': float(row['max_deger'])
+                            }
+                        
+                        # MG bazında güncelle (loop ile)
+                        for idx, row in df.iterrows():
+                            mg = str(row['mg']) if pd.notna(row['mg']) else '0'
+                            if mg in kpi_lookup:
+                                df.at[idx, 'min_deger'] = kpi_lookup[mg]['min']
+                                df.at[idx, 'max_deger'] = kpi_lookup[mg]['max']
+                                
+                    except Exception as e:
+                        st.warning(f"⚠️ KPI atlandı: {e}")
                 
                 # 5. MATRİS DEĞERLER
                 df['genlestirme'] = 1.0
