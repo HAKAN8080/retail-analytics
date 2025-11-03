@@ -7,7 +7,12 @@ from datetime import datetime
 # ============================================
 # SAYFA YAPILANDIRMASI
 # ============================================
-st.set_page_config(page_title="Lost Sales v4.0", page_icon="📉", layout="wide")
+st.set_page_config(
+    page_title="Lost Sales Analysis",
+    page_icon="📊",
+    layout="wide"
+)
+
 
 # ============================================
 # SESSION STATE
@@ -1043,6 +1048,7 @@ st.markdown("""
     <p style='font-size: 0.8em;'>AR4U - Thorius</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
