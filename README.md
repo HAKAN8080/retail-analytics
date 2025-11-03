@@ -1,2 +1,2 @@
-# retail-analytics
+ # retail-analytics
 Retail Analytics Platform
