@@ -265,7 +265,7 @@ elif menu == "📤 Veri Yükleme":
         ]
     })
     
-    st.dataframe(data_status, use_container_width=True, hide_index=True)
+    st.dataframe(data_status, width=True, hide_index=True)
 
 # ============================================
 # ANALİZ
@@ -342,7 +342,7 @@ elif menu == "🔬 Analiz":
             else:
                 st.error(f"❌ Toplam: %{toplam_yuzde:.1f}")
         
-        if st.button("💾 Gün Dağılımını Kaydet", use_container_width=True):
+        if st.button("💾 Gün Dağılımını Kaydet", width=True):
             if abs(toplam_yuzde - 100.0) < 0.1:
                 st.session_state.gun_dagilim = gun_dagilim.copy()
                 st.success("✅ Kaydedildi!")
@@ -357,7 +357,7 @@ elif menu == "🔬 Analiz":
         
         fig_gun = px.bar(gun_df, x='Gün', y='Oran (%)', title='Gün Dağılım',
                         color='Oran (%)', color_continuous_scale='Blues')
-        st.plotly_chart(fig_gun, use_container_width=True)
+        st.plotly_chart(fig_gun, width=True)
     
     # Özet
     gun_ozet = st.session_state.gun_dagilim
@@ -372,7 +372,7 @@ elif menu == "🔬 Analiz":
     st.markdown("---")
     
     # HESAPLA BUTONU
-    if st.button("🚀 LOST SALES HESAPLA", type="primary", use_container_width=True):
+    if st.button("🚀 LOST SALES HESAPLA", type="primary", width=True):
         try:
             progress = st.progress(0)
             status = st.empty()
@@ -684,7 +684,7 @@ elif menu == "🔬 Analiz":
                 ]
             }
             
-            st.dataframe(pd.DataFrame(ozet_data), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(ozet_data), width=True, hide_index=True)
             
             # SK İstatistikleri
             if sk_kullanildi and 'stoklu_gun_orani' in kayip_df.columns:
@@ -707,7 +707,7 @@ elif menu == "🔬 Analiz":
                     'Değer': [f"%{ort_stoklu:.1f}", f"{dusuk:,}", f"{yuksek:,}", kalite]
                 }
                 
-                st.dataframe(pd.DataFrame(sk_ozet), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(sk_ozet), width=True, hide_index=True)
             
             # Proxy dağılımı
             if 'proxy_fallback_tip' in kayip_df.columns:
@@ -724,10 +724,10 @@ elif menu == "🔬 Analiz":
                                 title='Proxy Hesaplama Yöntemi',
                                 color='Kayıt', color_continuous_scale='Blues')
                     fig.update_xaxes(tickangle=45)  # update_xaxis değil update_xaxes!
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width=True)
                 
                 with col2:
-                    st.dataframe(fallback_dist, use_container_width=True, hide_index=True)
+                    st.dataframe(fallback_dist, width=True, hide_index=True)
         
         except Exception as e:
             st.error(f"❌ Hata: {e}")
@@ -771,7 +771,7 @@ elif menu == "📊 Raporlar":
         urun_grp['tahmini_kayip'] = urun_grp['tahmini_kayip'].round(0).astype(int)
         urun_grp = urun_grp.sort_values('tahmini_kayip', ascending=False)
         
-        st.dataframe(urun_grp.head(50), use_container_width=True, height=400)
+        st.dataframe(urun_grp.head(50), width=True, height=400)
         
         csv = urun_grp.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir", csv,
@@ -788,7 +788,7 @@ elif menu == "📊 Raporlar":
         mag_grp['tahmini_kayip'] = mag_grp['tahmini_kayip'].round(0).astype(int)
         mag_grp = mag_grp.sort_values('tahmini_kayip', ascending=False)
         
-        st.dataframe(mag_grp.head(50), use_container_width=True, height=400)
+        st.dataframe(mag_grp.head(50), width=True, height=400)
         
         csv = mag_grp.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir", csv,
@@ -805,7 +805,7 @@ elif menu == "📊 Raporlar":
             fig1 = px.pie(tip_dag, values='tahmini_kayip', names='lost_sales_tip',
                          title='Tip Dağılımı',
                          color_discrete_map={'Tip 1: Depoda Var': '#FF6B6B', 'Tip 2: Depoda Yok': '#4ECDC4'})
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(fig1, width=True)
         
         with col2:
             # Top 10 Ürün
@@ -818,7 +818,7 @@ elif menu == "📊 Raporlar":
             
             fig2 = px.bar(top10, x='tahmini_kayip', y=y_col, orientation='h',
                          title='Top 10 Ürün', color='tahmini_kayip', color_continuous_scale='Reds')
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width=True)
         
         # Segment analizi
         if 'segment' in df.columns:
@@ -828,7 +828,7 @@ elif menu == "📊 Raporlar":
             fig3 = px.bar(seg_dag, x='segment', y='tahmini_kayip', color='lost_sales_tip',
                          title='Segment × Tip', barmode='stack',
                          color_discrete_map={'Tip 1: Depoda Var': '#FF6B6B', 'Tip 2: Depoda Yok': '#4ECDC4'})
-            st.plotly_chart(fig3, use_container_width=True)
+            st.plotly_chart(fig3, width=True)
     
     with tab4:
         st.subheader("📅 Zaman Bazlı Analiz")
@@ -900,7 +900,7 @@ elif menu == "📊 Raporlar":
                 
                 # Tablo
                 st.markdown("### 📋 Haftalık Detay")
-                st.dataframe(haftalik, use_container_width=True, hide_index=True)
+                st.dataframe(haftalik, width=True, hide_index=True)
                 
                 # Grafik
                 st.markdown("---")
@@ -934,7 +934,7 @@ elif menu == "📊 Raporlar":
                     legend_title="Metrik"
                 )
                 
-                st.plotly_chart(fig_trend, use_container_width=True)
+                st.plotly_chart(fig_trend, width=True)
                 
                 # SK Oranı Grafiği
                 st.markdown("---")
@@ -954,7 +954,7 @@ elif menu == "📊 Raporlar":
                                   line_color="gray",
                                   annotation_text=f"Ortalama: %{ort_sk_oran:.1f}")
                 
-                st.plotly_chart(fig_oran, use_container_width=True)
+                st.plotly_chart(fig_oran, width=True)
                 
                 # İndirme
                 st.markdown("---")
@@ -964,7 +964,7 @@ elif menu == "📊 Raporlar":
                     csv_haftalik,
                     f"haftalik_analiz_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                     "text/csv",
-                    use_container_width=True
+                    width=True
                 )
             else:
                 st.error("❌ Trend verisinde 'tarih' kolonu bulunamadı!")
@@ -993,7 +993,7 @@ elif menu == "💾 Export":
         csv = df.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir (Tümü)", csv,
             f"lost_sales_detay_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
-            use_container_width=True)
+            width=True)
     
     with col2:
         st.subheader("📦 Ürün Özeti")
@@ -1006,7 +1006,7 @@ elif menu == "💾 Export":
         csv_urun = urun_ozet.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir (Ürün)", csv_urun,
             f"lost_sales_urun_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
-            use_container_width=True)
+            width=True)
     
     with col3:
         st.subheader("🏪 Mağaza Özeti")
@@ -1019,7 +1019,7 @@ elif menu == "💾 Export":
         csv_mag = mag_ozet.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir (Mağaza)", csv_mag,
             f"lost_sales_magaza_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
-            use_container_width=True)
+            width=True)
 
 # ============================================
 # FOOTER
@@ -1040,3 +1040,4 @@ st.markdown("""
     <p style='font-size: 0.8em;'>AR4U - Thorius</p>
 </div>
 """, unsafe_allow_html=True)
+
