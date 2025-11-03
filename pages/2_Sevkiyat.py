@@ -2116,3 +2116,27 @@ elif menu == "📈 Raporlar":
                 
                 else:
                     st.warning("Harita için yeterli il verisi bulunamadı.")
+# ============================================
+# 💾 MASTER DATA OLUŞTURMA
+# ============================================
+elif menu == "💾 Master Data":
+    st.title("💾 Master Data Oluşturma")
+    st.markdown("---")
+    
+    st.info("""
+    **Master Data Nedir?**
+    
+    Anlık Stok/Satış CSV'sine aşağıdaki kolonları ekleyerek tek bir master dosya oluşturur:
+    - **ihtiyac:** Hesaplanan sevkiyat ihtiyacı
+    - **sevkiyat:** Gerçekleşen sevkiyat miktarı
+    - **tip:** Sevkiyat tipi (RPT, Initial, Min)
+    - **alim_ihtiyaci:** Tedarikçiden alınması gereken miktar
+    - **depo_stok:** İlgili depodaki ürün stoku
+    - **oncelik:** Sevkiyat öncelik sırası
+    
+    Bu dosya ile tüm verilerinizi tek CSV'de tutabilirsiniz.
+    """)
+    
+    st.markdown("---")
+    
+    # Master Data oluşturma butonu ve işlemleri - aynı kalabilir çünkü ad alanları kullanılmıyor
