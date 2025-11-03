@@ -710,7 +710,7 @@ elif menu == "🎲 Hedef Matris":
             st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
 
 # ============================================
-# 📊 SIRALAMA
+# 📊 SIRALAMA - DÜZELTİLMİŞ
 # ============================================
 elif menu == "🔢 Sıralama":
     st.title("🔢 Sıralama")
@@ -731,23 +731,32 @@ elif menu == "🔢 Sıralama":
         magaza_aggregated['stok_satis_orani'] = magaza_aggregated['stok'] / magaza_aggregated['satis'].replace(0, 1)
         
         product_ranges = st.session_state.segmentation_params['product_ranges']
+        store_ranges = st.session_state.segmentation_params['store_ranges']
+        
+        # Segment labels
+        product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+        store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
+        
+        # Ürün segmentasyonu
         urun_aggregated['urun_segment'] = pd.cut(
             urun_aggregated['stok_satis_orani'], 
             bins=[r[0] for r in product_ranges] + [product_ranges[-1][1]],
-            labels=[f"{r[0]}-{r[1]}" for r in product_ranges],
+            labels=product_labels,
             include_lowest=True
         )
         
-        store_ranges = st.session_state.segmentation_params['store_ranges']
+        # Mağaza segmentasyonu
         magaza_aggregated['magaza_segment'] = pd.cut(
             magaza_aggregated['stok_satis_orani'],
             bins=[r[0] for r in store_ranges] + [store_ranges[-1][1]],
-            labels=[f"{r[0]}-{r[1]}" for r in store_ranges],
+            labels=store_labels,
             include_lowest=True
         )
         
+        # ⬇️ BURADA DEĞİŞİKLİK - KOLON ADLARINI DÜZELT ⬇️
         prod_segments = sorted([str(x) for x in urun_aggregated['urun_segment'].unique() if pd.notna(x)])
         store_segments = sorted([str(x) for x in magaza_aggregated['magaza_segment'].unique() if pd.notna(x)])
+        # ⬆️ 'segment' değil, 'urun_segment' ve 'magaza_segment' kullan ⬆️
         
         st.subheader("🎯 Öncelik Sıralaması")
         
