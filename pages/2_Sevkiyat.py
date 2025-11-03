@@ -441,7 +441,7 @@ elif menu == "🫧 Segmentasyon":
             ) 
 
 # ============================================
-# 🎲 HEDEF MATRİS
+# 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ
 # ============================================
 elif menu == "🎲 Hedef Matris":
     st.title("🎲 Hedef Matris Parametreleri")
@@ -505,7 +505,7 @@ elif menu == "🎲 Hedef Matris":
         prod_segments = sort_segments(prod_segments_raw)
         store_segments = sort_segments(store_segments_raw)
         
-        # OTOMATIK KAYDET - segmentleri session_state'e
+        # OTOMATIK KAYDET
         st.session_state.prod_segments = prod_segments
         st.session_state.store_segments = store_segments
         st.session_state.urun_segment_map = urun_aggregated[['urun_kod', 'urun_segment']].set_index('urun_kod')['urun_segment'].to_dict()
@@ -562,8 +562,16 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        # DataFrame'e çevir ve index'e geri al
-        edited_sisme = pd.DataFrame(edited_sisme_temp).set_index('Ürün Segmenti')
+        # GÜVENLİ DÖNÜŞÜM
+        try:
+            edited_df = pd.DataFrame(edited_sisme_temp)
+            if 'Ürün Segmenti' in edited_df.columns:
+                edited_sisme = edited_df.set_index('Ürün Segmenti')
+            else:
+                edited_sisme = edited_df.set_index(edited_df.columns[0])
+        except:
+            edited_sisme = sisme_data
+        
         st.markdown("---")
         
         # ============================================
@@ -583,7 +591,6 @@ elif menu == "🎲 Hedef Matris":
                     genlestirme_data[seg] = 1.0
             genlestirme_data = genlestirme_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        # Satır başlıklarını göster
         genlestirme_display = genlestirme_data.reset_index()
         genlestirme_display.columns = ['Ürün Segmenti'] + list(genlestirme_data.columns)
         
@@ -597,8 +604,15 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        # DataFrame'e çevir ve index'e geri al
-        edited_genlestirme = pd.DataFrame(edited_genlestirme_temp).set_index('Ürün Segmenti')
+        try:
+            edited_df = pd.DataFrame(edited_genlestirme_temp)
+            if 'Ürün Segmenti' in edited_df.columns:
+                edited_genlestirme = edited_df.set_index('Ürün Segmenti')
+            else:
+                edited_genlestirme = edited_df.set_index(edited_df.columns[0])
+        except:
+            edited_genlestirme = genlestirme_data
+        
         st.markdown("---")
         
         # ============================================
@@ -618,7 +632,6 @@ elif menu == "🎲 Hedef Matris":
                     min_oran_data[seg] = 1.0
             min_oran_data = min_oran_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        # Satır başlıklarını göster
         min_oran_display = min_oran_data.reset_index()
         min_oran_display.columns = ['Ürün Segmenti'] + list(min_oran_data.columns)
         
@@ -632,8 +645,15 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        # DataFrame'e çevir ve index'e geri al
-        edited_min_oran = pd.DataFrame(edited_min_oran_temp).set_index('Ürün Segmenti')
+        try:
+            edited_df = pd.DataFrame(edited_min_oran_temp)
+            if 'Ürün Segmenti' in edited_df.columns:
+                edited_min_oran = edited_df.set_index('Ürün Segmenti')
+            else:
+                edited_min_oran = edited_df.set_index(edited_df.columns[0])
+        except:
+            edited_min_oran = min_oran_data
+        
         st.markdown("---")
         
         # ============================================
@@ -653,7 +673,6 @@ elif menu == "🎲 Hedef Matris":
                     initial_data[seg] = 1.0
             initial_data = initial_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        # Satır başlıklarını göster
         initial_display = initial_data.reset_index()
         initial_display.columns = ['Ürün Segmenti'] + list(initial_data.columns)
         
@@ -667,8 +686,15 @@ elif menu == "🎲 Hedef Matris":
             hide_index=True
         )
         
-        # DataFrame'e çevir ve index'e geri al
-        edited_initial = pd.DataFrame(edited_initial_temp).set_index('Ürün Segmenti')
+        try:
+            edited_df = pd.DataFrame(edited_initial_temp)
+            if 'Ürün Segmenti' in edited_df.columns:
+                edited_initial = edited_df.set_index('Ürün Segmenti')
+            else:
+                edited_initial = edited_df.set_index(edited_df.columns[0])
+        except:
+            edited_initial = initial_data
+        
         st.markdown("---")
         
         # Kaydet butonu
@@ -682,7 +708,6 @@ elif menu == "🎲 Hedef Matris":
                 st.success("✅ Tüm matrisler kaydedildi!")
         with col2:
             st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
-
 
 # ============================================
 # 📊 SIRALAMA
