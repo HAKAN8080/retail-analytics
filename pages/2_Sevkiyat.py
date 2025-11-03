@@ -1,45 +1,36 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import os
-import sys
 
-# 🎯 STREAMLIT CACHE'İ COMPLETELY TEMİZLE
-st.cache_data.clear()
-st.cache_resource.clear()
-
-# 🎯 SESSION STATE'I COMPLETELY RESET
-for key in list(st.session_state.keys()):
-    if key not in ['_runtime', '_config']:
-        del st.session_state[key]
-
-# 🎯 DATAFRAME GÖSTERİMİNİ TAMAMEN DEĞİŞTİR
-def show_data_simple(data, **kwargs):
+# 🎯 DATAFRAME GÖSTERİMİNİ TAMAMEN KALDIR
+def disable_all_dataframes(data, **kwargs):
     if isinstance(data, pd.DataFrame):
-        st.write("📊 **VERİ ÖNİZLEME**")
-        st.write(f"**Şekil:** {data.shape[0]} satır × {data.shape[1]} sütun")
+        st.success("✅ Veri başarıyla yüklendi!")
+        st.write(f"📊 **Veri Boyutu:** {data.shape[0]} satır × {data.shape[1]} sütun")
+        st.write("📋 **Sütunlar:**", list(data.columns))
         
-        # Sadece ilk 3 satırı basitçe göster
-        for i in range(min(3, len(data))):
-            with st.container():
-                cols = st.columns(len(data.columns))
-                for j, col_name in enumerate(data.columns):
-                    cols[j].write(f"**{col_name}:**")
-                    cols[j].write(data.iloc[i][col_name])
-            st.divider()
+        # Sadece sayısal bilgi ver
+        if st.checkbox("📈 İstatistikleri göster"):
+            st.write(data.describe())
         return
+    
     st.write(data)
 
-st.dataframe = show_data_simple
-st.data_editor = show_data_simple
-st.table = show_data_simple
+# TÜM gösterimleri override et
+st.dataframe = disable_all_dataframes
+st.data_editor = disable_all_dataframes  
+st.table = disable_all_dataframes
 
-# Sayfa konfigürasyonu - EN SONDA
+# Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
     page_icon="📦",
     layout="wide"
 )
+
+
+
+
 # Session state başlatma
 if 'urun_master' not in st.session_state:
     st.session_state.urun_master = None
