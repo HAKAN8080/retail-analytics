@@ -68,10 +68,10 @@ if menu == "🏠 Ana Sayfa":
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("➡️ Veri Yükleme Sayfasına Git", use_container_width='content'):
+        if st.button("➡️ Veri Yükleme Sayfasına Git", width='content'):
             st.switch_page("pages/0_Veri_Yukleme.py")
     with col2:
-        if st.button("➡️ Alım Sipariş Sayfasına Git", use_container_width='content'):
+        if st.button("➡️ Alım Sipariş Sayfasına Git", width='content'):
             st.switch_page("pages/4_PO.py")
     
     st.markdown("---")
@@ -164,7 +164,7 @@ elif menu == "🫧 Segmentasyon":
         
         col1, col2 = st.columns([1, 2])
         with col1:
-            st.dataframe(segment_dist, use_container_width='content', height=200)
+            st.dataframe(segment_dist, width='content', height=200)
         with col2:
             st.bar_chart(segment_dist)
         
@@ -199,7 +199,7 @@ elif menu == "🫧 Segmentasyon":
                 'Toplam Ciro': '{:,.2f}',
                 'Stok/Satış Oranı': '{:.2f}'
             }),
-            use_container_width='content',
+            width='content',
             height=400
         )
         
@@ -223,7 +223,7 @@ elif menu == "🫧 Segmentasyon":
                 'Toplam Ciro': '{:,.2f}',
                 'Ort. Cover': '{:.2f}'
             }),
-            use_container_width='content'
+            width='content'
         )
         
         # CSV İndir - ÜRÜN
@@ -277,7 +277,7 @@ elif menu == "🫧 Segmentasyon":
         
         col1, col2 = st.columns([1, 2])
         with col1:
-            st.dataframe(segment_dist_store, use_container_width='content', height=200)
+            st.dataframe(segment_dist_store, width='content', height=200)
         with col2:
             st.bar_chart(segment_dist_store)
         
@@ -312,7 +312,7 @@ elif menu == "🫧 Segmentasyon":
                 'Toplam Ciro': '{:,.2f}',
                 'Stok/Satış Oranı': '{:.2f}'
             }),
-            use_container_width='content',
+            width='content',
             height=400
         )
         
@@ -336,7 +336,7 @@ elif menu == "🫧 Segmentasyon":
                 'Toplam Ciro': '{:,.2f}',
                 'Ort. Cover': '{:.2f}'
             }),
-            use_container_width='content'
+            width='content'
         )
         
         # CSV İndir - MAĞAZA
@@ -371,7 +371,7 @@ elif menu == "🫧 Segmentasyon":
     
     with col1:
         # Excel formatında (iki sheet)
-        if st.button("📊 Excel İndir (Ürün + Mağaza)", use_container_width='content'):
+        if st.button("📊 Excel İndir (Ürün + Mağaza)", width='content'):
             try:
                 import io
                 from io import BytesIO
@@ -395,7 +395,7 @@ elif menu == "🫧 Segmentasyon":
     
     with col2:
         # ZIP formatında (iki CSV)
-        if st.button("📦 ZIP İndir (2 CSV)", use_container_width='content'):
+        if st.button("📦 ZIP İndir (2 CSV)", width='content'):
             import zipfile
             import io
             
@@ -486,12 +486,12 @@ elif menu == "🎲 Hedef Matris":
         with col1:
             st.write("**Ürün Dağılımı**")
             prod_dist = urun_aggregated['urun_segment'].value_counts().sort_index()
-            st.dataframe(prod_dist, use_container_width='content')
+            st.dataframe(prod_dist, width='content')
         
         with col2:
             st.write("**Mağaza Dağılımı**")
             store_dist = magaza_aggregated['magaza_segment'].value_counts().sort_index()
-            st.dataframe(store_dist, use_container_width='content')
+            st.dataframe(store_dist, width='content')
         
         st.markdown("---")
         
@@ -532,7 +532,7 @@ elif menu == "🎲 Hedef Matris":
         
         edited_sisme = st.data_editor(
             sisme_data,
-            use_container_width='content',
+            width='content',
             column_config={col: st.column_config.NumberColumn(
                 col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
             ) for col in store_segments},
@@ -562,7 +562,7 @@ elif menu == "🎲 Hedef Matris":
         
         edited_genlestirme = st.data_editor(
             genlestirme_data,
-            use_container_width='content',
+            width='content',
             column_config={col: st.column_config.NumberColumn(
                 col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
             ) for col in store_segments},
@@ -592,7 +592,7 @@ elif menu == "🎲 Hedef Matris":
         
         edited_min_oran = st.data_editor(
             min_oran_data,
-            use_container_width='content',
+            width='content',
             column_config={col: st.column_config.NumberColumn(
                 col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
             ) for col in store_segments},
@@ -622,7 +622,7 @@ elif menu == "🎲 Hedef Matris":
         
         edited_initial = st.data_editor(
             initial_data,
-            use_container_width='content',
+            width='content',
             column_config={col: st.column_config.NumberColumn(
                 col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
             ) for col in store_segments},
@@ -730,7 +730,7 @@ elif menu == "🔢 Sıralama":
         
         edited_siralama = st.data_editor(
             siralama_df.sort_values('Oncelik').reset_index(drop=True),
-            use_container_width='content',
+            width='content',
             num_rows="dynamic",
             column_config={
                 "Magaza_Cluster": st.column_config.SelectboxColumn("Mağaza Cluster", options=store_segments, required=True),
@@ -834,7 +834,7 @@ elif menu == "📐 Hesaplama":
         
         st.markdown("---")
               
-        if st.button("🚀 Sevkiyat Hesapla", type="primary", use_container_width='content', key="hesapla_btn"):
+        if st.button("🚀 Sevkiyat Hesapla", type="primary", width='content', key="hesapla_btn"):
             start_time = time.time()
            
             with st.spinner("📊 Hesaplama yapılıyor..."):
@@ -1178,7 +1178,7 @@ elif menu == "📐 Hesaplama":
                             data=csv_bytes,
                             file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                             mime='text/csv',
-                            use_container_width='content',
+                            width='content',
                             key="csv_indir_1"
                         )
                     else:
@@ -1236,7 +1236,7 @@ elif menu == "📐 Hesaplama":
         # Performans özetini göster
         st.dataframe(
             summary_df,
-            use_container_width='content',
+            width='content',
             hide_index=True
         )
 
@@ -1283,7 +1283,7 @@ elif menu == "📐 Hesaplama":
                     data=csv_bytes,
                     file_name=f"detayli_sevkiyat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime='text/csv',
-                    use_container_width='content',
+                    width='content',
                     key="csv_indir_2"
                 )
             else:
@@ -1338,7 +1338,7 @@ elif menu == "📈 Raporlar":
         with st.expander("🔍 Veri Yapısı (Debug)", expanded=False):
             st.write("**Kolonlar:**", list(result_df.columns))
             st.write("**İlk 5 satır:**")
-            st.dataframe(result_df.head(), use_container_width='content')
+            st.dataframe(result_df.head(), width='content')
             st.write("**Temel İstatistikler:**")
             st.write(f"- Toplam satır: {len(result_df)}")
             
@@ -1473,7 +1473,7 @@ elif menu == "📈 Raporlar":
                         'Kayıp Oranı %': '{:.1f}%',
                         'Mağaza Sayısı': '{:.0f}'
                     }),
-                    use_container_width='content',
+                    width='content',
                     height=400
                 )
             
@@ -1481,12 +1481,12 @@ elif menu == "📈 Raporlar":
                 st.subheader("🏆 En İyi Performans")
                 if len(filtered_urun) > 0:
                     best_coverage = filtered_urun.nlargest(5, 'Sevkiyat/İhtiyaç %')[['Ürün Kodu', 'Sevkiyat/İhtiyaç %']]
-                    st.dataframe(best_coverage, use_container_width='content')
+                    st.dataframe(best_coverage, width='content')
                 
                 st.subheader("⚠️ En Fazla Kayıp")
                 if len(filtered_urun) > 0:
                     worst_loss = filtered_urun.nlargest(5, 'Satış Kaybı')[['Ürün Kodu', 'Satış Kaybı']]
-                    st.dataframe(worst_loss, use_container_width='content')
+                    st.dataframe(worst_loss, width='content')
             
             st.markdown("---")
             
@@ -1517,7 +1517,7 @@ elif menu == "📈 Raporlar":
                     data=urun_sevkiyat.to_csv(index=False, encoding='utf-8-sig'),
                     file_name="urun_analizi_tum.csv",
                     mime="text/csv",
-                    use_container_width='content'
+                    width='content'
                 )
             with col2:
                 st.download_button(
@@ -1525,7 +1525,7 @@ elif menu == "📈 Raporlar":
                     data=filtered_urun.to_csv(index=False, encoding='utf-8-sig'),
                     file_name="urun_analizi_filtreli.csv",
                     mime="text/csv",
-                    use_container_width='content'
+                    width='content'
                 )
         
         # ============================================
@@ -1626,7 +1626,7 @@ elif menu == "📈 Raporlar":
                     'Gerçekleşme %': '{:.1f}%',
                     'Kayıp Oranı %': '{:.1f}%'
                 }),
-                use_container_width='content',
+                width='content',
                 height=400
             )
             
@@ -1679,7 +1679,7 @@ elif menu == "📈 Raporlar":
                             'Ortalama Sevkiyat/Mağaza': '{:,.0f}',
                             'Gerçekleşme %': '{:.1f}%'
                         }),
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 with col2:
@@ -1692,7 +1692,7 @@ elif menu == "📈 Raporlar":
                 data=filtered_magaza.to_csv(index=False, encoding='utf-8-sig'),
                 file_name="magaza_analizi.csv",
                 mime="text/csv",
-                use_container_width='content'
+                width='content'
             )
         
         # ============================================
@@ -1746,7 +1746,7 @@ elif menu == "📈 Raporlar":
                         'sevkiyat_miktari': '{:,.0f}',
                         'stok_yoklugu_satis_kaybi': '{:,.0f}'
                     }),
-                    use_container_width='content',
+                    width='content',
                     height=400
                 )
                 
@@ -1770,7 +1770,7 @@ elif menu == "📈 Raporlar":
                             'Toplam Kayıp': '{:,.0f}',
                             'Etkilenen Mağaza': '{:.0f}'
                         }),
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 with col2:
@@ -1788,7 +1788,7 @@ elif menu == "📈 Raporlar":
                             'Toplam Kayıp': '{:,.0f}',
                             'Etkilenen Ürün': '{:.0f}'
                         }),
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 st.markdown("---")
@@ -1812,7 +1812,7 @@ elif menu == "📈 Raporlar":
                             'Toplam Kayıp': '{:,.0f}',
                             'Etkilenen Mağaza': '{:.0f}'
                         }),
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 with col2:
@@ -1829,7 +1829,7 @@ elif menu == "📈 Raporlar":
                             'Toplam Kayıp': '{:,.0f}',
                             'Etkilenen Ürün': '{:.0f}'
                         }),
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 st.markdown("---")
@@ -1845,7 +1845,7 @@ elif menu == "📈 Raporlar":
                         data=kayip_df.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="detayli_kayip_raporu.csv",
                         mime="text/csv",
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 with col2:
@@ -1854,7 +1854,7 @@ elif menu == "📈 Raporlar":
                         data=urun_kayip.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="urun_bazinda_kayip.csv",
                         mime="text/csv",
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 with col3:
@@ -1863,7 +1863,7 @@ elif menu == "📈 Raporlar":
                         data=magaza_kayip.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="magaza_bazinda_kayip.csv",
                         mime="text/csv",
-                        use_container_width='content'
+                        width='content'
                     )
                 
             else:
@@ -2013,7 +2013,7 @@ elif menu == "📈 Raporlar":
                     
                     st.info("🔍 Haritayı mouse tekerleği ile zoom in/out yapabilir, sürükleyerek hareket ettirebilirsiniz.")
                     
-                    st.plotly_chart(fig, use_container_width='content')
+                    st.plotly_chart(fig, width='content')
                     
                     # İl seçimi için dropdown
                     st.markdown("---")
@@ -2068,7 +2068,7 @@ elif menu == "📈 Raporlar":
                                         'Ürün Sayısı': '{:.0f}',
                                         'Gerçekleşme %': '{:.1f}%'
                                     }),
-                                    use_container_width='content',
+                                    width='content',
                                     height=300
                                 )
                             else:
@@ -2097,7 +2097,7 @@ elif menu == "📈 Raporlar":
                                 'Ort. Sevkiyat/Mağaza': '{:,.0f}',
                                 'Toplam Sevkiyat': '{:,.0f}'
                             }),
-                            use_container_width='content'
+                            width='content'
                         )
                     
                     with col2:
@@ -2111,7 +2111,7 @@ elif menu == "📈 Raporlar":
                         data=il_bazinda.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="il_bazinda_analiz.csv",
                         mime="text/csv",
-                        use_container_width='content'
+                        width='content'
                     )
                 
                 else:
@@ -2164,7 +2164,7 @@ elif menu == "💾 Master Data":
         st.markdown("---")
         
         # MASTER DATA OLUŞTURMA BUTONU
-        if st.button("🚀 Master Data Oluştur", type="primary", use_container_width='content', key="master_data_btn"):
+        if st.button("🚀 Master Data Oluştur", type="primary", width='content', key="master_data_btn"):
             with st.spinner("📊 Master data hazırlanıyor..."):
                 
                 # Base data
@@ -2287,7 +2287,7 @@ elif menu == "💾 Master Data":
                     
                     with col1:
                         tip_dist = master_df[master_df['tip'] != '']['tip'].value_counts()
-                        st.dataframe(tip_dist, use_container_width='content')
+                        st.dataframe(tip_dist, width='content')
                     
                     with col2:
                         st.bar_chart(tip_dist)
@@ -2302,7 +2302,7 @@ elif menu == "💾 Master Data":
                     return ['background-color: #e8f4f8' if s.name in new_cols else '' for _ in s]
                 
                 preview_df = master_df.head(20).style.apply(highlight_new_cols, axis=0)
-                st.dataframe(preview_df, use_container_width='content', height=400)
+                st.dataframe(preview_df, width='content', height=400)
                 
                 st.markdown("---")
                 
@@ -2349,7 +2349,7 @@ elif menu == "💾 Master Data":
                         data=master_df.to_csv(index=False, encoding='utf-8-sig'),
                         file_name="master_data.csv",
                         mime="text/csv",
-                        use_container_width='content',
+                        width='content',
                         key="master_csv"
                     )
                 
@@ -2367,7 +2367,7 @@ elif menu == "💾 Master Data":
                             data=output.getvalue(),
                             file_name="master_data.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width='content',
+                            width='content',
                             key="master_excel"
                         )
                     except ImportError:
@@ -2379,7 +2379,7 @@ elif menu == "💾 Master Data":
                         data=master_df.to_json(orient='records', force_ascii=False),
                         file_name="master_data.json",
                         mime="application/json",
-                        use_container_width='content',
+                        width='content',
                         key="master_json"
                     )
                 
@@ -2394,7 +2394,7 @@ elif menu == "💾 Master Data":
                             data=buffer.getvalue(),
                             file_name="master_data.parquet",
                             mime="application/octet-stream",
-                            use_container_width='content',
+                            width='content',
                             key="master_parquet"
                         )
                     except ImportError:
@@ -2435,7 +2435,7 @@ elif menu == "💾 Master Data":
                 
                 if len(filtered_df) > 0:
                     st.write(f"**Filtre Sonucu:** {len(filtered_df)} satır bulundu")
-                    st.dataframe(filtered_df, use_container_width='content', height=300)
+                    st.dataframe(filtered_df, width='content', height=300)
                     
                     # Filtrelenmiş veriyi indir
                     st.download_button(
