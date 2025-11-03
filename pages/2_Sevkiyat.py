@@ -756,7 +756,7 @@ elif menu == "🔢 Sıralama":
         st.info("ℹ️ Kaydetmeseniz de default sıralama kullanılacaktır.")
 
 # ============================================
-# 🚚 HESAPLAMA - DÜZELTİLMİŞ
+# 🚚 HESAPLAMA - DÜZELTİLMİŞ (TAMSAYI DÖNÜŞÜMÜ)
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
@@ -1105,7 +1105,7 @@ elif menu == "📐 Hesaplama":
                 result_df_max['stok_yoklugu_kaybi'] = result_df_max['ihtiyac'] - result_df_max['sevkiyat_gercek']
                 result_df_max = result_df_max[result_df_max['ihtiyac'] > 0].copy()
                 
-                # Sonuç tablosu
+                # Sonuç tablosu - TAMSAYI DÖNÜŞÜMÜ EKLENDİ
                 result_final = result_df_max[[
                     'Oncelik', 'magaza_kod', 'urun_kod',
                     'magaza_segment', 'urun_segment', 'Durum',
@@ -1117,6 +1117,12 @@ elif menu == "📐 Hesaplama":
                     'sevkiyat_gercek': 'sevkiyat_miktari',
                     'stok_yoklugu_kaybi': 'stok_yoklugu_satis_kaybi'
                 })
+                
+                # TAMSAYI DÖNÜŞÜMÜ - ÜRÜN STOKLARI İÇİN
+                integer_columns = ['stok', 'yol', 'satis', 'ihtiyac_miktari', 'sevkiyat_miktari', 'stok_yoklugu_satis_kaybi']
+                for col in integer_columns:
+                    if col in result_final.columns:
+                        result_final[col] = result_final[col].round().astype(int)
                 
                 # Kolon sıralamasını düzenle
                 result_final = result_final[[
@@ -1140,7 +1146,7 @@ elif menu == "📐 Hesaplama":
                 st.success(f"✅ Hesaplama tamamlandı! ({calculation_time:.2f} saniye)")
             
 # -------------------------------
-# CSV İNDİRME BUTONU (DÜZELTİLMİŞ)
+# CSV İNDİRME BUTONU (TAMSAYI DÖNÜŞÜMÜ EKLENDİ)
 # -------------------------------
 if st.session_state.sevkiyat_sonuc is not None:
     try:
@@ -1160,7 +1166,7 @@ if st.session_state.sevkiyat_sonuc is not None:
             'ihtiyac_miktari': 'ihtiyac_miktari',
             'sevkiyat_miktari': 'sevkiyat_miktari',
             'durum': 'durum',
-            'depo_kod': 'depo_kod'  # ✅ BURAYI EKLEDİK
+            'depo_kod': 'depo_kod'
         }
         
         for turkish_col, original_col in mapping.items():
@@ -1186,6 +1192,12 @@ if st.session_state.sevkiyat_sonuc is not None:
                 else:
                     # Mağaza master yoksa sabit değer kullan
                     detayli_df['depo_kod'] = 'MERKEZ'
+            
+            # TAMSAYI DÖNÜŞÜMÜ - CSV İÇİN
+            integer_columns = ['stok', 'yol', 'satis', 'ihtiyac_miktari', 'sevkiyat_miktari']
+            for col in integer_columns:
+                if col in detayli_df.columns:
+                    detayli_df[col] = detayli_df[col].round().astype(int)
             
             # Sütun sırasını ayarla (depo_kod başta olsun)
             sutun_sirasi = ['depo_kod'] + [col for col in detayli_df.columns if col != 'depo_kod']
@@ -1220,8 +1232,6 @@ if st.session_state.sevkiyat_sonuc is not None:
                 st.session_state.sevkiyat_sonuc = None
                 st.success("✅ Sonuçlar temizlendi!")
                 st.rerun()
-
-
 
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ
