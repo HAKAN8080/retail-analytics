@@ -778,9 +778,7 @@ elif menu == "📊 Raporlar":
             f"urun_analizi_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
             width='stretch')
         
-        st.download_button("📥 CSV İndir", csv,
-            f"urun_analizi_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv")
-    
+        
     with tab2:
         st.subheader("🏪 Mağaza Bazında Analiz")
         
@@ -796,7 +794,8 @@ elif menu == "📊 Raporlar":
         
         csv = mag_grp.to_csv(index=False, encoding='utf-8-sig')
         st.download_button("📥 CSV İndir", csv,
-            f"magaza_analizi_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv")
+           f"magaza_analizi_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
+           width='stretch')  # EKLENDİ
     
     with tab3:
         st.subheader("📊 Görselleştirme")
@@ -1044,6 +1043,7 @@ st.markdown("""
     <p style='font-size: 0.8em;'>AR4U - Thorius</p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
