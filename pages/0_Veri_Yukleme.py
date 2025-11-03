@@ -607,56 +607,10 @@ if selected_data:
     if 'description' in current_def and current_def['description']:
         st.info(current_def['description'])
     
-    st.write(f"📊 İlk 10 satır önizleme:")
-    for i in range(min(10, len(data))):
-        with st.expander(f"Satır {i+1}"):
-            for col in data.columns:
-                st.write(f"**{col}:** {data.iloc[i][col]}")
     
-    # Veri kalitesi kontrolü
-    with st.expander("📊 Veri Kalitesi Raporu"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**Eksik Değerler:**")
-            missing = data.isnull().sum()
-            if missing.any():
-                st.write("Eksik değerler:")
-                for col, count in missing[missing > 0].items():
-                    st.write(f"- {col}: {count} eksik")
-            else:
-                st.success("Eksik değer yok")
-        
-        with col2:
-            st.write("**Veri Tipleri:**")
-            dtypes = data.dtypes.to_frame('Veri Tipi')
-            st.write("Veri tipleri:")
-            for col, dtype in dtypes.itertuples():
-                st.write(f"- {col}: {dtype}")
-        
-        # String kolonlarda virgül kontrolü
-        string_cols = data.select_dtypes(include=['object']).columns
-        if len(string_cols) > 0:
-            st.write("**String Kolonlarda Virgül Kontrolü:**")
-            comma_check = {}
-            for col in string_cols:
-                comma_count = data[col].astype(str).str.contains(',').sum()
-                if comma_count > 0:
-                    comma_check[col] = comma_count
-            
-            if comma_check:
-                st.warning(f"⚠️ Aşağıdaki kolonlarda virgül içeren değerler var:")
-                for col, count in comma_check.items():
-                    st.write(f"- {col}: {count} satır")
-            else:
-                st.success("✅ String kolonlarda virgül sorunu yok")
-else:
-    st.info("Henüz yüklenmiş veri yok")
 
-st.markdown("---")
-
-# CSV İhracat Bölümü
-st.subheader("📤 Veri İhracat")
+# CSV İnceleme Bölümü
+st.subheader("📤 Veri Analizi")
 
 if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k in data_definitions.keys()):
     export_data = st.selectbox(
@@ -712,6 +666,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", width='stretch'):
             st.switch_page("pages/4_PO.py")
+
 
 
 
