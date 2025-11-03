@@ -225,18 +225,9 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
     table_df = pd.DataFrame(table_data)
     
     # Tabloyu göster
-    st.dataframe(
-        table_df,
-        width='stretch',
-        hide_index=True,
-        column_config={
-            "Icon": st.column_config.TextColumn("", width="small"),
-            "Dosya Adı": st.column_config.TextColumn("Dosya Adı", width="medium"),
-            "Açıklama": st.column_config.TextColumn("Açıklama", width="large"),
-            "Satır": st.column_config.NumberColumn("Satır", width="small"),
-            "Kolon": st.column_config.NumberColumn("Kolon", width="small")
-        }
-    )
+    st.write("📋 Örnek Dosya Listesi:")
+    for _, row in table_df.iterrows():
+        st.write(f"{row['Icon']} **{row['Dosya Adı']}** - {row['Açıklama']} ({row['Satır']} satır, {row['Kolon']} kolon)")
     
     st.markdown("---")
     st.markdown("**📥 Tekli İndirme:**")
@@ -463,11 +454,14 @@ if uploaded_files:
             else:
                 return ['background-color: #fff3cd'] * len(row)
         
-        st.dataframe(
-            results_df.style.apply(highlight_upload_results, axis=1),
-            width='stretch',
-            hide_index=True
-        )
+        st.write("📋 Yükleme Sonuçları:")
+        for _, row in results_df.iterrows():
+            if '✅ Başarılı' in row['Durum']:
+                st.success(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
+            elif '❌' in row['Durum']:
+                st.error(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
+           else:
+                st.warning(f"{row['Dosya']} - {row['Veri Tipi']}: {row['Detay']}")
         
         success_count = sum(1 for r in upload_results if '✅ Başarılı' in r['Durum'])
         st.success(f"✅ {success_count} / {len(upload_results)} dosya başarıyla yüklendi!")
@@ -706,6 +700,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", width='stretch'):
             st.switch_page("pages/4_PO.py")
+
 
 
 
