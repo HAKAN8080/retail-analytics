@@ -1051,17 +1051,25 @@ elif menu == "📐 Hesaplama":
                 
                 # RPT, Initial, Min satırları oluştur
                 anlik_rpt = anlik_df.copy()
-                anlik_rpt['Durum'] = 'RPT'
+                anlik_rpt.loc[:, 'Durum'] = 'RPT'
                 
                 anlik_min = anlik_df.copy()
-                anlik_min['Durum'] = 'Min'
+                anlik_min.loc[:, 'Durum'] = 'Min'
                 
                 if len(yeni_urun_kodlari) > 0:
-                    anlik_initial = anlik_df[anlik_df['urun_kod'].astype(str).isin(yeni_urun_kodlari)].copy()
-                    anlik_initial['Durum'] = 'Initial'
-                    anlik_df = pd.concat([anlik_rpt, anlik_initial, anlik_min], ignore_index=True)
+                    # Yeni ürün filtresi
+                    yeni_urun_mask = anlik_df['urun_kod'].astype(str).isin(yeni_urun_kodlari)
+                    if yeni_urun_mask.sum() > 0:  # Eğer gerçekten yeni ürün varsa
+                        anlik_initial = anlik_df[yeni_urun_mask].copy()
+                        anlik_initial.loc[:, 'Durum'] = 'Initial'
+                        anlik_df = pd.concat([anlik_rpt, anlik_initial, anlik_min], ignore_index=True)
+                    else:
+                        # Yeni ürün yok, sadece RPT ve Min
+                        anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
                 else:
                     anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
+                                else:
+                                    anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
                 
                 # Sıralama
                 if st.session_state.siralama_data is not None:
