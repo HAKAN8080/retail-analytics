@@ -1,3 +1,6 @@
+
+
+
 import streamlit as st
 import pandas as pd
 import time
@@ -11,16 +14,11 @@ st.set_page_config(
     layout="wide"
 )
 
+# ============================================
+# SESSION STATE BAŞLATMA - TEK SEFER
+# ============================================
 
-# Segmentation parametrelerini başlat
-if 'segmentation_params' not in st.session_state:
-    st.session_state.segmentation_params = {
-        'product_ranges': [(0, 2), (2, 4), (4, float('inf'))],
-        'store_ranges': [(0, 2), (2, 4), (4, float('inf'))]
-    }
-
-
-# Session state başlatma
+# Veri dosyaları
 if 'urun_master' not in st.session_state:
     st.session_state.urun_master = None
 if 'magaza_master' not in st.session_state:
@@ -35,11 +33,15 @@ if 'haftalik_trend' not in st.session_state:
     st.session_state.haftalik_trend = None
 if 'kpi' not in st.session_state:
     st.session_state.kpi = None
+
+# Segmentasyon parametreleri - TEK TANIMLA
 if 'segmentation_params' not in st.session_state:
     st.session_state.segmentation_params = {
         'product_ranges': [(0, 4), (5, 8), (9, 12), (12, 15), (15, 20), (20, float('inf'))],
         'store_ranges': [(0, 4), (5, 8), (9, 12), (12, 15), (15, 20), (20, float('inf'))]
     }
+
+# Matrisler
 if 'initial_matris' not in st.session_state:
     st.session_state.initial_matris = None
 if 'target_matrix' not in st.session_state:
@@ -50,12 +52,24 @@ if 'genlestirme_orani' not in st.session_state:
     st.session_state.genlestirme_orani = None
 if 'min_oran' not in st.session_state:
     st.session_state.min_oran = None
+
+# Diğer
 if 'siralama_data' not in st.session_state:
     st.session_state.siralama_data = None
 if 'sevkiyat_sonuc' not in st.session_state:
     st.session_state.sevkiyat_sonuc = None
 if 'yeni_urun_listesi' not in st.session_state:
     st.session_state.yeni_urun_listesi = None
+
+# Hedef Matris'ten gelen segmentler (otomatik kaydedilecek)
+if 'urun_segment_map' not in st.session_state:
+    st.session_state.urun_segment_map = None
+if 'magaza_segment_map' not in st.session_state:
+    st.session_state.magaza_segment_map = None
+if 'prod_segments' not in st.session_state:
+    st.session_state.prod_segments = None
+if 'store_segments' not in st.session_state:
+    st.session_state.store_segments = None
 
 # Sidebar menü 
 menu = st.sidebar.radio(
