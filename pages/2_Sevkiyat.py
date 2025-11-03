@@ -854,7 +854,7 @@ elif menu == "📐 Hesaplama":
                     st.session_state.min_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
                 if 'initial_matris' not in st.session_state or st.session_state.initial_matris is None:
                     st.session_state.initial_matris = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                                progress_bar.progress(10, text="Yeni ürünler tespit ediliyor...")
+                progress_bar.progress(10, text="Yeni ürünler tespit ediliyor...")
 
                 # YENİ ÜRÜN TESPİTİ
                 depo_df_temp = depo_df.copy()
