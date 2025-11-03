@@ -206,7 +206,7 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
             file_name="ornek_csv_dosyalari.zip",
             mime="application/zip",
             type="primary",
-            use_container_width=True
+            width=True
         )
     
     st.markdown("---")
@@ -227,7 +227,7 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
     # Tabloyu göster
     st.dataframe(
         table_df,
-        use_container_width=True,
+        width=True,
         hide_index=True,
         column_config={
             "Icon": st.column_config.TextColumn("", width="small"),
@@ -251,7 +251,7 @@ with st.expander("📥 Örnek CSV Dosyalarını İndir", expanded=False):
                 file_name=filename,
                 mime="text/csv",
                 key=f"download_{filename}",
-                use_container_width=True
+                width=True
             )
 
 st.markdown("---")
@@ -366,7 +366,7 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     st.write(f"**{len(uploaded_files)} dosya seçildi**")
     
-    if st.button("🚀 Tüm Dosyaları Yükle", type="primary", use_container_width=True):
+    if st.button("🚀 Tüm Dosyaları Yükle", type="primary", width=True):
         upload_results = []
         
         for uploaded_file in uploaded_files:
@@ -465,7 +465,7 @@ if uploaded_files:
         
         st.dataframe(
             results_df.style.apply(highlight_upload_results, axis=1),
-            use_container_width=True,
+            width=True,
             hide_index=True
         )
         
@@ -537,7 +537,7 @@ def highlight_status(row):
 
 st.dataframe(
     status_df.style.apply(highlight_status, axis=1),
-    use_container_width=True,
+    width=True,
     hide_index=True
 )
 
@@ -567,7 +567,7 @@ with col3:
     st.metric("📊 Toplam Satır", f"{total_rows:,}")
 
 with col4:
-    if st.button("🗑️ Tümünü Sil", use_container_width=True):
+    if st.button("🗑️ Tümünü Sil", width=True):
         for def_data in data_definitions.values():
             st.session_state[def_data['state_key']] = None
         st.success("✅ Tüm veriler silindi!")
@@ -609,7 +609,7 @@ if selected_data:
     if 'description' in current_def and current_def['description']:
         st.info(current_def['description'])
     
-    st.dataframe(data.head(20), use_container_width=True, height=300)
+    st.dataframe(data.head(20), width=True, height=300)
     
     # Veri kalitesi kontrolü
     with st.expander("📊 Veri Kalitesi Raporu"):
@@ -672,7 +672,7 @@ if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k 
                 data=csv_data,
                 file_name=f"{export_def['name'].lower().replace(' ', '_')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width=True
             )
         
         with col2:
@@ -682,7 +682,7 @@ if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k 
                 data=csv_data_comma,
                 file_name=f"{export_def['name'].lower().replace(' ', '_')}_comma.csv",
                 mime="text/csv",
-                use_container_width=True
+                width=True
             )
 else:
     st.info("İhraç edilecek veri yok")
@@ -701,10 +701,11 @@ if required_loaded == required_count and required_count > 0:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("➡️ Sevkiyat Modülüne Git", use_container_width=True):
+        if st.button("➡️ Sevkiyat Modülüne Git", width=True):
             st.switch_page("pages/2_Sevkiyat.py")
     with col2:
-        if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
+        if st.button("➡️ Alım Sipariş Modülüne Git", width=True):
             st.switch_page("pages/4_PO.py")
+
 
 
