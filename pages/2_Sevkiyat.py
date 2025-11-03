@@ -554,17 +554,24 @@ elif menu == "🎲 Hedef Matris":
             # Sıralama - ÖNEMLİ!
             sisme_data = sisme_data.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
         
-        edited_sisme = st.data_editor(
-            sisme_data,
+        # Satır başlıklarını göstermek için index'i kolona çevir
+        sisme_display = sisme_data.reset_index()
+        sisme_display.columns = ['Ürün Segmenti'] + list(sisme_data.columns)
+        
+        edited_sisme_temp = st.data_editor(
+            sisme_display,
             width='content',
             column_config={col: st.column_config.NumberColumn(
                 col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
             ) for col in store_segments},
-            key="sisme_matrix"
+            key="sisme_matrix",
+            hide_index=True  # DataFrame index'ini gizle çünkü ilk kolonda zaten var
         )
         
-        st.markdown("---")
-        
+        # Kaydetmek için tekrar index'e çevir
+        edited_sisme = edited_sisme_temp.set_index('Ürün Segmenti')        
+                st.markdown("---")
+                
         # 2. GENLEŞTİRME ORANI MATRİSİ
         st.markdown("### 2️⃣ Genleştirme Oranı Matrisi (Default: 1.0)")
         
