@@ -1,43 +1,45 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import time
+import os
+import sys
 
-# 🎯 STREAMLIT'I TAMAMEN BYPASS ET - DATAFRAME GÖSTERME!
-_original_dataframe = st.dataframe
+# 🎯 STREAMLIT CACHE'İ COMPLETELY TEMİZLE
+st.cache_data.clear()
+st.cache_resource.clear()
 
-def bypass_dataframe(data, **kwargs):
+# 🎯 SESSION STATE'I COMPLETELY RESET
+for key in list(st.session_state.keys()):
+    if key not in ['_runtime', '_config']:
+        del st.session_state[key]
+
+# 🎯 DATAFRAME GÖSTERİMİNİ TAMAMEN DEĞİŞTİR
+def show_data_simple(data, **kwargs):
     if isinstance(data, pd.DataFrame):
-        st.write(f"📊 **DataFrame Önizleme** - {data.shape[0]} satır × {data.shape[1]} sütun")
+        st.write("📊 **VERİ ÖNİZLEME**")
+        st.write(f"**Şekil:** {data.shape[0]} satır × {data.shape[1]} sütun")
         
-        # 1. İlk 5 satırı basit şekilde göster
-        st.write("**İlk 5 Satır:**")
-        for i in range(min(5, len(data))):
-            row_text = " | ".join([f"{col}: {data.iloc[i][col]}" for col in data.columns])
-            st.text(f"{i+1}. {row_text}")
-        
-        # 2. DataFrame info
-        with st.expander("📋 DataFrame Bilgileri"):
-            st.write(f"**Sütunlar:** {list(data.columns)}")
-            st.write(f"**Tipler:** {dict(data.dtypes)}")
-        
+        # Sadece ilk 3 satırı basitçe göster
+        for i in range(min(3, len(data))):
+            with st.container():
+                cols = st.columns(len(data.columns))
+                for j, col_name in enumerate(data.columns):
+                    cols[j].write(f"**{col_name}:**")
+                    cols[j].write(data.iloc[i][col_name])
+            st.divider()
         return
-    
-    return _original_dataframe(data, **kwargs)
+    st.write(data)
 
-st.dataframe = bypass_dataframe
-st.data_editor = bypass_dataframe
-st.table = bypass_dataframe
+st.dataframe = show_data_simple
+st.data_editor = show_data_simple
+st.table = show_data_simple
 
-# Sayfa konfigürasyonu
+# Sayfa konfigürasyonu - EN SONDA
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
-    page_icon="📦", 
+    page_icon="📦",
     layout="wide"
 )
-
-# ... session state kodunuz aynı kalacak
-
 # Session state başlatma
 if 'urun_master' not in st.session_state:
     st.session_state.urun_master = None
