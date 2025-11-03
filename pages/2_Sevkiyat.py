@@ -4,68 +4,6 @@ import time
 import numpy as np
 import io
 
-# 🎯 DATAFRAME GÖSTERİMİNİ BASİTLEŞTİR - MEVCUT KODUN ÜSTÜNE EKLEYİN
-def simple_display(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        st.write(f"📊 Veri: {len(data)} satır × {len(data.columns)} sütun")
-        if st.checkbox("🔍 İlk 10 satırı göster"):
-            for i in range(min(10, len(data))):
-                st.write(f"**Satır {i+1}:**", dict(data.iloc[i]))
-        return
-    st.write(data)
-
-st.dataframe = simple_display
-
-# 🎯 STREAMLIT.IO ÖZEL FIX
-def streamlit_cloud_safe_display(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        try:
-            # 1. Önce basit gösterim dene
-            st.write(f"📊 **Veri Önizleme** - {data.shape[0]} satır × {data.shape[1]} sütun")
-            
-            # 2. DataFrame'i tamamen yeniden oluştur
-            clean_data = {}
-            for col in data.columns:
-                clean_data[col] = data[col].values.tolist()
-            
-            clean_df = pd.DataFrame(clean_data)
-            
-            # 3. SADECE head göster
-            display_df = clean_df.head(10)
-            
-            # 4. Manuel HTML tablo
-            html = "<div style='overflow-x: auto;'><table style='border-collapse: collapse; width: 100%;'>"
-            
-            # Header
-            html += "<tr style='background-color: #f0f2f6;'>"
-            for col in display_df.columns:
-                html += f"<th style='border: 1px solid #ddd; padding: 8px; text-align: left;'>{col}</th>"
-            html += "</tr>"
-            
-            # Rows
-            for i in range(len(display_df)):
-                html += "<tr>"
-                for col in display_df.columns:
-                    value = display_df.iloc[i][col]
-                    html += f"<td style='border: 1px solid #ddd; padding: 8px;'>{value}</td>"
-                html += "</tr>"
-            
-            html += "</table></div>"
-            st.markdown(html, unsafe_allow_html=True)
-            
-            if len(data) > 10:
-                st.caption(f"İlk 10 satır gösteriliyor. Toplam: {len(data)} satır")
-                
-        except Exception as e:
-            st.error(f"Gösterim hatası: {str(e)}")
-            st.write("Veri mevcut ancak gösterilemiyor.")
-    
-    return
-
-# Override et
-st.dataframe = streamlit_cloud_safe_display
-st.data_editor = streamlit_cloud_safe_display
-
 # Sayfa config
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
