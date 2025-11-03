@@ -845,17 +845,16 @@ elif menu == "📐 Hesaplama":
                 depo_df = st.session_state.depo_stok.copy()
                 kpi_df = st.session_state.kpi.copy()
                 
-                # Default matrisler
-                if st.session_state.sisme_orani is None:
+                # Default matrisler - DÜZELTİLMİŞ VERSİYON
+                if 'sisme_orani' not in st.session_state or st.session_state.sisme_orani is None:
                     st.session_state.sisme_orani = pd.DataFrame(0.5, index=["0-4"], columns=["0-4"])
-                if st.session_state.genlestirme_orani is None:
+                if 'genlestirme_orani' not in st.session_state or st.session_state.genlestirme_orani is None:
                     st.session_state.genlestirme_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                if st.session_state.min_orani is None:
+                if 'min_orani' not in st.session_state or st.session_state.min_orani is None:
                     st.session_state.min_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                if st.session_state.initial_matris is None:
+                if 'initial_matris' not in st.session_state or st.session_state.initial_matris is None:
                     st.session_state.initial_matris = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                
-                progress_bar.progress(10, text="Yeni ürünler tespit ediliyor...")
+                                progress_bar.progress(10, text="Yeni ürünler tespit ediliyor...")
 
                 # YENİ ÜRÜN TESPİTİ
                 depo_df_temp = depo_df.copy()
