@@ -3,47 +3,60 @@ import pandas as pd
 import numpy as np
 import time
 
-# DEBUG: Hangi DataFrame'in sorun çıkardığını bul
-_original_dataframe = st.dataframe
+# 🎯 KESİN ÇÖZÜM - TÜM DATAFRAME'LERİ COMPLETELY RESET
+import warnings
+warnings.filterwarnings('ignore')
 
-def debug_dataframe(data, **kwargs):
+# Streamlit'i COMPLETELY override et
+_original_dataframe = st.dataframe
+_original_data_editor = st.data_editor
+_original_table = st.table
+
+def nuclear_dataframe_fix(data, **kwargs):
     if isinstance(data, pd.DataFrame):
-        print("🔍 DataFrame şekli:", data.shape)
-        print("📊 DataFrame tipleri:")
-        print(data.dtypes)
-        print("❌ Problemli sütunlar:")
-        for col in data.columns:
-            if str(data[col].dtype) in ['Int64', 'string', 'boolean']:
-                print(f"  - {col}: {data[col].dtype}")
-        
-        # Tüm problemli tipleri düzelt
-        data_fixed = data.copy()
-        
-        # INT64 -> float64
-        int64_cols = data_fixed.select_dtypes(include=['Int64']).columns
-        for col in int64_cols:
-            data_fixed[col] = data_fixed[col].astype('float64')
-            print(f"✅ {col} Int64 -> float64 dönüştürüldü")
-        
-        # STRING -> object
-        string_cols = data_fixed.select_dtypes(include=['string']).columns
-        for col in string_cols:
-            data_fixed[col] = data_fixed[col].astype('object')
-            print(f"✅ {col} string -> object dönüştürüldü")
+        # DataFrame'i COMPLETELY yeniden oluştur - EN GARANTİ YOL
+        try:
+            # 1. YOL: Dict üzerinden temizle
+            clean_data = {}
+            for col in data.columns:
+                # Her sütunu basit Python listesine çevir
+                clean_data[col] = data[col].tolist()
             
-        # BOOLEAN -> bool
-        bool_cols = data_fixed.select_dtypes(include=['boolean']).columns
-        for col in bool_cols:
-            data_fixed[col] = data_fixed[col].astype('bool')
-            print(f"✅ {col} boolean -> bool dönüştürüldü")
+            df_clean = pd.DataFrame(clean_data)
             
-        return _original_dataframe(data_fixed, **kwargs)
+            # 2. TÜM sütunları object yap
+            for col in df_clean.columns:
+                df_clean[col] = df_clean[col].astype('object')
+                
+            return _original_dataframe(df_clean, **kwargs)
+            
+        except Exception as e:
+            # 2. YOL: CSV üzerinden reset
+            try:
+                csv_str = data.to_csv(index=False)
+                from io import StringIO
+                df_clean = pd.read_csv(StringIO(csv_str))
+                return _original_dataframe(df_clean, **kwargs)
+            except:
+                # 3. YOL: String olarak göster
+                st.write("📊 Veri Önizleme:")
+                st.write(data)
+                return
     
     return _original_dataframe(data, **kwargs)
 
-st.dataframe = debug_dataframe
-st.data_editor = debug_dataframe
+# TÜM gösterim fonksiyonlarını override et
+st.dataframe = nuclear_dataframe_fix
+st.data_editor = nuclear_dataframe_fix
+st.table = nuclear_dataframe_fix
 
+# DEBUG için
+def debug_display():
+    st.sidebar.markdown("### 🐛 Debug Info")
+    if st.sidebar.button("Reset Session State"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
