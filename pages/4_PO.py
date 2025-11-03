@@ -85,7 +85,7 @@ if menu == "🏠 Ana Sayfa":
         - PO Detay KPI (marka/MG bazında özel hedefler için)
         """)
         
-        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", use_container_width=True):
+        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", width='stretch'):
             st.switch_page("pages/0_Veri_Yukleme.py")
         
         st.stop()
@@ -293,7 +293,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     
     edited_cover_matrix = st.data_editor(
         st.session_state.cover_segment_matrix,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             "cover_segment": st.column_config.TextColumn(
@@ -320,7 +320,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     st.markdown("---")
     
     # HESAPLAMA
-    if st.button("🚀 Alım Sipariş Hesapla", type="primary", use_container_width=True):
+    if st.button("🚀 Alım Sipariş Hesapla", type="primary", width='stretch'):
         try:
             with st.spinner("📊 Hesaplama yapılıyor..."):
                 
@@ -611,7 +611,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                             
                             if len(karsilastirma_df) > 0:
                                 karsilastirma_df['tasarruf'] = karsilastirma_df['brut_ihtiyac_eski'] - karsilastirma_df['brut_ihtiyac']
-                                st.dataframe(karsilastirma_df, use_container_width=True)
+                                st.dataframe(karsilastirma_df, width='stretch')
                 
                 # Net ihtiyaç (açık siparişleri düş)
                 urun_toplam['net_ihtiyac'] = urun_toplam['brut_ihtiyac'] - urun_toplam['acik_siparis']
@@ -739,7 +739,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     
                     st.dataframe(
                         display_df.style.format(format_dict),
-                        use_container_width=True,
+                        width='stretch',
                         height=400
                     )
                     
@@ -754,11 +754,11 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                             data=csv_data,
                             file_name=f"alim_siparis_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.csv",
                             mime="text/csv",
-                            use_container_width=True
+                            width='stretch'
                         )
                     
                     with col2:
-                        if st.button("📊 Depo Bazlı Görünüme Git", use_container_width=True):
+                        if st.button("📊 Depo Bazlı Görünüme Git", width='stretch'):
                             st.switch_page("pages/4_PO.py")  # Aynı sayfada menü değiştir
                 
                 else:
@@ -871,7 +871,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                 'Toplam Brüt Kar': '{:,.2f}',
                 'Alım Payı %': '{:.1f}%'
             }),
-            use_container_width=True
+            width='stretch'
         )
     
     # KARLILIK ANALİZİ
@@ -899,7 +899,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                 'Toplam Alım': '{:,.0f}',
                 'Toplam Brüt Kar': '{:,.2f}'
             }),
-            use_container_width=True
+            width='stretch'
         )
     
     # TEDARİKÇİ ANALİZİ - AD ALANLARI KALDIRILDI
@@ -927,7 +927,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                     'Toplam Alım': '{:,.0f}',
                     'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in tedarikci_analiz.columns else None
                 }),
-                use_container_width=True
+                width='stretch'
             )
         else:
             st.info("ℹ️ Tedarikçi bilgisi bulunamadı (Ürün Master'da satici_kod yok)")
@@ -958,7 +958,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                     'Toplam Alım': '{:,.0f}',
                     'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in depo_analiz.columns else None
                 }),
-                use_container_width=True
+                width='stretch'
             )
         else:
             st.info("ℹ️ Depo bilgisi bulunamadı")
@@ -1115,7 +1115,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
     
     st.dataframe(
         final_df.style.format(format_dict),
-        use_container_width=True,
+        width='stretch',
         height=500
     )
     
@@ -1135,7 +1135,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
             data=csv_data,
             file_name=filename,
             mime="text/csv",
-            use_container_width=True
+            width='stretch'
         )
     
     with col2:
@@ -1159,7 +1159,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 data=csv_ozet,
                 file_name=f"ozet_{selected_depo}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
     
     with col3:
@@ -1171,5 +1171,6 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 data=tum_csv,
                 file_name=f"tum_depolar_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
+
