@@ -1172,21 +1172,21 @@ if st.session_state.sevkiyat_sonuc is not None:
             # DEPO_KODU EKLEME - MAĞAZA MASTER'DAN AL
             if 'magaza_master' in st.session_state and not st.session_state.magaza_master.empty:
                 # Mağaza-depo mapping oluştur
-                magaza_depo_map = st.session_state.magaza_master.set_index('magaza_kodu')['depo_kodu'].to_dict()
+                magaza_depo_map = st.session_state.magaza_master.set_index('magaza_kod')['depo_kod'].to_dict()
                 
                 # Her mağaza için depo kodunu ekle
-                detayli_df['depo_kodu'] = detayli_df['magaza_kod'].map(magaza_depo_map)
+                detayli_df['depo_kod'] = detayli_df['magaza_kod'].map(magaza_depo_map)
                 
                 # Mapping'de bulunamayan mağazalar için default değer
-                if detayli_df['depo_kodu'].isnull().any():
+                if detayli_df['depo_kod'].isnull().any():
                     default_depo = 'MERKEZ'
-                    detayli_df['depo_kodu'] = detayli_df['depo_kodu'].fillna(default_depo)
+                    detayli_df['depo_kod'] = detayli_df['depo_kod'].fillna(default_depo)
             else:
                 # Mağaza master yoksa sabit değer kullan
-                detayli_df['depo_kodu'] = 'MERKEZ'
+                detayli_df['depo_kod'] = 'BULUNAMADI'
             
             # Sütun sırasını ayarla (depo_kodu başta olsun)
-            sutun_sirasi = ['depo_kodu'] + [col for col in detayli_df.columns if col != 'depo_kodu']
+            sutun_sirasi = ['depo_kod'] + [col for col in detayli_df.columns if col != 'depo_kod']
             detayli_df = detayli_df[sutun_sirasi]
             
             # CSV'yi bellek üzerinden indirilebilir hale getir
