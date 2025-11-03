@@ -12,7 +12,6 @@ st.set_page_config(
 )
 
 
-# ⬇️ BURAYI EKLEYİN ⬇️
 # Segmentation parametrelerini başlat
 if 'segmentation_params' not in st.session_state:
     st.session_state.segmentation_params = {
