@@ -607,7 +607,11 @@ if selected_data:
     if 'description' in current_def and current_def['description']:
         st.info(current_def['description'])
     
-    st.dataframe(data.head(20), width='stretch', height=300)
+    st.write(f"📊 İlk 10 satır önizleme:")
+    for i in range(min(10, len(data))):
+        with st.expander(f"Satır {i+1}"):
+            for col in data.columns:
+                st.write(f"**{col}:** {data.iloc[i][col]}")
     
     # Veri kalitesi kontrolü
     with st.expander("📊 Veri Kalitesi Raporu"):
@@ -617,14 +621,18 @@ if selected_data:
             st.write("**Eksik Değerler:**")
             missing = data.isnull().sum()
             if missing.any():
-                st.dataframe(missing[missing > 0].to_frame('Eksik Sayısı'))
+                st.write("Eksik değerler:")
+                for col, count in missing[missing > 0].items():
+                    st.write(f"- {col}: {count} eksik")
             else:
                 st.success("Eksik değer yok")
         
         with col2:
             st.write("**Veri Tipleri:**")
             dtypes = data.dtypes.to_frame('Veri Tipi')
-            st.dataframe(dtypes)
+            st.write("Veri tipleri:")
+            for col, dtype in dtypes.itertuples():
+                st.write(f"- {col}: {dtype}")
         
         # String kolonlarda virgül kontrolü
         string_cols = data.select_dtypes(include=['object']).columns
@@ -704,6 +712,7 @@ if required_loaded == required_count and required_count > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", width='stretch'):
             st.switch_page("pages/4_PO.py")
+
 
 
 
