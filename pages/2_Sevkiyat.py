@@ -3,6 +3,19 @@ import pandas as pd
 import numpy as np
 import time
 
+# DataFrame gösterimini otomatik düzelt
+_original_dataframe = st.dataframe
+def fixed_dataframe(data, **kwargs):
+    if isinstance(data, pd.DataFrame):
+        df = data.copy()
+        # Sadece Int64 problemlerini çöz
+        for col in df.select_dtypes(include=['Int64']).columns:
+            df[col] = df[col].astype('float64')
+        return _original_dataframe(df, **kwargs)
+    return _original_dataframe(data, **kwargs)
+st.dataframe = fixed_dataframe
+
+
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
