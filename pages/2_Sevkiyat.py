@@ -831,13 +831,16 @@ elif menu == "🔢 Sıralama":
         st.info("ℹ️ Kaydetmeseniz de default sıralama kullanılacaktır.")
 
 # ============================================
-# 🚚 HESAPLAMA - DÜZELTİLMİŞ (TAMSAYI DÖNÜŞÜMÜ)
+# 🚚 HESAPLAMA 
+# ============================================
+# ============================================
+# 🚚 HESAPLAMA - TAM DÜZELTİLMİŞ
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
     st.markdown("---")
     
-    # Session state kontrolü - önceki sonuçları koru
+    # Session state kontrolü
     if 'sevkiyat_sonuc' not in st.session_state:
         st.session_state.sevkiyat_sonuc = None
     
@@ -845,10 +848,8 @@ elif menu == "📐 Hesaplama":
     if st.session_state.sevkiyat_sonuc is not None:
         st.success("✅ Daha önce hesaplanmış sevkiyat sonuçları mevcut!")
         
-        # Önceki sonuçları hızlıca göster
         result_final = st.session_state.sevkiyat_sonuc.copy()
         
-        # Özet metrikler
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("📦 Toplam İhtiyaç", f"{result_final['ihtiyac_miktari'].sum():,.0f}")
@@ -920,15 +921,20 @@ elif menu == "📐 Hesaplama":
                 depo_df = st.session_state.depo_stok.copy()
                 kpi_df = st.session_state.kpi.copy()
                 
-                # Default matrisler - DÜZELTİLMİŞ VERSİYON
-                if 'sisme_orani' not in st.session_state or st.session_state.sisme_orani is None:
+                # Kolonları string'e çevir
+                anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
+                anlik_df['magaza_kod'] = anlik_df['magaza_kod'].astype(str)
+                
+                # Default matrisler
+                if st.session_state.sisme_orani is None:
                     st.session_state.sisme_orani = pd.DataFrame(0.5, index=["0-4"], columns=["0-4"])
-                if 'genlestirme_orani' not in st.session_state or st.session_state.genlestirme_orani is None:
+                if st.session_state.genlestirme_orani is None:
                     st.session_state.genlestirme_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                if 'min_orani' not in st.session_state or st.session_state.min_orani is None:
+                if st.session_state.min_orani is None:
                     st.session_state.min_orani = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
-                if 'initial_matris' not in st.session_state or st.session_state.initial_matris is None:
+                if st.session_state.initial_matris is None:
                     st.session_state.initial_matris = pd.DataFrame(1.0, index=["0-4"], columns=["0-4"])
+                
                 progress_bar.progress(10, text="Yeni ürünler tespit ediliyor...")
 
                 # YENİ ÜRÜN TESPİTİ
@@ -941,7 +947,6 @@ elif menu == "📐 Hesaplama":
                 yeni_urun_adaylari = depo_toplam[depo_toplam['depo_stok_toplam'] > 300]['urun_kod'].tolist()
                 
                 toplam_magaza_sayisi = anlik_df['magaza_kod'].nunique()
-                anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
                 urun_magaza_stok = anlik_df[anlik_df['urun_kod'].isin(yeni_urun_adaylari)].copy()
                 urun_magaza_stok = urun_magaza_stok[urun_magaza_stok['stok'] > 0]
                 
@@ -963,16 +968,14 @@ elif menu == "📐 Hesaplama":
                 magaza_agg = anlik_df.groupby('magaza_kod').agg({'stok': 'sum', 'satis': 'sum'}).reset_index()
                 magaza_agg['cover'] = magaza_agg['stok'] / magaza_agg['satis'].replace(0, 1)
                 
-                # YENİ KOD - Hedef Matris'ten gelen segmentleri kullan
-                if 'urun_segment_map' in st.session_state and 'magaza_segment_map' in st.session_state:
-                    # Hedef Matris'te kaydedilmiş segmentleri kullan
-                    anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
-                    anlik_df['magaza_kod'] = anlik_df['magaza_kod'].astype(str)
+                # Hedef Matris'ten gelen segmentleri kullan
+                if (st.session_state.urun_segment_map is not None and 
+                    st.session_state.magaza_segment_map is not None):
                     
                     anlik_df['urun_segment'] = anlik_df['urun_kod'].map(st.session_state.urun_segment_map)
                     anlik_df['magaza_segment'] = anlik_df['magaza_kod'].map(st.session_state.magaza_segment_map)
                 else:
-                    # Hedef Matris'te kayıt yoksa, eski yöntemle segmentasyon yap
+                    # Default segmentasyon
                     st.warning("⚠️ Hedef Matris'te segment kaydı bulunamadı. Default segmentasyon kullanılıyor.")
                     
                     product_ranges = st.session_state.segmentation_params['product_ranges']
@@ -1009,7 +1012,6 @@ elif menu == "📐 Hesaplama":
                 if st.session_state.urun_master is not None:
                     urun_master = st.session_state.urun_master[['urun_kod', 'mg']].copy()
                     urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
-                    anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
                     urun_master['mg'] = urun_master['mg'].fillna(0).astype(float).astype(int).astype(str)
                     
                     anlik_df = anlik_df.merge(urun_master, on='urun_kod', how='left')
@@ -1049,34 +1051,30 @@ elif menu == "📐 Hesaplama":
                 
                 progress_bar.progress(70, text="İhtiyaçlar hesaplanıyor...")
                 
-                # RPT, Initial, Min satırları oluştur
+                # DURUM KOLONLARI OLUŞTUR
                 anlik_rpt = anlik_df.copy()
-                anlik_rpt.loc[:, 'Durum'] = 'RPT'
+                anlik_rpt['Durum'] = 'RPT'
                 
                 anlik_min = anlik_df.copy()
-                anlik_min.loc[:, 'Durum'] = 'Min'
+                anlik_min['Durum'] = 'Min'
                 
                 if len(yeni_urun_kodlari) > 0:
-                    # Yeni ürün filtresi
-                    yeni_urun_mask = anlik_df['urun_kod'].astype(str).isin(yeni_urun_kodlari)
-                    if yeni_urun_mask.sum() > 0:  # Eğer gerçekten yeni ürün varsa
+                    yeni_urun_mask = anlik_df['urun_kod'].isin(yeni_urun_kodlari)
+                    if yeni_urun_mask.sum() > 0:
                         anlik_initial = anlik_df[yeni_urun_mask].copy()
-                        anlik_initial.loc[:, 'Durum'] = 'Initial'
+                        anlik_initial['Durum'] = 'Initial'
                         anlik_df = pd.concat([anlik_rpt, anlik_initial, anlik_min], ignore_index=True)
                     else:
-                        # Yeni ürün yok, sadece RPT ve Min
                         anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
                 else:
                     anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
-                                else:
-                                    anlik_df = pd.concat([anlik_rpt, anlik_min], ignore_index=True)
                 
                 # Sıralama
                 if st.session_state.siralama_data is not None:
                     siralama_df = st.session_state.siralama_data.copy()
                 else:
-                    prod_segments = sorted([str(x) for x in urun_agg['segment'].unique() if pd.notna(x)])
-                    store_segments = sorted([str(x) for x in magaza_agg['segment'].unique() if pd.notna(x)])
+                    prod_segments = sorted([str(x) for x in anlik_df['urun_segment'].unique() if pd.notna(x)])
+                    store_segments = sorted([str(x) for x in anlik_df['magaza_segment'].unique() if pd.notna(x)])
                     
                     siralama_rows = []
                     oncelik_counter = 1
@@ -1127,15 +1125,12 @@ elif menu == "📐 Hesaplama":
                     yasak_df = st.session_state.yasak_master.copy()
                     yasak_df['urun_kod'] = yasak_df['urun_kod'].astype(str)
                     yasak_df['magaza_kod'] = yasak_df['magaza_kod'].astype(str)
-                    anlik_df['urun_kod'] = anlik_df['urun_kod'].astype(str)
-                    anlik_df['magaza_kod'] = anlik_df['magaza_kod'].astype(str)
                     
                     anlik_df = anlik_df.merge(yasak_df[['urun_kod', 'magaza_kod', 'yasak_durum']], on=['urun_kod', 'magaza_kod'], how='left')
                     anlik_df.loc[anlik_df['yasak_durum'] == 'Yasak', 'ihtiyac'] = 0
                 
                 # Depo eşleşmesi
                 magaza_df['magaza_kod'] = magaza_df['magaza_kod'].astype(str)
-                anlik_df['magaza_kod'] = anlik_df['magaza_kod'].astype(str)
                 anlik_df = anlik_df.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
                 
                 progress_bar.progress(95, text="Depo stok kontrolleri yapılıyor...")
@@ -1161,11 +1156,6 @@ elif menu == "📐 Hesaplama":
                     key = (depo_kod_str, urun_kod_str)
                     if key not in depo_stok_dict:
                         depo_stok_dict[key] = float(row['stok'])
-                
-                result_df_max['urun_kod_clean'] = result_df_max['urun_kod'].astype(str).apply(
-                    lambda x: str(int(float(x))) if ('.' in str(x)) else str(x)
-                )
-                result_df_max['depo_kod_clean'] = result_df_max['depo_kod'].astype(str)
                 
                 # Sevkiyat hesapla
                 sevkiyat_gercek = []
@@ -1200,7 +1190,7 @@ elif menu == "📐 Hesaplama":
                 result_df_max['stok_yoklugu_kaybi'] = result_df_max['ihtiyac'] - result_df_max['sevkiyat_gercek']
                 result_df_max = result_df_max[result_df_max['ihtiyac'] > 0].copy()
                 
-                # Sonuç tablosu - TAMSAYI DÖNÜŞÜMÜ EKLENDİ
+                # Sonuç tablosu
                 result_final = result_df_max[[
                     'Oncelik', 'magaza_kod', 'urun_kod',
                     'magaza_segment', 'urun_segment', 'Durum',
@@ -1213,13 +1203,13 @@ elif menu == "📐 Hesaplama":
                     'stok_yoklugu_kaybi': 'stok_yoklugu_satis_kaybi'
                 })
                 
-                # TAMSAYI DÖNÜŞÜMÜ - ÜRÜN STOKLARI İÇİN
+                # TAMSAYI DÖNÜŞÜMÜ
                 integer_columns = ['stok', 'yol', 'satis', 'ihtiyac_miktari', 'sevkiyat_miktari', 'stok_yoklugu_satis_kaybi']
                 for col in integer_columns:
                     if col in result_final.columns:
                         result_final[col] = result_final[col].round().astype(int)
                 
-                # Kolon sıralamasını düzenle
+                # Kolon sıralaması
                 result_final = result_final[[
                     'oncelik', 'magaza_kod', 'urun_kod',
                     'magaza_segment', 'urun_segment', 'durum',
@@ -1228,18 +1218,17 @@ elif menu == "📐 Hesaplama":
                 
                 result_final.insert(0, 'sira_no', range(1, len(result_final) + 1))
                 
-                # Hesaplama süresini hesapla
+                # Hesaplama süresi
                 end_time = time.time()
                 calculation_time = end_time - start_time
                 
                 progress_bar.progress(100, text="Tamamlandı!")
                 
-                # SONUÇLARI SESSION STATE'E KAYDET
+                # SONUÇLARI KAYDET
                 st.session_state.sevkiyat_sonuc = result_final.copy()
                 
-                # Hesaplama tamamlandı mesajını göster
                 st.success(f"✅ Hesaplama tamamlandı! ({calculation_time:.2f} saniye)")
-            
+
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ (GİRİNTİ SORUNU ÇÖZÜLDÜ)
 # ============================================
