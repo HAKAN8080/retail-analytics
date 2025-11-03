@@ -891,22 +891,39 @@ elif menu == "📐 Hesaplama":
                     df['magaza_segment'] = '0-4'
                 
                 # 4. KPI
+                # 4. KPI - DÜZELTİLMİŞ
                 default_fc = kpi_df['forward_cover'].mean()
+                
+                # Önce default değerler
                 df['min_deger'] = 0
                 df['max_deger'] = 999999
                 
                 if st.session_state.urun_master is not None:
-                    urun_m = st.session_state.urun_master[['urun_kod', 'mg']].copy()
-                    urun_m['urun_kod'] = urun_m['urun_kod'].astype(str)
-                    urun_m['mg'] = urun_m['mg'].fillna(0).astype(int).astype(str)
-                    df = df.merge(urun_m, on='urun_kod', how='left')
-                    
-                    kpi_data = kpi_df[['mg_id', 'min_deger', 'max_deger']].rename(columns={'mg_id': 'mg'})
-                    kpi_data['mg'] = kpi_data['mg'].astype(str)
-                    df['mg'] = df['mg'].astype(str)
-                    df = df.merge(kpi_data, on='mg', how='left')
-                    df['min_deger'] = df['min_deger'].fillna(0)
-                    df['max_deger'] = df['max_deger'].fillna(999999)
+                    try:
+                        # Ürün master ile mg ekle
+                        urun_m = st.session_state.urun_master[['urun_kod', 'mg']].copy()
+                        urun_m['urun_kod'] = urun_m['urun_kod'].astype(str)
+                        urun_m['mg'] = urun_m['mg'].fillna(0).astype(int).astype(str)
+                        
+                        df = df.merge(urun_m, on='urun_kod', how='left')
+                        df['mg'] = df['mg'].fillna('0')
+                        
+                        # KPI ile min/max güncelle
+                        kpi_data = kpi_df[['mg_id', 'min_deger', 'max_deger']].copy()
+                        kpi_data.columns = ['mg', 'kpi_min', 'kpi_max']
+                        kpi_data['mg'] = kpi_data['mg'].astype(str)
+                        
+                        df = df.merge(kpi_data, on='mg', how='left')
+                        
+                        # Güncelleme yap
+                        df['min_deger'] = df['kpi_min'].fillna(df['min_deger'])
+                        df['max_deger'] = df['kpi_max'].fillna(df['max_deger'])
+                        
+                        # Temp kolonları sil
+                        df.drop(['kpi_min', 'kpi_max'], axis=1, inplace=True)
+                        
+                    except Exception as e:
+                        st.warning(f"KPI eşleştirme hatası (default değerler kullanılıyor): {e}")
                 
                 # 5. MATRİS DEĞERLER
                 df['genlestirme'] = 1.0
