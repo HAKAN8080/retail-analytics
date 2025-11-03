@@ -3,6 +3,18 @@ import pandas as pd
 import numpy as np
 import time
 
+# 🎯 DATAFRAME GÖSTERİMİNİ BASİTLEŞTİR
+def simple_display(data, **kwargs):
+    if isinstance(data, pd.DataFrame):
+        st.write(f"📊 Veri: {len(data)} satır × {len(data.columns)} sütun")
+        if st.checkbox("🔍 İlk 10 satırı göster"):
+            for i in range(min(10, len(data))):
+                st.write(f"**Satır {i+1}:**", dict(data.iloc[i]))
+        return
+    st.write(data)
+
+st.dataframe = simple_display
+
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Alım Sipariş (PO)",
@@ -1173,4 +1185,5 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 width='stretch'
             )
+
 
