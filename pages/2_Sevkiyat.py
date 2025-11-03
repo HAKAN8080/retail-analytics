@@ -1,6 +1,3 @@
-
-
-
 import streamlit as st
 import pandas as pd
 import time
@@ -551,23 +548,46 @@ elif menu == "🎲 Hedef Matris":
                 if seg not in sisme_data.columns:
                     sisme_data[seg] = 0.5
             
-            # Sıralama - ÖNEMLİ!
-            sisme_data = sisme_data.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
-        
-        # Satır başlıklarını göstermek için index'i kolona çevir
-        sisme_display = sisme_data.reset_index()
-        sisme_display.columns = ['Ürün Segmenti'] + list(sisme_data.columns)
-        
-        edited_sisme_temp = st.data_editor(
-            sisme_display,
-            width='content',
-            column_config={col: st.column_config.NumberColumn(
-                col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
-            ) for col in store_segments},
-            key="sisme_matrix",
-            hide_index=True  # DataFrame index'ini gizle çünkü ilk kolonda zaten var
-        )
-        
+            # 1. ŞİŞME ORANI MATRİSİ
+            st.markdown("### 1️⃣ Şişme Oranı Matrisi (Default: 0.5)")
+            
+            if st.session_state.sisme_orani is None or len(st.session_state.sisme_orani) == 0:
+                sisme_data = pd.DataFrame(0.5, index=prod_segments, columns=store_segments)
+            else:
+                # Mevcut matrisi kontrol et ve eksikleri doldur
+                sisme_data = st.session_state.sisme_orani.copy()
+                
+                # Eksik satırları ekle
+                for seg in prod_segments:
+                    if seg not in sisme_data.index:
+                        sisme_data.loc[seg] = 0.5
+                
+                # Eksik kolonları ekle
+                for seg in store_segments:
+                    if seg not in sisme_data.columns:
+                        sisme_data[seg] = 0.5
+                
+                # Sıralama
+                sisme_data = sisme_data.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
+            
+            # Satır başlıklarını göster
+            sisme_display = sisme_data.reset_index()
+            sisme_display.columns = ['Ürün Segmenti'] + list(sisme_data.columns)
+            
+            edited_sisme_temp = st.data_editor(
+                sisme_display,
+                width='content',
+                column_config={col: st.column_config.NumberColumn(
+                    col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+                ) for col in store_segments},
+                key="sisme_matrix",
+                hide_index=True
+            )
+            
+            # Index'e geri çevir (KAYDETMEK İÇİN GEREKLİ!)
+            edited_sisme = edited_sisme_temp.set_index('Ürün Segmenti')
+            
+            st.markdown("---")
         # Kaydetmek için tekrar index'e çevir
         edited_sisme = edited_sisme_temp.set_index('Ürün Segmenti')        
                 st.markdown("---")
