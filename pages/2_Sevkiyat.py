@@ -1122,56 +1122,12 @@ elif menu == "📐 Hesaplama":
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
                 st.info("Bu dosyayı SAP sistemine yükleyebilirsiniz")
                 
-                # SAP formatında veri hazırla
+                # SAP formatında veri hazırla - SADECE TEMEL BİLGİLER
                 sap_data = final[['magaza_kod', 'urun_kod', 'depo_kod', 'sevkiyat_miktari']].copy()
                 sap_data.columns = ['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet']
                 
-                # Paket bilgilerini ekle (ürün master'dan)
-                if st.session_state.urun_master is not None:
-                    # Hangi kolonlar var kontrol et
-                    available_cols = ['urun_kod']
-                    if 'paket_tipi' in st.session_state.urun_master.columns:
-                        available_cols.append('paket_tipi')
-                    if 'paket_ici' in st.session_state.urun_master.columns:
-                        available_cols.append('paket_ici')
-                    if 'paket_sayisi' in st.session_state.urun_master.columns:
-                        available_cols.append('paket_sayisi')
-                    
-                    urun_paket = st.session_state.urun_master[available_cols].copy()
-                    urun_paket['urun_kod'] = urun_paket['urun_kod'].astype(str)
-                    sap_data['urun_kodu'] = sap_data['urun_kodu'].astype(str)
-                    
-                    sap_data = sap_data.merge(
-                        urun_paket, 
-                        left_on='urun_kodu', 
-                        right_on='urun_kod', 
-                        how='left'
-                    )
-                    sap_data = sap_data.drop('urun_kod', axis=1)
-                else:
-                    # Paket bilgileri yoksa default değerler
-                    sap_data['paket_tipi'] = 'STD'
-                    sap_data['paket_ici'] = 1
-                    sap_data['paket_sayisi'] = 0
-                
-                # Eksik kolonları doldur
-                if 'paket_tipi' not in sap_data.columns:
-                    sap_data['paket_tipi'] = 'STD'
-                if 'paket_ici' not in sap_data.columns:
-                    sap_data['paket_ici'] = 1
-                if 'paket_sayisi' not in sap_data.columns:
-                    sap_data['paket_sayisi'] = 0
-                
-                # Paket sayısını hesapla (sevk_adet / paket_ici)
-                sap_data['paket_ici'] = sap_data['paket_ici'].fillna(1).replace(0, 1)
-                sap_data['paket_sayisi'] = np.ceil(sap_data['sevk_adet'] / sap_data['paket_ici']).astype(int)
-                
                 # Sadece sevkiyatı olan kayıtları al
                 sap_data = sap_data[sap_data['sevk_adet'] > 0]
-                
-                # Kolon sıralaması
-                sap_data = sap_data[['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet', 
-                                     'paket_tipi', 'paket_ici', 'paket_sayisi']]
                 
                 # Önizleme
                 col1, col2 = st.columns([2, 1])
@@ -1186,8 +1142,8 @@ elif menu == "📐 Hesaplama":
                 
                 with col2:
                     st.metric("Toplam Sevkiyat Satırı", f"{len(sap_data):,}")
-                    st.metric("Toplam Paket", f"{sap_data['paket_sayisi'].sum():,}")
-                    st.metric("Toplam Adet", f"{sap_data['sevk_adet'].sum():,}")
+                    st.metric("Toplam Sevk Adet", f"{sap_data['sevk_adet'].sum():,}")
+                    st.metric("Ortalama Sevk/Satır", f"{sap_data['sevk_adet'].mean():,.1f}")
                 
                 # İndirme butonu
                 st.markdown("---")
