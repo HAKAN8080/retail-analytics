@@ -1094,17 +1094,122 @@ elif menu == "📐 Hesaplama":
                 
                 st.success(f"✅ Hesaplama tamamlandı! {len(final):,} satır oluşturuldu.")
                 
-                # ÖZET
-                col1, col2, col3 = st.columns(3)
+                st.markdown("---")
+                
+                # ÖZET METRİKLER - GELİŞTİRİLMİŞ
+                st.subheader("📊 Özet Metrikler")
+                col1, col2, col3, col4 = st.columns(4)
+                
                 with col1:
                     ihtiyac_toplam = final['ihtiyac_miktari'].sum() if 'ihtiyac_miktari' in final.columns else 0
                     st.metric("Toplam İhtiyaç", f"{ihtiyac_toplam:,.0f}")
+                
                 with col2:
                     sevkiyat_toplam = final['sevkiyat_miktari'].sum() if 'sevkiyat_miktari' in final.columns else 0
                     st.metric("Toplam Sevkiyat", f"{sevkiyat_toplam:,.0f}")
+                
                 with col3:
                     kayip_toplam = final['stok_yoklugu_satis_kaybi'].sum() if 'stok_yoklugu_satis_kaybi' in final.columns else 0
                     st.metric("Satış Kaybı", f"{kayip_toplam:,.0f}")
+                
+                with col4:
+                    gerceklesme_orani = (sevkiyat_toplam / ihtiyac_toplam * 100) if ihtiyac_toplam > 0 else 0
+                    st.metric("Gerçekleşme Oranı", f"{gerceklesme_orani:.1f}%")
+                
+                st.markdown("---")
+                
+                # SAP İÇİN DETAYLI CSV İNDİRME
+                st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
+                st.info("Bu dosyayı SAP sistemine yükleyebilirsiniz")
+                
+                # SAP formatında veri hazırla
+                sap_data = final[['magaza_kod', 'urun_kod', 'depo_kod', 'sevkiyat_miktari']].copy()
+                sap_data.columns = ['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet']
+                
+                # Paket bilgilerini ekle (ürün master'dan)
+                if st.session_state.urun_master is not None:
+                    # Hangi kolonlar var kontrol et
+                    available_cols = ['urun_kod']
+                    if 'paket_tipi' in st.session_state.urun_master.columns:
+                        available_cols.append('paket_tipi')
+                    if 'paket_ici' in st.session_state.urun_master.columns:
+                        available_cols.append('paket_ici')
+                    if 'paket_sayisi' in st.session_state.urun_master.columns:
+                        available_cols.append('paket_sayisi')
+                    
+                    urun_paket = st.session_state.urun_master[available_cols].copy()
+                    urun_paket['urun_kod'] = urun_paket['urun_kod'].astype(str)
+                    sap_data['urun_kodu'] = sap_data['urun_kodu'].astype(str)
+                    
+                    sap_data = sap_data.merge(
+                        urun_paket, 
+                        left_on='urun_kodu', 
+                        right_on='urun_kod', 
+                        how='left'
+                    )
+                    sap_data = sap_data.drop('urun_kod', axis=1)
+                else:
+                    # Paket bilgileri yoksa default değerler
+                    sap_data['paket_tipi'] = 'STD'
+                    sap_data['paket_ici'] = 1
+                    sap_data['paket_sayisi'] = 0
+                
+                # Eksik kolonları doldur
+                if 'paket_tipi' not in sap_data.columns:
+                    sap_data['paket_tipi'] = 'STD'
+                if 'paket_ici' not in sap_data.columns:
+                    sap_data['paket_ici'] = 1
+                if 'paket_sayisi' not in sap_data.columns:
+                    sap_data['paket_sayisi'] = 0
+                
+                # Paket sayısını hesapla (sevk_adet / paket_ici)
+                sap_data['paket_ici'] = sap_data['paket_ici'].fillna(1).replace(0, 1)
+                sap_data['paket_sayisi'] = np.ceil(sap_data['sevk_adet'] / sap_data['paket_ici']).astype(int)
+                
+                # Sadece sevkiyatı olan kayıtları al
+                sap_data = sap_data[sap_data['sevk_adet'] > 0]
+                
+                # Kolon sıralaması
+                sap_data = sap_data[['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet', 
+                                     'paket_tipi', 'paket_ici', 'paket_sayisi']]
+                
+                # Önizleme
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.write("**Dosya Önizlemesi (İlk 10 satır):**")
+                    st.dataframe(
+                        sap_data.head(10),
+                        use_container_width=True,
+                        height=300
+                    )
+                
+                with col2:
+                    st.metric("Toplam Sevkiyat Satırı", f"{len(sap_data):,}")
+                    st.metric("Toplam Paket", f"{sap_data['paket_sayisi'].sum():,}")
+                    st.metric("Toplam Adet", f"{sap_data['sevk_adet'].sum():,}")
+                
+                # İndirme butonu
+                col1, col2, col3 = st.columns([1, 1, 2])
+                with col1:
+                    st.download_button(
+                        label="📥 SAP Dosyası İndir (CSV)",
+                        data=sap_data.to_csv(index=False, encoding='utf-8-sig'),
+                        file_name="sap_sevkiyat_detay.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="download_sap_csv"
+                    )
+                
+                with col2:
+                    st.download_button(
+                        label="📥 Tam Detay İndir (CSV)",
+                        data=final.to_csv(index=False, encoding='utf-8-sig'),
+                        file_name="sevkiyat_tam_detay.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="download_full_csv"
+                    )
                 
             except Exception as e:
                 st.error(f"❌ Hesaplama hatası: {str(e)}")
@@ -1154,7 +1259,7 @@ elif menu == "📈 Raporlar":
             # KOLON ADI DÜZELTMESİ
             sevkiyat_kolon_adi = 'sevkiyat_miktari' if 'sevkiyat_miktari' in result_df.columns else 'sevkiyat_gercek'
             ihtiyac_kolon_adi = 'ihtiyac_miktari' if 'ihtiyac_miktari' in result_df.columns else 'ihtiyac'
-            kayip_kolon_adi = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_kaybi' in result_df.columns else 'stok_yoklugu_kaybi'
+            kayip_kolon_adi = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_keybi' in result_df.columns else 'stok_yoklugu_kaybi'
             
             if sevkiyat_kolon_adi in result_df.columns:
                 st.write(f"- Sevkiyat miktarı > 0: {(result_df[sevkiyat_kolon_adi] > 0).sum()}")
@@ -1292,31 +1397,31 @@ elif menu == "📈 Raporlar":
                 st.subheader("🏆 En İyi Performans")
                 if len(filtered_urun) > 0:
                     best_coverage = filtered_urun.nlargest(5, 'Sevkiyat/İhtiyaç %')[['Ürün Kodu', 'Sevkiyat/İhtiyaç %']]
-                    st.dataframe(best_coverage, width='content', key="best_coverage_table")
+                    st.dataframe(best_coverage, width='content', key="rapor_urun_best_coverage")
                 
                 st.subheader("⚠️ En Fazla Kayıp")
                 if len(filtered_urun) > 0:
                     worst_loss = filtered_urun.nlargest(5, 'Satış Kaybı')[['Ürün Kodu', 'Satış Kaybı']]
-                    st.dataframe(worst_loss, width='content', key="worst_loss_table")
+                    st.dataframe(worst_loss, width='content', key="rapor_urun_worst_loss")
             
             st.markdown("---")
             
-            # Grafikler
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if len(top_10_urun) > 0:
-                    st.write("**Top 10 Ürün - Sevkiyat Miktarı**")
-                    grafik_df = top_10_urun.set_index('Ürün Kodu')[['Sevkiyat']]
-                    st.bar_chart(grafik_df, key="top10_urun_chart")
-            
-            with col2:
-                if len(filtered_urun) > 0:
-                    st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+            # Grafikler - TOP 10 KALDIRILDI
+            if len(filtered_urun) > 0:
+                st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+                try:
                     oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
                     # Grafik etiketlerini düzelt
-                    oran_dagilim.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in oran_dagilim.index]
-                    st.bar_chart(oran_dagilim, key="oran_dagilim_chart")
+                    oran_dagilim_dict = {}
+                    for interval in oran_dagilim.index:
+                        key_str = f"{int(interval.left)}-{int(interval.right)}%"
+                        oran_dagilim_dict[key_str] = int(oran_dagilim[interval])
+                    
+                    if oran_dagilim_dict:
+                        oran_dagilim_df = pd.DataFrame.from_dict(oran_dagilim_dict, orient='index', columns=['Adet'])
+                        st.bar_chart(oran_dagilim_df, key="rapor_urun_oran_dagilim")
+                except Exception as e:
+                    st.warning(f"Grafik oluşturulamadı: {str(e)}")
             
             st.markdown("---")
             
@@ -1340,6 +1445,20 @@ elif menu == "📈 Raporlar":
                     use_container_width=True,
                     key="download_filtered_urun"
                 )
+
+        # ============================================
+        # MAĞAZA ANALİZİ - TAB2
+        # ============================================
+        with tab2:
+            st.subheader("🏪 Mağaza Bazında Analiz")
+            st.info("Mağaza analizi yakında eklenecek")
+
+        # ============================================
+        # SATIŞ KAYBI ANALİZİ - TAB3
+        # ============================================
+        with tab3:
+            st.subheader("⚠️ Satış Kaybı Analizi")
+            st.info("Satış kaybı analizi yakında eklenecek")
 
         # ============================================
         # İL BAZINDA HARİTA - DÜZELTİLMİŞ (UNIQUE KEY'LER)
