@@ -1307,7 +1307,9 @@ elif menu == "📈 Raporlar":
             with col1:
                 if len(top_10_urun) > 0:
                     st.write("**Top 10 Ürün - Sevkiyat Miktarı**")
-                    grafik_df = top_10_urun.set_index('Ürün Kodu')[['Sevkiyat']]
+                    grafik_df = top_10_urun.copy()
+                    grafik_df['Ürün Kodu'] = grafik_df['Ürün Kodu'].astype(str)
+                    grafik_df = grafik_df.set_index('Ürün Kodu')[['Sevkiyat']]
                     st.bar_chart(grafik_df, key="top10_urun_chart")
             
             with col2:
@@ -1315,8 +1317,12 @@ elif menu == "📈 Raporlar":
                     st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
                     oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
                     # Grafik etiketlerini düzelt
-                    oran_dagilim.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in oran_dagilim.index]
-                    st.bar_chart(oran_dagilim, key="oran_dagilim_chart")
+                    oran_dagilim_dict = {}
+                    for interval in oran_dagilim.index:
+                        key = f"%{int(interval.left)}-%{int(interval.right)}"
+                        oran_dagilim_dict[key] = oran_dagilim[interval]
+                    oran_dagilim_df = pd.DataFrame.from_dict(oran_dagilim_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(oran_dagilim_df, key="oran_dagilim_chart")
             
             st.markdown("---")
             
@@ -1474,15 +1480,21 @@ elif menu == "📈 Raporlar":
             with col1:
                 if len(top_10_magaza) > 0:
                     st.write("**Top 10 Mağaza - Sevkiyat Miktarı**")
-                    grafik_df_magaza = top_10_magaza.set_index('Mağaza Kodu')[['Sevkiyat']]
+                    grafik_df_magaza = top_10_magaza.copy()
+                    grafik_df_magaza['Mağaza Kodu'] = grafik_df_magaza['Mağaza Kodu'].astype(str)
+                    grafik_df_magaza = grafik_df_magaza.set_index('Mağaza Kodu')[['Sevkiyat']]
                     st.bar_chart(grafik_df_magaza, key="top10_magaza_chart")
             
             with col2:
                 if len(filtered_magaza) > 0:
                     st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
                     oran_dagilim_magaza = filtered_magaza['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
-                    oran_dagilim_magaza.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in oran_dagilim_magaza.index]
-                    st.bar_chart(oran_dagilim_magaza, key="oran_dagilim_magaza_chart")
+                    oran_dagilim_magaza_dict = {}
+                    for interval in oran_dagilim_magaza.index:
+                        key = f"%{int(interval.left)}-%{int(interval.right)}"
+                        oran_dagilim_magaza_dict[key] = oran_dagilim_magaza[interval]
+                    oran_dagilim_magaza_df = pd.DataFrame.from_dict(oran_dagilim_magaza_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(oran_dagilim_magaza_df, key="oran_dagilim_magaza_chart")
             
             st.markdown("---")
             
@@ -1608,14 +1620,20 @@ elif menu == "📈 Raporlar":
                 
                 with col1:
                     st.write("**Top 10 Kayıplı Ürün**")
-                    top_10_kayip = urun_kayip.head(10).set_index('Ürün Kodu')[['Toplam Kayıp']]
+                    top_10_kayip = urun_kayip.head(10).copy()
+                    top_10_kayip['Ürün Kodu'] = top_10_kayip['Ürün Kodu'].astype(str)
+                    top_10_kayip = top_10_kayip.set_index('Ürün Kodu')[['Toplam Kayıp']]
                     st.bar_chart(top_10_kayip, key="top10_kayip_chart")
                 
                 with col2:
                     st.write("**Kayıp Oranı Dağılımı**")
                     kayip_dagilim = urun_kayip['Kayıp Oranı %'].value_counts(bins=10).sort_index()
-                    kayip_dagilim.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in kayip_dagilim.index]
-                    st.bar_chart(kayip_dagilim, key="kayip_dagilim_chart")
+                    kayip_dagilim_dict = {}
+                    for interval in kayip_dagilim.index:
+                        key = f"%{int(interval.left)}-%{int(interval.right)}"
+                        kayip_dagilim_dict[key] = kayip_dagilim[interval]
+                    kayip_dagilim_df = pd.DataFrame.from_dict(kayip_dagilim_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(kayip_dagilim_df, key="kayip_dagilim_chart")
                 
                 st.markdown("---")
                 
@@ -1882,7 +1900,9 @@ elif menu == "📈 Raporlar":
                     
                     with col2:
                         st.write("**Segment Dağılımı**")
-                        segment_dagilim = segment_ozet.set_index('Performans Segmenti')[['İl Sayısı']]
+                        segment_dagilim = segment_ozet.copy()
+                        segment_dagilim['Performans Segmenti'] = segment_dagilim['Performans Segmenti'].astype(str)
+                        segment_dagilim = segment_dagilim.set_index('Performans Segmenti')[['İl Sayısı']]
                         st.bar_chart(segment_dagilim, key="segment_dagilim_chart")
                     
                     # İndirme butonu - UNIQUE KEY
