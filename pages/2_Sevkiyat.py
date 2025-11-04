@@ -1302,21 +1302,23 @@ elif menu == "📈 Raporlar":
             st.markdown("---")
             
             # Grafikler
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if len(top_10_urun) > 0:
-                    st.write("**Top 10 Ürün - Sevkiyat Miktarı**")
-                    grafik_df = top_10_urun.set_index('Ürün Kodu')[['Sevkiyat']]
-                    st.bar_chart(grafik_df, key="top10_urun_chart")
-            
-            with col2:
-                if len(filtered_urun) > 0:
-                    st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+            if len(filtered_urun) > 0:
+                st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+                try:
                     oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
                     # Grafik etiketlerini düzelt
-                    oran_dagilim.index = [f"%{int(interval.left)}-%{int(interval.right)}" for interval in oran_dagilim.index]
-                    st.bar_chart(oran_dagilim, key="oran_dagilim_chart")
+                    oran_dagilim_dict = {}
+                    for interval in oran_dagilim.index:
+                        key = f"{int(interval.left)}-{int(interval.right)}%"
+                        oran_dagilim_dict[key] = int(oran_dagilim[interval])
+                    
+                    if oran_dagilim_dict:
+                        oran_dagilim_df = pd.DataFrame.from_dict(oran_dagilim_dict, orient='index', columns=['Adet'])
+                        st.bar_chart(oran_dagilim_df, key="oran_dagilim_chart")
+                    else:
+                        st.info("Gösterilecek dağılım verisi bulunamadı.")
+                except Exception as e:
+                    st.warning(f"Grafik oluşturulamadı: {str(e)}")
             
             st.markdown("---")
             
@@ -1340,6 +1342,317 @@ elif menu == "📈 Raporlar":
                     use_container_width=True,
                     key="download_filtered_urun"
                 )
+
+        # ============================================
+        # MAĞAZA ANALİZİ - TAB2
+        # ============================================
+        with tab2:
+            st.subheader("🏪 Mağaza Bazında Analiz")
+            
+            # KOLON ADI DÜZELTMESİ
+            sevkiyat_kolon = 'sevkiyat_miktari' if 'sevkiyat_miktari' in result_df.columns else 'sevkiyat_gercek'
+            ihtiyac_kolon = 'ihtiyac_miktari' if 'ihtiyac_miktari' in result_df.columns else 'ihtiyac'
+            kayip_kolon = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_kaybi' in result_df.columns else 'stok_yoklugu_kaybi'
+            
+            # Mağaza bazında toplamlar
+            magaza_sevkiyat = result_df.groupby('magaza_kod').agg({
+                ihtiyac_kolon: 'sum',
+                sevkiyat_kolon: 'sum',
+                kayip_kolon: 'sum',
+                'urun_kod': 'nunique'
+            }).reset_index()
+            
+            magaza_sevkiyat.columns = ['magaza_kod', 'İhtiyaç', 'Sevkiyat', 'Satış Kaybı', 'Ürün Sayısı']
+            
+            # Hesaplamalar
+            magaza_sevkiyat['Sevkiyat/İhtiyaç %'] = np.where(
+                magaza_sevkiyat['İhtiyaç'] > 0,
+                (magaza_sevkiyat['Sevkiyat'] / magaza_sevkiyat['İhtiyaç'] * 100),
+                0
+            ).round(2)
+            
+            magaza_sevkiyat['Kayıp Oranı %'] = np.where(
+                magaza_sevkiyat['İhtiyaç'] > 0,
+                (magaza_sevkiyat['Satış Kaybı'] / magaza_sevkiyat['İhtiyaç'] * 100),
+                0
+            ).round(2)
+            
+            # Mağaza adlarını ekle (eğer varsa)
+            if st.session_state.magaza_master is not None:
+                magaza_detay = st.session_state.magaza_master[['magaza_kod', 'magaza_ad', 'il']].copy()
+                magaza_detay['magaza_kod'] = magaza_detay['magaza_kod'].astype(str)
+                magaza_sevkiyat['magaza_kod'] = magaza_sevkiyat['magaza_kod'].astype(str)
+                
+                magaza_sevkiyat = magaza_sevkiyat.merge(magaza_detay, on='magaza_kod', how='left')
+                
+                # Kolon sıralaması
+                magaza_sevkiyat = magaza_sevkiyat[[
+                    'magaza_kod', 'magaza_ad', 'il',
+                    'İhtiyaç', 'Sevkiyat', 'Sevkiyat/İhtiyaç %',
+                    'Satış Kaybı', 'Kayıp Oranı %', 'Ürün Sayısı'
+                ]]
+                
+                magaza_sevkiyat.columns = [
+                    'Mağaza Kodu', 'Mağaza Adı', 'İl',
+                    'İhtiyaç', 'Sevkiyat', 'Sevkiyat/İhtiyaç %',
+                    'Satış Kaybı', 'Kayıp Oranı %', 'Ürün Sayısı'
+                ]
+            else:
+                magaza_sevkiyat.columns = [
+                    'Mağaza Kodu', 'İhtiyaç', 'Sevkiyat', 'Satış Kaybı', 'Ürün Sayısı',
+                    'Sevkiyat/İhtiyaç %', 'Kayıp Oranı %'
+                ]
+            
+            # En yüksek sevkiyatlı 10 mağaza
+            top_10_magaza = magaza_sevkiyat.nlargest(10, 'Sevkiyat')
+            
+            # Metrikler
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Toplam Mağaza", len(magaza_sevkiyat))
+            with col2:
+                st.metric("Toplam İhtiyaç", f"{magaza_sevkiyat['İhtiyaç'].sum():,.0f}")
+            with col3:
+                st.metric("Toplam Sevkiyat", f"{magaza_sevkiyat['Sevkiyat'].sum():,.0f}")
+            with col4:
+                st.metric("Toplam Kayıp", f"{magaza_sevkiyat['Satış Kaybı'].sum():,.0f}")
+            
+            st.markdown("---")
+            
+            # Filtreleme
+            col1, col2 = st.columns(2)
+            with col1:
+                min_sevkiyat_magaza = st.number_input("Min Sevkiyat Filtresi",
+                                                     min_value=0,
+                                                     value=0,
+                                                     key="min_sevkiyat_filter_magaza")
+            with col2:
+                min_urun_magaza = st.number_input("Min Ürün Sayısı",
+                                                 min_value=0,
+                                                 value=0,
+                                                 key="min_urun_filter_magaza")
+            
+            filtered_magaza = magaza_sevkiyat[
+                (magaza_sevkiyat['Sevkiyat'] >= min_sevkiyat_magaza) &
+                (magaza_sevkiyat['Ürün Sayısı'] >= min_urun_magaza)
+            ]
+            
+            st.write(f"**Filtrelenmiş Mağaza Sayısı:** {len(filtered_magaza)}")
+            
+            # Tablolar
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.subheader("📊 Mağaza Performans Tablosu")
+                st.dataframe(
+                    filtered_magaza.style.format({
+                        'İhtiyaç': '{:,.0f}',
+                        'Sevkiyat': '{:,.0f}',
+                        'Sevkiyat/İhtiyaç %': '{:.1f}%',
+                        'Satış Kaybı': '{:,.0f}',
+                        'Kayıp Oranı %': '{:.1f}%',
+                        'Ürün Sayısı': '{:.0f}'
+                    }),
+                    use_container_width=True,
+                    height=400
+                )
+            
+            with col2:
+                st.subheader("🏆 En İyi Performans")
+                if len(filtered_magaza) > 0:
+                    best_magaza = filtered_magaza.nlargest(5, 'Sevkiyat/İhtiyaç %')[['Mağaza Kodu', 'Sevkiyat/İhtiyaç %']]
+                    st.dataframe(best_magaza, use_container_width=True, key="best_magaza_table")
+                
+                st.subheader("⚠️ En Fazla Kayıp")
+                if len(filtered_magaza) > 0:
+                    worst_magaza = filtered_magaza.nlargest(5, 'Satış Kaybı')[['Mağaza Kodu', 'Satış Kaybı']]
+                    st.dataframe(worst_magaza, use_container_width=True, key="worst_magaza_table")
+            
+            st.markdown("---")
+            
+            # Grafikler
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if len(top_10_magaza) > 0:
+                    st.write("**Top 10 Mağaza - Sevkiyat Miktarı**")
+                    grafik_df_magaza = top_10_magaza.copy()
+                    grafik_df_magaza['Mağaza Kodu'] = grafik_df_magaza['Mağaza Kodu'].astype(str)
+                    grafik_df_magaza = grafik_df_magaza.set_index('Mağaza Kodu')[['Sevkiyat']]
+                    st.bar_chart(grafik_df_magaza, key="top10_magaza_chart")
+            
+            with col2:
+                if len(filtered_magaza) > 0:
+                    st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+                    oran_dagilim_magaza = filtered_magaza['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
+                    oran_dagilim_magaza_dict = {}
+                    for interval in oran_dagilim_magaza.index:
+                        key = f"%{int(interval.left)}-%{int(interval.right)}"
+                        oran_dagilim_magaza_dict[key] = oran_dagilim_magaza[interval]
+                    oran_dagilim_magaza_df = pd.DataFrame.from_dict(oran_dagilim_magaza_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(oran_dagilim_magaza_df, key="oran_dagilim_magaza_chart")
+            
+            st.markdown("---")
+            
+            # İndirme butonları
+            col1, col2 = st.columns(2)
+            with col1:
+                st.download_button(
+                    label="📥 Tüm Mağaza Analizi İndir (CSV)",
+                    data=magaza_sevkiyat.to_csv(index=False, encoding='utf-8-sig'),
+                    file_name="magaza_analizi_tum.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key="download_all_magaza"
+                )
+            with col2:
+                st.download_button(
+                    label="📥 Filtrelenmiş Mağazalar İndir (CSV)",
+                    data=filtered_magaza.to_csv(index=False, encoding='utf-8-sig'),
+                    file_name="magaza_analizi_filtreli.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key="download_filtered_magaza"
+                )
+
+        # ============================================
+        # SATIŞ KAYBI ANALİZİ - TAB3
+        # ============================================
+        with tab3:
+            st.subheader("⚠️ Satış Kaybı Analizi")
+            
+            # KOLON ADI DÜZELTMESİ
+            sevkiyat_kolon = 'sevkiyat_miktari' if 'sevkiyat_miktari' in result_df.columns else 'sevkiyat_gercek'
+            ihtiyac_kolon = 'ihtiyac_miktari' if 'ihtiyac_miktari' in result_df.columns else 'ihtiyac'
+            kayip_kolon = 'stok_yoklugu_satis_kaybi' if 'stok_yoklugu_satis_kaybi' in result_df.columns else 'stok_yoklugu_kaybi'
+            
+            # Kayıp olan kayıtları filtrele
+            kayiplar = result_df[result_df[kayip_kolon] > 0].copy()
+            
+            if len(kayiplar) == 0:
+                st.success("🎉 Hiç satış kaybı yok! Mükemmel performans!")
+            else:
+                st.warning(f"⚠️ **Toplam {len(kayiplar):,} kayıtta** satış kaybı tespit edildi.")
+                
+                # Toplam kayıp metrikleri
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Kayıp Kayıt Sayısı", f"{len(kayiplar):,}")
+                with col2:
+                    st.metric("Toplam Kayıp", f"{kayiplar[kayip_kolon].sum():,.0f}")
+                with col3:
+                    kayip_oran = (kayiplar[kayip_kolon].sum() / result_df[ihtiyac_kolon].sum() * 100) if result_df[ihtiyac_kolon].sum() > 0 else 0
+                    st.metric("Kayıp Oranı", f"{kayip_oran:.2f}%")
+                with col4:
+                    st.metric("Etkilenen Ürün", f"{kayiplar['urun_kod'].nunique():,}")
+                
+                st.markdown("---")
+                
+                # Ürün bazında kayıplar
+                urun_kayip = kayiplar.groupby('urun_kod').agg({
+                    kayip_kolon: 'sum',
+                    ihtiyac_kolon: 'sum',
+                    'magaza_kod': 'nunique'
+                }).reset_index()
+                
+                urun_kayip.columns = ['Ürün Kodu', 'Toplam Kayıp', 'Toplam İhtiyaç', 'Etkilenen Mağaza']
+                urun_kayip['Kayıp Oranı %'] = (urun_kayip['Toplam Kayıp'] / urun_kayip['Toplam İhtiyaç'] * 100).round(2)
+                urun_kayip = urun_kayip.sort_values('Toplam Kayıp', ascending=False)
+                
+                # En çok kayıplı 20 ürün
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.subheader("📉 En Çok Kayıplı Ürünler (Top 20)")
+                    st.dataframe(
+                        urun_kayip.head(20).style.format({
+                            'Toplam Kayıp': '{:,.0f}',
+                            'Toplam İhtiyaç': '{:,.0f}',
+                            'Kayıp Oranı %': '{:.1f}%',
+                            'Etkilenen Mağaza': '{:.0f}'
+                        }),
+                        use_container_width=True,
+                        height=400,
+                        key="top_kayip_urun_table"
+                    )
+                
+                with col2:
+                    st.subheader("📊 İstatistikler")
+                    st.metric("Toplam Kayıplı Ürün", f"{len(urun_kayip):,}")
+                    st.metric("Ort. Kayıp/Ürün", f"{urun_kayip['Toplam Kayıp'].mean():,.0f}")
+                    st.metric("Max Kayıp", f"{urun_kayip['Toplam Kayıp'].max():,.0f}")
+                
+                st.markdown("---")
+                
+                # Mağaza bazında kayıplar
+                st.subheader("🏪 Mağaza Bazında Kayıplar (Top 20)")
+                
+                magaza_kayip = kayiplar.groupby('magaza_kod').agg({
+                    kayip_kolon: 'sum',
+                    ihtiyac_kolon: 'sum',
+                    'urun_kod': 'nunique'
+                }).reset_index()
+                
+                magaza_kayip.columns = ['Mağaza Kodu', 'Toplam Kayıp', 'Toplam İhtiyaç', 'Etkilenen Ürün']
+                magaza_kayip['Kayıp Oranı %'] = (magaza_kayip['Toplam Kayıp'] / magaza_kayip['Toplam İhtiyaç'] * 100).round(2)
+                magaza_kayip = magaza_kayip.sort_values('Toplam Kayıp', ascending=False)
+                
+                st.dataframe(
+                    magaza_kayip.head(20).style.format({
+                        'Toplam Kayıp': '{:,.0f}',
+                        'Toplam İhtiyaç': '{:,.0f}',
+                        'Kayıp Oranı %': '{:.1f}%',
+                        'Etkilenen Ürün': '{:.0f}'
+                    }),
+                    use_container_width=True,
+                    height=300,
+                    key="top_kayip_magaza_table"
+                )
+                
+                st.markdown("---")
+                
+                # Grafikler
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write("**Top 10 Kayıplı Ürün**")
+                    top_10_kayip = urun_kayip.head(10).copy()
+                    top_10_kayip['Ürün Kodu'] = top_10_kayip['Ürün Kodu'].astype(str)
+                    top_10_kayip = top_10_kayip.set_index('Ürün Kodu')[['Toplam Kayıp']]
+                    st.bar_chart(top_10_kayip, key="top10_kayip_chart")
+                
+                with col2:
+                    st.write("**Kayıp Oranı Dağılımı**")
+                    kayip_dagilim = urun_kayip['Kayıp Oranı %'].value_counts(bins=10).sort_index()
+                    kayip_dagilim_dict = {}
+                    for interval in kayip_dagilim.index:
+                        key = f"%{int(interval.left)}-%{int(interval.right)}"
+                        kayip_dagilim_dict[key] = kayip_dagilim[interval]
+                    kayip_dagilim_df = pd.DataFrame.from_dict(kayip_dagilim_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(kayip_dagilim_df, key="kayip_dagilim_chart")
+                
+                st.markdown("---")
+                
+                # İndirme butonları
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.download_button(
+                        label="📥 Ürün Bazlı Kayıplar İndir",
+                        data=urun_kayip.to_csv(index=False, encoding='utf-8-sig'),
+                        file_name="urun_kayip_analizi.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="download_urun_kayip"
+                    )
+                with col2:
+                    st.download_button(
+                        label="📥 Mağaza Bazlı Kayıplar İndir",
+                        data=magaza_kayip.to_csv(index=False, encoding='utf-8-sig'),
+                        file_name="magaza_kayip_analizi.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="download_magaza_kayip"
+                    )
 
         # ============================================
         # İL BAZINDA HARİTA - DÜZELTİLMİŞ (UNIQUE KEY'LER)
@@ -1583,7 +1896,9 @@ elif menu == "📈 Raporlar":
                     
                     with col2:
                         st.write("**Segment Dağılımı**")
-                        segment_dagilim = segment_ozet.set_index('Performans Segmenti')[['İl Sayısı']]
+                        segment_dagilim = segment_ozet.copy()
+                        segment_dagilim['Performans Segmenti'] = segment_dagilim['Performans Segmenti'].astype(str)
+                        segment_dagilim = segment_dagilim.set_index('Performans Segmenti')[['İl Sayısı']]
                         st.bar_chart(segment_dagilim, key="segment_dagilim_chart")
                     
                     # İndirme butonu - UNIQUE KEY
