@@ -9,7 +9,7 @@ def disable_dataframes(data, **kwargs):
         st.write("📋 Sütunlar:", list(data.columns))
         
         # İlk 3 satırı basitçe göster
-        if st.checkbox("👀 İlk 3 satırı göster"):
+        if st.checkbox("👀 İlk 3 satırı göster", key="prepack_show_first_3"):
             for i in range(min(3, len(data))):
                 with st.expander(f"Satır {i+1}"):
                     for col in data.columns:
