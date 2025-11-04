@@ -148,14 +148,14 @@ elif menu == "🫧 Segmentasyon":
     # Ürün segmentasyonu
     st.subheader("🏷️ Ürün Segmentasyonu (Toplam Stok / Toplam Satış)")
     
-    use_default_product = st.checkbox("Varsayılan aralıkları kullan (Ürün)", value=True)
+    use_default_product = st.checkbox("Varsayılan aralıkları kullan (Ürün)", value=True, key="seg_use_default_product")
     
     if use_default_product:
         st.write("**Varsayılan Aralıklar**: 0-4, 5-8, 9-12, 12-15, 15-20, 20+")
         product_ranges = [(0, 4), (5, 8), (9, 12), (12, 15), (15, 20), (20, float('inf'))]
     else:
         st.write("Özel aralıklar tanımlayın:")
-        num_ranges = st.number_input("Kaç aralık?", min_value=2, max_value=10, value=6)
+        num_ranges = st.number_input("Kaç aralık?", min_value=2, max_value=10, value=6, key="seg_num_ranges_product")
         
         product_ranges = []
         for i in range(num_ranges):
@@ -261,7 +261,7 @@ elif menu == "🫧 Segmentasyon":
     # Mağaza segmentasyonu
     st.subheader("🏪 Mağaza Segmentasyonu (Toplam Stok / Toplam Satış)")
     
-    use_default_store = st.checkbox("Varsayılan aralıkları kullan (Mağaza)", value=True)
+    use_default_store = st.checkbox("Varsayılan aralıkları kullan (Mağaza)", value=True, key="seg_use_default_store")
     
     if use_default_store:
         st.write("**Varsayılan Aralıklar**: 0-4, 5-8, 9-12, 12-15, 15-20, 20+")
@@ -392,7 +392,7 @@ elif menu == "🫧 Segmentasyon":
     
     with col1:
         # Excel formatında (iki sheet)
-        if st.button("📊 Excel İndir (Ürün + Mağaza)", width='content'):
+        if st.button("📊 Excel İndir (Ürün + Mağaza)", width='content', key="seg_export_excel"):
             try:
                 import io
                 from io import BytesIO
@@ -416,7 +416,7 @@ elif menu == "🫧 Segmentasyon":
     
     with col2:
         # ZIP formatında (iki CSV)
-        if st.button("📦 ZIP İndir (2 CSV)", width='content'):
+        if st.button("📦 ZIP İndir (2 CSV)", width='content', key="seg_export_zip"):
             import zipfile
             import io
             
@@ -1190,6 +1190,9 @@ elif menu == "📐 Hesaplama":
                     st.metric("Toplam Adet", f"{sap_data['sevk_adet'].sum():,}")
                 
                 # İndirme butonu
+                st.markdown("---")
+                st.info("💡 **Not:** Hesaplama başarılı olduysa aşağıdaki butonlar görünecektir. Eğer hata aldıysanız yukarıdaki hata mesajını kontrol edin.")
+                
                 col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
                     st.download_button(
@@ -1198,7 +1201,7 @@ elif menu == "📐 Hesaplama":
                         file_name="sap_sevkiyat_detay.csv",
                         mime="text/csv",
                         use_container_width=True,
-                        key="download_sap_csv"
+                        key="hesaplama_download_sap_csv"
                     )
                 
                 with col2:
@@ -1208,7 +1211,7 @@ elif menu == "📐 Hesaplama":
                         file_name="sevkiyat_tam_detay.csv",
                         mime="text/csv",
                         use_container_width=True,
-                        key="download_full_csv"
+                        key="hesaplama_download_full_csv"
                     )
                 
             except Exception as e:
