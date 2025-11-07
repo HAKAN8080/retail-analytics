@@ -184,7 +184,7 @@ if menu == "🏠 Ana Sayfa":
     ### 📐 Güncellenmiş Formül (DÜZELTİLDİ ✅)
 ```
     Net İhtiyaç = Brüt İhtiyaç - Açık Sipariş
-    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 2)] - [Mevcut Stoklar] + Karşılanamayan Min İhtiyaç
+    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 6)] - [Mevcut Stoklar] + Karşılanamayan Min İhtiyaç
     
     Karşılanamayan Min İhtiyaç = MAX(0, Min Gerekli Stok - Mevcut Stoklar)
     
@@ -1212,6 +1212,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 width='stretch'
             )
+
 
 
 
