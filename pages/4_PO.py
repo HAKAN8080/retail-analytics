@@ -3,45 +3,6 @@ import pandas as pd
 import numpy as np
 import time
 
-# 🎯 STREAMLIT ARROW HATASI ÇÖZÜMÜ - TÜM DATAFRAME'LERİ KAPAT
-def disable_dataframes(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        st.write(f"📊 Veri: {data.shape[0]} satır × {data.shape[1]} sütun")
-        st.write("📋 Sütunlar:", list(data.columns))
-        
-        # İlk 3 satırı basitçe göster
-        # Her dataframe için farklı bir key oluştur
-        unique_key = f"df_view_{id(data)}"  # ✅ Unique key!
-        if st.checkbox("👀 İlk 3 satırı göster", key=unique_key):
-            for i in range(min(3, len(data))):
-                with st.expander(f"Satır {i+1}"):
-                    for col in data.columns:
-                        st.write(f"**{col}:** {data.iloc[i][col]}")
-        return
-    
-    # DataFrame değilse normal göster
-    st.write(data)
-
-# TÜM DATAFRAME GÖSTERİMLERİNİ DEĞİŞTİR
-st.dataframe = disable_dataframes
-st.data_editor = disable_dataframes  
-st.table = disable_dataframes
-
-
-
-
-# 🎯 DATAFRAME GÖSTERİMİNİ BASİTLEŞTİR
-def simple_display(data, **kwargs):
-    if isinstance(data, pd.DataFrame):
-        st.write(f"📊 Veri: {len(data)} satır × {len(data.columns)} sütun")
-        if st.checkbox("🔍 İlk 10 satırı göster"):
-            for i in range(min(10, len(data))):
-                st.write(f"**Satır {i+1}:**", dict(data.iloc[i]))
-        return
-    st.write(data)
-
-st.dataframe = simple_display
-
 # Sayfa konfigürasyonu
 st.set_page_config(
     page_title="Alım Sipariş (PO)",
@@ -124,7 +85,7 @@ if menu == "🏠 Ana Sayfa":
         - PO Detay KPI (marka/MG bazında özel hedefler için)
         """)
         
-        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", width='stretch'):
+        if st.button("➡️ Veri Yükleme Sayfasına Git", type="primary", use_container_width=True):
             st.switch_page("pages/0_Veri_Yukleme.py")
         
         st.stop()
@@ -176,29 +137,6 @@ if menu == "🏠 Ana Sayfa":
     5. **🏪 Depo Bazlı Çıktı**
        - Her depo için ayrı sipariş listesi
        - Tedarikçi bazında gruplama
-    """)
-    
-    st.markdown("---")
-    
-    st.markdown("""
-    ### 📐 Güncellenmiş Formül (DÜZELTİLDİ ✅)
-```
-    Net İhtiyaç = Brüt İhtiyaç - Açık Sipariş
-    Brüt İhtiyaç = [(Satış × Genişletme × (Forward Cover + 6)] - [Mevcut Stoklar] + Karşılanamayan Min İhtiyaç
-    
-    Karşılanamayan Min İhtiyaç = MAX(0, Min Gerekli Stok - Mevcut Stoklar)
-    
-    Forward Cover Düzeltmesi:
-    - İthal ürünler için: FC × 1.2
-    - Yerli ürünler için: FC × 1.0
-    
-    Koli Yuvarlaması:
-    Koli Sayısı = YUKARI_YUVARLA(Net İhtiyaç / Koli İçi)
-    Final Miktar = Koli Sayısı × Koli İçi
-```
-    
-    **⚠️ ÖNEMLİ DÜZELTME:** 
-    Min sevkiyat artık direkt eklenmek yerine, sadece karşılanamayan minimum ihtiyaç kadar ekleniyor!
     """)
 
 # ============================================
@@ -262,7 +200,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
         cover_threshold = st.number_input(
             "Cover < X için hesapla",
             min_value=0,
-            max_value=200,
+            max_value=100,
             value=15,
             step=1,
             help="Sadece cover değeri X'ten küçük ürünler hesaplanır"
@@ -332,13 +270,15 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     
     edited_cover_matrix = st.data_editor(
         st.session_state.cover_segment_matrix,
-        width='stretch',
+        use_container_width=True,
         hide_index=True,
+        num_rows="fixed",
         column_config={
             "cover_segment": st.column_config.TextColumn(
                 "Cover Segment",
                 disabled=True,
-                width="medium"
+                width="medium",
+                help="Ürün cover aralığı"
             ),
             "katsayi": st.column_config.NumberColumn(
                 "Genişletme Katsayısı",
@@ -347,7 +287,8 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 step=0.1,
                 format="%.2f",
                 required=True,
-                width="medium"
+                width="medium",
+                help="Bu segment için genişletme çarpanı"
             )
         }
     )
@@ -359,7 +300,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     st.markdown("---")
     
     # HESAPLAMA
-    if st.button("🚀 Alım Sipariş Hesapla", type="primary", width='stretch'):
+    if st.button("🚀 Alım Sipariş Hesapla", type="primary", use_container_width=True):
         try:
             with st.spinner("📊 Hesaplama yapılıyor..."):
                 
@@ -385,12 +326,12 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     lambda x: str(int(float(x))) if '.' in str(x) else str(x)
                 )
                 
-                # 2. ÜRÜN MASTER VARSA EKLE - AD ALANLARI KALDIRILDI
+                # 2. ÜRÜN MASTER VARSA EKLE
                 if st.session_state.urun_master is not None:
                     urun_master = st.session_state.urun_master.copy()
                     urun_master['urun_kod'] = urun_master['urun_kod'].astype(str)
                     
-                    # Gerekli kolonları seç - AD ALANLARI YOK
+                    # Gerekli kolonları seç
                     master_cols = ['urun_kod']
                     if 'satici_kod' in urun_master.columns:
                         master_cols.append('satici_kod')
@@ -560,7 +501,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     if ithal_sayisi > 0:
                         st.info(f"ℹ️ {ithal_sayisi} ithal ürün için FC × {ithal_factor} uygulandı")
                 
-                # 11. MIN SEVK EKLE (KARŞILANAMAYAN MİNİMUM İHTİYAÇ) ✅ DÜZELTİLDİ
+                # 11. MIN SEVK EKLE (KARŞILANAMAYAN MİNİMUM İHTİYAÇ)
                 if st.session_state.sevkiyat_sonuc is not None:
                     sevk_df = st.session_state.sevkiyat_sonuc.copy()
                     sevk_df['urun_kod'] = sevk_df['urun_kod'].astype(str)
@@ -572,17 +513,15 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     urun_toplam = urun_toplam.merge(min_sevk, on='urun_kod', how='left')
                     urun_toplam['min_gerekli_stok'] = urun_toplam['min_gerekli_stok'].fillna(0)
                     
-                    # Mevcut stokları hesapla (cover hesabında kullanılan toplam_stok)
+                    # Mevcut stokları hesapla
                     urun_toplam['mevcut_stok'] = urun_toplam['toplam_stok']
                     
                     # Karşılanamayan minimum ihtiyacı hesapla
-                    # Sadece mevcut stokların minimum gerekli stoku karşılayamadığı miktar
                     urun_toplam['karsilanamayan_min'] = np.maximum(
                         0,
                         urun_toplam['min_gerekli_stok'] - urun_toplam['mevcut_stok']
                     )
                     
-                    # Debug bilgisi için min_sevk_adeti kolonunu da koruyalım
                     urun_toplam['min_sevk_adeti'] = urun_toplam['min_gerekli_stok']
                     
                     # Karşılanamayan miktar bilgisini göster
@@ -615,42 +554,19 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 filtre_sayisi = urun_toplam['filtre_uygun'].sum()
                 st.write(f"**✅ Filtreye uygun:** {filtre_sayisi} ürün")
                 
-                # 13. ALIM SİPARİŞ HESAPLA (DÜZELTİLMİŞ FORMÜL) ✅
+                # 13. ALIM SİPARİŞ HESAPLA - FC + 5 ✅
                 urun_toplam['talep'] = (
                     urun_toplam['satis'] * 
                     urun_toplam['genlestirme_katsayisi'] * 
-                    (urun_toplam['forward_cover'] + 2)
+                    (urun_toplam['forward_cover'] + 5)  # ✅ +2'den +5'e değişti
                 )
                 
-                # Brüt ihtiyaç - DÜZELTİLMİŞ FORMÜL
+                # Brüt ihtiyaç
                 urun_toplam['brut_ihtiyac'] = (
                     urun_toplam['talep'] - 
                     urun_toplam['mevcut_stok'] + 
-                    urun_toplam['karsilanamayan_min']  # ✅ Sadece karşılanamayan miktar ekleniyor
+                    urun_toplam['karsilanamayan_min']
                 )
-                
-                # ESKİ VE YENİ HESAPLAMA KARŞILAŞTIRMASI (DEBUG)
-                if st.session_state.sevkiyat_sonuc is not None:
-                    # Eski formülle hesaplama (karşılaştırma için)
-                    urun_toplam['brut_ihtiyac_eski'] = (
-                        urun_toplam['talep'] - 
-                        urun_toplam['mevcut_stok'] + 
-                        urun_toplam['min_sevk_adeti']  # Eski: tüm min sevkiyat eklenirdi
-                    )
-                    
-                    fark_toplam = (urun_toplam['brut_ihtiyac_eski'] - urun_toplam['brut_ihtiyac']).sum()
-                    if fark_toplam > 0:
-                        st.success(f"✅ Yeni formül ile {fark_toplam:,.0f} adet gereksiz sipariş önlendi!")
-                        
-                        with st.expander("📊 Formül Karşılaştırması"):
-                            karsilastirma_df = urun_toplam[
-                                (urun_toplam['min_gerekli_stok'] > 0) & 
-                                (urun_toplam['karsilanamayan_min'] < urun_toplam['min_sevk_adeti'])
-                            ][['urun_kod', 'mevcut_stok', 'min_gerekli_stok', 'karsilanamayan_min', 'brut_ihtiyac_eski', 'brut_ihtiyac']].head(10)
-                            
-                            if len(karsilastirma_df) > 0:
-                                karsilastirma_df['tasarruf'] = karsilastirma_df['brut_ihtiyac_eski'] - karsilastirma_df['brut_ihtiyac']
-                                st.dataframe(karsilastirma_df, width='stretch')
                 
                 # Net ihtiyaç (açık siparişleri düş)
                 urun_toplam['net_ihtiyac'] = urun_toplam['brut_ihtiyac'] - urun_toplam['acik_siparis']
@@ -724,7 +640,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                         toplam_acik = urun_toplam['acik_siparis'].sum()
                         st.metric("📋 Açık Sipariş", f"{toplam_acik:,.0f}")
                 
-                # DETAYLI TABLO - AD ALANLARI KALDIRILDI
+                # DETAYLI TABLO
                 st.markdown("---")
                 st.subheader("📋 Alım Sipariş Detayı")
                 
@@ -732,7 +648,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 pozitif_df = urun_toplam[urun_toplam['alim_siparis_final'] > 0].copy()
                 
                 if len(pozitif_df) > 0:
-                    # Gösterilecek kolonları seç - AD ALANLARI YOK
+                    # Gösterilecek kolonları seç
                     display_cols = ['urun_kod', 'cover_segment', 'cover', 'brut_kar_marji', 
                                     'satis', 'toplam_stok']
                     
@@ -778,7 +694,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     
                     st.dataframe(
                         display_df.style.format(format_dict),
-                        width='stretch',
+                        use_container_width=True,
                         height=400
                     )
                     
@@ -793,12 +709,12 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                             data=csv_data,
                             file_name=f"alim_siparis_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.csv",
                             mime="text/csv",
-                            width='stretch'
+                            use_container_width=True
                         )
                     
                     with col2:
-                        if st.button("📊 Depo Bazlı Görünüme Git", width='stretch'):
-                            st.switch_page("pages/4_PO.py")  # Aynı sayfada menü değiştir
+                        if st.button("📊 Depo Bazlı Görünüme Git", use_container_width=True):
+                            st.switch_page("pages/4_PO.py")
                 
                 else:
                     st.warning("⚠️ Filtrelere uygun ürün bulunamadı!")
@@ -910,7 +826,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                 'Toplam Brüt Kar': '{:,.2f}',
                 'Alım Payı %': '{:.1f}%'
             }),
-            width='stretch'
+            use_container_width=True
         )
     
     # KARLILIK ANALİZİ
@@ -938,10 +854,10 @@ elif menu == "📊 Alım Sipariş Raporları":
                 'Toplam Alım': '{:,.0f}',
                 'Toplam Brüt Kar': '{:,.2f}'
             }),
-            width='stretch'
+            use_container_width=True
         )
     
-    # TEDARİKÇİ ANALİZİ - AD ALANLARI KALDIRILDI
+    # TEDARİKÇİ ANALİZİ
     with tab3:
         if 'satici_kod' in alim_df.columns:
             st.subheader("📦 Tedarikçi Bazında Analiz")
@@ -957,7 +873,8 @@ elif menu == "📊 Alım Sipariş Raporları":
             # Koli bilgisi varsa ekle
             if 'alim_koli' in alim_df.columns:
                 koli_analiz = alim_df.groupby(['satici_kod'])['alim_koli'].sum().reset_index()
-                tedarikci_analiz = tedarikci_analiz.merge(koli_analiz, on='satici_kod', how='left')
+                tedarikci_analiz = tedarikci_analiz.merge(koli_analiz, left_on='Tedarikçi Kod', right_on='satici_kod', how='left')
+                tedarikci_analiz.drop('satici_kod', axis=1, inplace=True)
                 tedarikci_analiz.rename(columns={'alim_koli': 'Toplam Koli'}, inplace=True)
             
             st.dataframe(
@@ -966,7 +883,7 @@ elif menu == "📊 Alım Sipariş Raporları":
                     'Toplam Alım': '{:,.0f}',
                     'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in tedarikci_analiz.columns else None
                 }),
-                width='stretch'
+                use_container_width=True
             )
         else:
             st.info("ℹ️ Tedarikçi bilgisi bulunamadı (Ürün Master'da satici_kod yok)")
@@ -986,7 +903,8 @@ elif menu == "📊 Alım Sipariş Raporları":
             # Koli bilgisi varsa ekle
             if 'alim_koli' in alim_df.columns:
                 depo_koli = alim_df.groupby(['depo_kod'])['alim_koli'].sum().reset_index()
-                depo_analiz = depo_analiz.merge(depo_koli, on='depo_kod', how='left')
+                depo_analiz = depo_analiz.merge(depo_koli, left_on='Depo Kod', right_on='depo_kod', how='left')
+                depo_analiz.drop('depo_kod', axis=1, inplace=True)
                 depo_analiz.rename(columns={'alim_koli': 'Toplam Koli'}, inplace=True)
             
             depo_analiz = depo_analiz.sort_values('Toplam Alım', ascending=False)
@@ -997,13 +915,13 @@ elif menu == "📊 Alım Sipariş Raporları":
                     'Toplam Alım': '{:,.0f}',
                     'Toplam Koli': '{:,.0f}' if 'Toplam Koli' in depo_analiz.columns else None
                 }),
-                width='stretch'
+                use_container_width=True
             )
         else:
             st.info("ℹ️ Depo bilgisi bulunamadı")
 
 # ============================================
-# 📦 DEPO BAZLI SİPARİŞ - AD ALANLARI KALDIRILDI
+# 📦 DEPO BAZLI SİPARİŞ
 # ============================================
 elif menu == "📦 Depo Bazlı Sipariş":
     st.title("📦 Depo Bazlı Sipariş Listeleri")
@@ -1094,7 +1012,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
     # Detaylı tablo
     st.subheader("📋 Sipariş Detayı")
     
-    # Gösterilecek sütunları belirle - AD ALANLARI YOK
+    # Gösterilecek sütunları belirle
     display_cols = ['urun_kod']
     
     if 'satici_kod' in display_df.columns:
@@ -1154,7 +1072,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
     
     st.dataframe(
         final_df.style.format(format_dict),
-        width='stretch',
+        use_container_width=True,
         height=500
     )
     
@@ -1174,7 +1092,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
             data=csv_data,
             file_name=filename,
             mime="text/csv",
-            width='stretch'
+            use_container_width=True
         )
     
     with col2:
@@ -1198,7 +1116,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 data=csv_ozet,
                 file_name=f"ozet_{selected_depo}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
-                width='stretch'
+                use_container_width=True
             )
     
     with col3:
@@ -1210,11 +1128,5 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 data=tum_csv,
                 file_name=f"tum_depolar_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
-                width='stretch'
+                use_container_width=True
             )
-
-
-
-
-
-
