@@ -379,10 +379,19 @@ elif menu == "🫧 Segmentasyon":
                 'product_ranges': product_ranges,
                 'store_ranges': store_ranges
             }
+            
+            # BURASI ÖNEMLİ - Segmentleri de kaydet
+            st.session_state.prod_segments = prod_segments
+            st.session_state.store_segments = store_segments
+            
+            # Segment mapping'leri de kaydet
+            st.session_state.urun_segment_map = temp_prod.set_index('urun_kod')['segment'].to_dict()
+            st.session_state.magaza_segment_map = temp_store.set_index('magaza_kod')['segment'].to_dict()
+            
             st.success("✅ Ayarlar kaydedildi!")
     with col2:
-        st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
-    
+        st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")    
+        
     st.markdown("---")
     
     # HER İKİSİNİ BİRLİKTE İNDİR
