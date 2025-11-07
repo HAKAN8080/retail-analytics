@@ -10,11 +10,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-# ============================================
-# ANA SAYFA
-# ============================================
-st.title("📊 Retail Analytics Platform")
-st.markdown("---")
+
 # ============================================
 # ANA SAYFA
 # ============================================
