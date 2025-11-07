@@ -20,9 +20,6 @@ st.markdown("---")
 # ============================================
 # HOŞ GELDİNİZ
 # ============================================
-col1, col2 = st.columns([2, 1])
-
-with col1:
     st.markdown("""
     ### 👋 Hoş Geldiniz! """)
     
@@ -34,9 +31,5 @@ with col1:
     4. Analiz sonuçlarını görüntüleyin
     5. Raporları CSV formatında indirin
     """)
-
-with col2:
-    st.info("""
-    ### 📚 Kullanım Kılavuzu""")
 
 st.markdown("---")
