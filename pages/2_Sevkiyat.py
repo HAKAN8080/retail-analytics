@@ -368,11 +368,27 @@ elif menu == "🫧 Segmentasyon":
             mime="text/csv",
             key="download_magaza_segment"
         )
-    
+        # Segmentasyon bölümünün EN SONU - Kaydet butonu bölümü
+
         st.markdown("---")
         
-        # Segment listelerini hazırla (Kaydet butonundan ÖNCE)
+        # ÖNCE değişkenleri hazırla
+        # Ürün için
+        if use_default_product:
+            product_ranges = [(0, 4), (5, 8), (9, 12), (12, 15), (15, 20), (20, float('inf'))]
+        else:
+            # Özel aralıklar zaten yukarıda tanımlanmış
+            pass
+        
         product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+        
+        # Mağaza için
+        if use_default_store:
+            store_ranges = [(0, 4), (5, 8), (9, 12), (12, 15), (15, 20), (20, float('inf'))]
+        else:
+            # Özel aralıklar zaten yukarıda tanımlanmış
+            pass
+        
         store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
         
         # Kaydet butonu
@@ -383,20 +399,18 @@ elif menu == "🫧 Segmentasyon":
                     'product_ranges': product_ranges,
                     'store_ranges': store_ranges
                 }
-                
-                # Segmentleri kaydet
                 st.session_state.prod_segments = product_labels
                 st.session_state.store_segments = store_labels
                 
-                # Segment mapping kaydet
-                if 'temp_prod' in locals() and temp_prod is not None:
+                if temp_prod is not None:
                     st.session_state.urun_segment_map = temp_prod.set_index('urun_kod')['segment'].to_dict()
-                if 'temp_store' in locals() and temp_store is not None:
+                if temp_store is not None:
                     st.session_state.magaza_segment_map = temp_store.set_index('magaza_kod')['segment'].to_dict()
                 
                 st.success("✅ Ayarlar kaydedildi!")
         with col2:
-            st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")    
+            st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
+        
             
     st.markdown("---")
     
