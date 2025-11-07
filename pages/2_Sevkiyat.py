@@ -465,6 +465,9 @@ elif menu == "🎲 Hedef Matris":
 # ============================================
 # 🚚 HESAPLAMA - DÜZELTİLMİŞ VERSİYON
 # ============================================
+# ============================================
+# 🚚 HESAPLAMA - TAM DÜZELTİLMİŞ VERSİYON
+# ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
     st.markdown("---")
@@ -564,46 +567,68 @@ elif menu == "📐 Hesaplama":
                                 
                 except Exception as e:
                     st.warning(f"⚠️ KPI atama hatası: {e}")
-                    # Hata durumunda default değerleri kullan
                     df['min_deger'] = 0.0
                     df['max_deger'] = 999999.0
                 
-                # 5. MATRİS DEĞERLERİ - GÜVENLİ ATAMA
-                # Önce bu kolonları oluştur
+                # 5. MATRİS DEĞERLERİ - TAM GÜVENLİ ATAMA
+                # Önce kolonları default değerlerle oluştur
                 df['genlestirme'] = 1.0
                 df['sisme'] = 0.5
                 df['min_oran'] = 1.0
                 df['initial_katsayi'] = 1.0
                 
-                # Matris değerlerini segment bazında uygula
-                if (st.session_state.genlestirme_orani is not None and 
-                    st.session_state.sisme_orani is not None and
-                    st.session_state.min_oran is not None and
-                    st.session_state.initial_matris is not None):
+                # Matris değerlerini segment bazında uygula - GÜVENLİ VERSİYON
+                try:
+                    # Tüm matrislerin var olduğunu kontrol et
+                    all_matrices_exist = all([
+                        st.session_state.genlestirme_orani is not None,
+                        st.session_state.sisme_orani is not None,
+                        st.session_state.min_oran is not None,
+                        st.session_state.initial_matris is not None
+                    ])
                     
-                    try:
+                    if all_matrices_exist:
+                        # Her bir satır için matris değerlerini uygula
                         for idx, row in df.iterrows():
                             urun_seg = str(row['urun_segment'])
                             magaza_seg = str(row['magaza_segment'])
                             
-                            if (urun_seg in st.session_state.genlestirme_orani.index and 
-                                magaza_seg in st.session_state.genlestirme_orani.columns):
-                                df.at[idx, 'genlestirme'] = st.session_state.genlestirme_orani.loc[urun_seg, magaza_seg]
+                            # Genleştirme oranı
+                            try:
+                                if (urun_seg in st.session_state.genlestirme_orani.index and 
+                                    magaza_seg in st.session_state.genlestirme_orani.columns):
+                                    df.at[idx, 'genlestirme'] = float(st.session_state.genlestirme_orani.loc[urun_seg, magaza_seg])
+                            except Exception:
+                                pass
                             
-                            if (urun_seg in st.session_state.sisme_orani.index and 
-                                magaza_seg in st.session_state.sisme_orani.columns):
-                                df.at[idx, 'sisme'] = st.session_state.sisme_orani.loc[urun_seg, magaza_seg]
+                            # Şişme oranı
+                            try:
+                                if (urun_seg in st.session_state.sisme_orani.index and 
+                                    magaza_seg in st.session_state.sisme_orani.columns):
+                                    df.at[idx, 'sisme'] = float(st.session_state.sisme_orani.loc[urun_seg, magaza_seg])
+                            except Exception:
+                                pass
                             
-                            if (urun_seg in st.session_state.min_oran.index and 
-                                magaza_seg in st.session_state.min_oran.columns):
-                                df.at[idx, 'min_oran'] = st.session_state.min_oran.loc[urun_seg, magaza_seg]
+                            # Min oran
+                            try:
+                                if (urun_seg in st.session_state.min_oran.index and 
+                                    magaza_seg in st.session_state.min_oran.columns):
+                                    df.at[idx, 'min_oran'] = float(st.session_state.min_oran.loc[urun_seg, magaza_seg])
+                            except Exception:
+                                pass
                             
-                            if (urun_seg in st.session_state.initial_matris.index and 
-                                magaza_seg in st.session_state.initial_matris.columns):
-                                df.at[idx, 'initial_katsayi'] = st.session_state.initial_matris.loc[urun_seg, magaza_seg]
-                                
-                    except Exception as e:
-                        st.warning(f"⚠️ Matris değer atama hatası: {e}")
+                            # Initial katsayı
+                            try:
+                                if (urun_seg in st.session_state.initial_matris.index and 
+                                    magaza_seg in st.session_state.initial_matris.columns):
+                                    df.at[idx, 'initial_katsayi'] = float(st.session_state.initial_matris.loc[urun_seg, magaza_seg])
+                            except Exception:
+                                pass
+                    else:
+                        st.info("ℹ️ Hedef matris değerleri tanımlı değil, default değerler kullanılıyor.")
+                        
+                except Exception as e:
+                    st.warning(f"⚠️ Matris değer atama hatası (default değerler kullanılacak): {str(e)}")
                 
                 # 6. RPT/MIN/INITIAL DURUMLARI
                 rpt = df.copy()
@@ -636,7 +661,7 @@ elif menu == "📐 Hesaplama":
                 if 'depo_kod' in magaza_df.columns:
                     result = result.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
                 else:
-                    result['depo_kod'] = 'DEPO_01'  # Fallback değer
+                    result['depo_kod'] = 'DEPO_01'
                 
                 # 9. YASAK KONTROL
                 if (st.session_state.yasak_master is not None and 
@@ -647,7 +672,6 @@ elif menu == "📐 Hesaplama":
                     yasak['urun_kod'] = yasak['urun_kod'].astype(str)
                     yasak['magaza_kod'] = yasak['magaza_kod'].astype(str)
                     
-                    # Sadece yasak_durum kolonu varsa kullan
                     if 'yasak_durum' in yasak.columns:
                         result = result.merge(
                             yasak[['urun_kod', 'magaza_kod', 'yasak_durum']], 
@@ -659,7 +683,7 @@ elif menu == "📐 Hesaplama":
                 # 10. DEPO STOK DAĞITIMI
                 result = result[result['ihtiyac'] > 0].copy()
                 
-                # Depo stok sözlüğü oluştur
+                # Depo stok sözlüğü
                 depo_dict = {}
                 for _, row in depo_df.iterrows():
                     depo_kod = str(row.get('depo_kod', 'DEPO_01'))
@@ -670,8 +694,6 @@ elif menu == "📐 Hesaplama":
                 # Öncelik sıralaması
                 if st.session_state.siralama_data is not None:
                     siralama_df = st.session_state.siralama_data.copy()
-                    # Sıralama mantığı burada uygulanacak
-                    # Basit sıralama için:
                     result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
                 else:
                     result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
@@ -700,7 +722,6 @@ elif menu == "📐 Hesaplama":
                     'stok', 'yol', 'satis', 'ihtiyac', 'sevkiyat_miktari', 'depo_kod', 'stok_yoklugu_satis_kaybi'
                 ]
                 
-                # Sadece mevcut kolonları kullan
                 available_columns = [col for col in final_columns if col in result.columns]
                 final = result[available_columns].copy()
                 
@@ -725,7 +746,7 @@ elif menu == "📐 Hesaplama":
                 
                 st.markdown("---")
                 
-                # ÖZET METRİKLER - GELİŞTİRİLMİŞ
+                # ÖZET METRİKLER
                 st.subheader("📊 Özet Metrikler")
                 col1, col2, col3, col4 = st.columns(4)
                 
@@ -747,36 +768,26 @@ elif menu == "📐 Hesaplama":
                 
                 st.markdown("---")
                 
-                # SAP İÇİN DETAYLI CSV İNDİRME
+                # SAP DOSYASI
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
                 st.info("Bu dosyayı SAP sistemine yükleyebilirsiniz")
                 
-                # SAP formatında veri hazırla - SADECE TEMEL BİLGİLER
                 sap_data = final[['magaza_kod', 'urun_kod', 'depo_kod', 'sevkiyat_miktari']].copy()
                 sap_data.columns = ['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet']
-                
-                # Sadece sevkiyatı olan kayıtları al
                 sap_data = sap_data[sap_data['sevk_adet'] > 0]
                 
-                # Önizleme
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
                     st.write("**Dosya Önizlemesi (İlk 10 satır):**")
-                    st.dataframe(
-                        sap_data.head(10),
-                        use_container_width=True,
-                        height=300
-                    )
+                    st.dataframe(sap_data.head(10), use_container_width=True, height=300)
                 
                 with col2:
                     st.metric("Toplam Sevkiyat Satırı", f"{len(sap_data):,}")
                     st.metric("Toplam Sevk Adet", f"{sap_data['sevk_adet'].sum():,}")
                     st.metric("Ortalama Sevk/Satır", f"{sap_data['sevk_adet'].mean():,.1f}")
                 
-                # İndirme butonu
                 st.markdown("---")
-                st.info("💡 **Not:** Hesaplama başarılı olduysa aşağıdaki butonlar görünecektir. Eğer hata aldıysanız yukarıdaki hata mesajını kontrol edin.")
                 
                 col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
