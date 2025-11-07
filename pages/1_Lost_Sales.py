@@ -1,42 +1,45 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.express as px
-from datetime import datetime
 
-
-# Sayfa konfigürasyonu
+# Sayfa config
 st.set_page_config(
-    page_title="Prepack Optimization",
-    page_icon="📦",
+    page_title="Lost Sales Analizi",
+    page_icon="📉",
     layout="wide"
 )
 
-# Basit sidebar navigasyon
-st.sidebar.title("🔗 Navigasyon")
-
-# Manuel butonlarla navigasyon - UNIQUE KEY'LER EKLENDİ
-col1, col2, col3, col4 = st.sidebar.columns(4)
-with col1:
-    if st.button("🏠", help="Ana Sayfa", key="prepack_nav_home"):
-        st.switch_page("app.py")
-with col2:
-    if st.button("📤", help="Veri Yükleme", key="prepack_nav_data"):
-        st.switch_page("pages/1_Veri_Yukleme.py")
-with col3:
-    if st.button("📈", help="Lost Sales", key="prepack_nav_lost"):
-        st.switch_page("pages/2_Lost_Sales.py")
-with col4:
-    if st.button("📦", help="Prepack Optimization", key="prepack_nav_prepack"):
-        st.switch_page("pages/3_Prepack_Optimization.py")
-
-# Sayfa içeriği - Sadece yapım aşamasında mesajı
-st.title("📦 Prepack Optimization")
+st.title("📉 Lost Sales Analizi")
 st.markdown("---")
 
-st.info("🚧 **Yapım Aşamasında**")
-st.write("Bu sayfa şu anda geliştirme aşamasındadır. Yakında kullanıma sunulacaktır.")
+# Yapım aşamasında mesajı
+st.info("🚧 **Bu sayfa yapım aşamasındadır.** 🚧")
 
-# Boşluk için
-for _ in range(8):
-    st.write("")
+st.markdown("""
+### Yakında Eklenecek Özellikler:
+
+- 📊 Satış kaybı analizi
+- 📈 Stok yetersizliği raporları
+- 🎯 Ürün ve mağaza bazında kayıp hesaplamaları
+- 📉 Trend analizleri
+- 💰 Gelir kaybı tahminleri
+
+---
+
+**Not:** Bu sayfa şu anda aktif değildir. Diğer sayfaları kullanabilirsiniz:
+- 🏠 Ana Sayfa
+- 💾 Veri Yükleme
+- 📦 Sevkiyat Planlama
+- 💵 Alım Sipariş (PO)
+""")
+
+st.markdown("---")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("⬅️ Ana Sayfaya Dön", use_container_width=True):
+        st.switch_page("app.py")
+
+with col2:
+    if st.button("➡️ Sevkiyat Planlamaya Git", use_container_width=True):
+        st.switch_page("pages/2_Sevkiyat.py")
