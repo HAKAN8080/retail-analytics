@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # ============================================
-# SESSION STATE BAŞLATMA - TEK SEFER
+# SESSION STATE BAŞLATMA - TEK SEFERDE
 # ============================================
 
 # Veri dosyaları
