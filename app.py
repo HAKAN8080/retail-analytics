@@ -31,10 +31,7 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.markdown("""
-    ### 👋 Hoş Geldiniz!
-    
-    Bu platform, perakende operasyonlarınızı optimize etmek için Thorius'un geliştirdiği güçlü analiz modülleri sunar:
-    """)
+    ### 👋 Hoş Geldiniz! """)
     
     st.success("""
     **🚀 Hızlı Başlangıç:**
