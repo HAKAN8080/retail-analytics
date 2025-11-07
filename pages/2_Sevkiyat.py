@@ -100,6 +100,9 @@ if menu == "🏠 Ana Sayfa":
 # ============================================
 # 🎯 SEGMENTASYON AYARLARI
 # ============================================
+# ============================================
+# 🫧 SEGMENTASYON AYARLARI - DÜZELTİLMİŞ
+# ============================================
 elif menu == "🫧 Segmentasyon":
     st.title("🫧 Segmentasyon")
     st.markdown("---")
@@ -245,16 +248,34 @@ elif menu == "🫧 Segmentasyon":
             
     st.markdown("---")
     
+    # ============================================
+    # DETAY VERİLERİNİ HAZIRLA (YENİ EKLENEN KISIM)
+    # ============================================
+    # Ürün detayı
+    urun_detail = temp_prod.copy()
+    if 'marka_kod' in urun_detail.columns:
+        urun_detail = urun_detail[['urun_kod', 'marka_kod', 'stok', 'satis', 'stok_satis_orani', 'segment']]
+        urun_detail.columns = ['Ürün Kodu', 'Marka Kodu', 'Toplam Stok', 'Toplam Satış', 'Stok/Satış Oranı', 'Segment']
+    else:
+        urun_detail = urun_detail[['urun_kod', 'stok', 'satis', 'stok_satis_orani', 'segment']]
+        urun_detail.columns = ['Ürün Kodu', 'Toplam Stok', 'Toplam Satış', 'Stok/Satış Oranı', 'Segment']
+    
+    # Mağaza detayı
+    magaza_detail = temp_store.copy()
+    magaza_detail = magaza_detail[['magaza_kod', 'stok', 'satis', 'stok_satis_orani', 'segment']]
+    magaza_detail.columns = ['Mağaza Kodu', 'Toplam Stok', 'Toplam Satış', 'Stok/Satış Oranı', 'Segment']
+    
+    # ============================================
     # HER İKİSİNİ BİRLİKTE İNDİR
+    # ============================================
     st.subheader("📥 Tüm Segmentasyon Verilerini İndir")
     
     col1, col2 = st.columns(2)
     
     with col1:
         # Excel formatında (iki sheet)
-        if st.button("📊 Excel İndir (Ürün + Mağaza)", width='content', key="seg_export_excel"):
+        if st.button("📊 Excel İndir (Ürün + Mağaza)", key="seg_export_excel"):
             try:
-                import io
                 from io import BytesIO
                 
                 # Excel writer oluştur
@@ -276,20 +297,20 @@ elif menu == "🫧 Segmentasyon":
     
     with col2:
         # ZIP formatında (iki CSV)
-        if st.button("📦 ZIP İndir (2 CSV)", width='content', key="seg_export_zip"):
+        if st.button("📦 ZIP İndir (2 CSV)", key="seg_export_zip"):
             import zipfile
-            import io
+            from io import BytesIO
             
-            zip_buffer = io.BytesIO()
+            zip_buffer = BytesIO()
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Ürün CSV
                 urun_csv = urun_detail.to_csv(index=False, encoding='utf-8-sig')
-                zip_file.writestr('urun_segmentasyon.csv', urun_csv.encode('utf-8-sig'))
+                zip_file.writestr('urun_segmentasyon.csv', urun_csv)
                 
                 # Mağaza CSV
                 magaza_csv = magaza_detail.to_csv(index=False, encoding='utf-8-sig')
-                zip_file.writestr('magaza_segmentasyon.csv', magaza_csv.encode('utf-8-sig'))
+                zip_file.writestr('magaza_segmentasyon.csv', magaza_csv)
             
             zip_buffer.seek(0)
             
@@ -298,7 +319,7 @@ elif menu == "🫧 Segmentasyon":
                 data=zip_buffer.getvalue(),
                 file_name="segmentasyon_detay.zip",
                 mime="application/zip"
-            ) 
+            )
 
 # ============================================
 # 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ
