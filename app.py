@@ -35,7 +35,6 @@ with col1:
     
     st.success("""
     **🚀 Hızlı Başlangıç:**
-    
     1. Sol menüden bir modül seçin (Lost Sales, Sevkiyat, PO, Prepack)
     2. CSV dosyalarınızı yükleyin
     3. Parametreleri ayarlayın
@@ -46,17 +45,11 @@ with col1:
 with col2:
     st.info("""
     ### 📚 Kullanım Kılavuzu
-    
     **1️⃣ Veri Yükleme**
-    
-    
     **2️⃣ Analiz**
-    
     **3️⃣ Raporlama**
-    
     st.warning("""
     ### ⚠️ Önemli Notlar
-    
     - Sunucuda saklanmaz
     - Tarayıcı kapatıldığında silinir
     """)
