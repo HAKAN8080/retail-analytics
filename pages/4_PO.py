@@ -246,11 +246,16 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     
     st.markdown("---")
     
-    # Cover Segment Matrix
-    st.subheader("📊 Cover Segment Genişletme Katsayıları")
+    # Cover Segment Matrix - GERÇEK 2D MATRİS ✅
+    st.subheader("📊 Cover Segment Genişletme Katsayıları (Matris)")
+    
+    st.info("**Matris Yapısı:** Ürün Cover Segmenti (satır) × Mağaza Cover Segmenti (sütun) = Genişletme Katsayısı")
     
     product_ranges = st.session_state.segmentation_params['product_ranges']
+    store_ranges = st.session_state.segmentation_params['store_ranges']
+    
     cover_segments = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+    store_segments = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
     
     def sort_segments(segments):
         def get_sort_key(seg):
@@ -261,41 +266,74 @@ elif menu == "💵 Alım Sipariş Hesaplama":
         return sorted(segments, key=get_sort_key)
     
     cover_segments_sorted = sort_segments(cover_segments)
+    store_segments_sorted = sort_segments(store_segments)
     
-    if 'cover_segment_matrix' not in st.session_state or st.session_state.cover_segment_matrix is None:
-        st.session_state.cover_segment_matrix = pd.DataFrame({
-            'cover_segment': cover_segments_sorted,
-            'katsayi': [1.5, 1.3, 1.0, 0.8, 0.6, 0.4][:len(cover_segments_sorted)]
-        })
+    # İlk kez oluşturuluyorsa - 2D MATRİS ✅
+    if 'cover_segment_matrix' not in st.session_state or st.session_state.cover_segment_matrix is None or \
+       not isinstance(st.session_state.cover_segment_matrix, pd.DataFrame) or \
+       len(st.session_state.cover_segment_matrix.columns) < 2:
+        
+        # Default: Düşük cover'lı ürünlere yüksek katsayı
+        default_matrix = pd.DataFrame(1.0, index=cover_segments_sorted, columns=store_segments_sorted)
+        
+        # Ürün cover'ına göre temel değer ver
+        for i, prod_seg in enumerate(cover_segments_sorted):
+            prod_start = int(prod_seg.split('-')[0])
+            if prod_start < 5:
+                default_matrix.loc[prod_seg, :] = 1.5
+            elif prod_start < 10:
+                default_matrix.loc[prod_seg, :] = 1.3
+            elif prod_start < 15:
+                default_matrix.loc[prod_seg, :] = 1.0
+            else:
+                default_matrix.loc[prod_seg, :] = 0.8
+        
+        st.session_state.cover_segment_matrix = default_matrix
     
-    edited_cover_matrix = st.data_editor(
-        st.session_state.cover_segment_matrix,
+    # Editable matris göster
+    matrix_display = st.session_state.cover_segment_matrix.reset_index()
+    matrix_display.columns = ['Ürün Cover'] + list(st.session_state.cover_segment_matrix.columns)
+    
+    edited_cover_matrix_temp = st.data_editor(
+        matrix_display,
         use_container_width=True,
         hide_index=True,
         num_rows="fixed",
         column_config={
-            "cover_segment": st.column_config.TextColumn(
-                "Cover Segment",
+            'Ürün Cover': st.column_config.TextColumn(
+                "Ürün Cover ↓",
                 disabled=True,
-                width="medium",
-                help="Ürün cover aralığı"
+                width="small",
+                help="Ürün cover segment (satır)"
             ),
-            "katsayi": st.column_config.NumberColumn(
-                "Genişletme Katsayısı",
+            **{col: st.column_config.NumberColumn(
+                f"Mğz {col}",
                 min_value=0.0,
                 max_value=10.0,
                 step=0.1,
-                format="%.2f",
+                format="%.1f",
                 required=True,
-                width="medium",
-                help="Bu segment için genişletme çarpanı"
-            )
+                width="small",
+                help=f"Mağaza cover {col}"
+            ) for col in store_segments_sorted}
         }
     )
     
+    # Güvenli dönüşüm
+    try:
+        edited_df = pd.DataFrame(edited_cover_matrix_temp)
+        if 'Ürün Cover' in edited_df.columns:
+            edited_cover_matrix = edited_df.set_index('Ürün Cover')
+        else:
+            edited_cover_matrix = edited_df.set_index(edited_df.columns[0])
+    except:
+        edited_cover_matrix = st.session_state.cover_segment_matrix
+    
+    # Kaydet butonu
     if st.button("💾 Cover Segment Matrisini Kaydet"):
         st.session_state.cover_segment_matrix = edited_cover_matrix
         st.success("✅ Kaydedildi!")
+    
     
     st.markdown("---")
     
@@ -421,16 +459,18 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     0
                 )
                 
-                # 7. COVER HESAPLA
-                urun_toplam['toplam_stok'] = (
+                # 7. COVER HESAPLA - SADECE MAĞAZA STOK ✅
+                # Toplam stok hesabı (sadece bilgi için)
+                urun_toplam['toplam_stok_tum'] = (
                     urun_toplam['stok'] + 
                     urun_toplam['yol'] + 
                     urun_toplam['depo_stok']
                 )
                 
+                # Cover hesabı - SADECE MAĞAZA STOK / SATIŞ ✅
                 urun_toplam['cover'] = np.where(
                     urun_toplam['satis'] > 0,
-                    urun_toplam['toplam_stok'] / urun_toplam['satis'],
+                    urun_toplam['stok'] / urun_toplam['satis'],  # ✅ SADECE MAĞAZA STOK
                     999
                 )
                 
@@ -447,12 +487,35 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 
                 urun_toplam['cover_segment'] = urun_toplam['cover_segment'].astype(str)
                 
-                # 9. GENİŞLETME KATSAYISI
-                urun_toplam = urun_toplam.merge(
-                    cover_matrix.rename(columns={'katsayi': 'genlestirme_katsayisi'}),
-                    on='cover_segment',
-                    how='left'
-                )
+                # MAĞAZA COVER SEGMENT (yeni) - Her ürün için ortalama mağaza cover'ı hesapla
+                # Basit yaklaşım: Ürün bazında segmente varsayılan değer ata
+                # TODO: Gelecekte mağaza bazlı hesaplama eklenebilir
+                urun_toplam['magaza_cover_segment'] = '5-8'  # Default mağaza segmenti
+                
+                # 9. GENİŞLETME KATSAYISI - 2D MATRİSTEN AL ✅
+                urun_toplam['genlestirme_katsayisi'] = 1.0  # Default
+                
+                # Eğer 2D matris varsa, ürün ve mağaza cover'ına göre al
+                if isinstance(cover_matrix, pd.DataFrame) and len(cover_matrix.columns) > 1:
+                    for idx, row in urun_toplam.iterrows():
+                        urun_seg = str(row['cover_segment'])
+                        magaza_seg = str(row['magaza_cover_segment'])
+                        
+                        try:
+                            if urun_seg in cover_matrix.index and magaza_seg in cover_matrix.columns:
+                                urun_toplam.at[idx, 'genlestirme_katsayisi'] = cover_matrix.loc[urun_seg, magaza_seg]
+                        except:
+                            pass
+                else:
+                    # Eski format (tek sütun) - geriye dönük uyumluluk
+                    if 'katsayi' in cover_matrix.columns:
+                        urun_toplam = urun_toplam.merge(
+                            cover_matrix.rename(columns={'katsayi': 'genlestirme_katsayisi'}),
+                            left_on='cover_segment',
+                            right_on='cover_segment',
+                            how='left'
+                        )
+                
                 urun_toplam['genlestirme_katsayisi'] = urun_toplam['genlestirme_katsayisi'].fillna(1.0)
                 
                 # 10. FORWARD COVER
@@ -513,8 +576,8 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     urun_toplam = urun_toplam.merge(min_sevk, on='urun_kod', how='left')
                     urun_toplam['min_gerekli_stok'] = urun_toplam['min_gerekli_stok'].fillna(0)
                     
-                    # Mevcut stokları hesapla
-                    urun_toplam['mevcut_stok'] = urun_toplam['toplam_stok']
+                    # Mevcut stokları hesapla - SADECE MAĞAZA STOK ✅
+                    urun_toplam['mevcut_stok'] = urun_toplam['stok']  # ✅ Sadece mağaza stoku
                     
                     # Karşılanamayan minimum ihtiyacı hesapla
                     urun_toplam['karsilanamayan_min'] = np.maximum(
@@ -532,7 +595,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     with col1:
                         st.metric("📦 Min Gerekli Stok", f"{min_gerekli_toplam:,.0f} adet")
                     with col2:
-                        st.metric("📊 Mevcut Stoklar", f"{urun_toplam['mevcut_stok'].sum():,.0f} adet")
+                        st.metric("📊 Mağaza Stokları", f"{urun_toplam['mevcut_stok'].sum():,.0f} adet")
                     with col3:
                         st.metric("❗ Karşılanamayan", f"{karsilanamayan_toplam:,.0f} adet")
                     
@@ -543,7 +606,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                     urun_toplam['min_gerekli_stok'] = 0
                     urun_toplam['karsilanamayan_min'] = 0
                     urun_toplam['min_sevk_adeti'] = 0
-                    urun_toplam['mevcut_stok'] = urun_toplam['toplam_stok']
+                    urun_toplam['mevcut_stok'] = urun_toplam['stok']  # ✅ Sadece mağaza stoku
                 
                 # 12. FİLTRELERİ UYGULA
                 urun_toplam['filtre_uygun'] = (
@@ -650,7 +713,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 if len(pozitif_df) > 0:
                     # Gösterilecek kolonları seç
                     display_cols = ['urun_kod', 'cover_segment', 'cover', 'brut_kar_marji', 
-                                    'satis', 'toplam_stok']
+                                    'satis', 'stok']  # ✅ Sadece mağaza stoku göster
                     
                     # Yeni eklenen kolonlar
                     if 'min_gerekli_stok' in pozitif_df.columns:
@@ -680,7 +743,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                         'cover': '{:.2f}',
                         'brut_kar_marji': '{:.2f}%',
                         'satis': '{:,.0f}',
-                        'toplam_stok': '{:,.0f}',
+                        'stok': '{:,.0f}',  # ✅ Mağaza stoku
                         'min_gerekli_stok': '{:,.0f}',
                         'karsilanamayan_min': '{:,.0f}',
                         'acik_siparis': '{:,.0f}',
