@@ -44,14 +44,6 @@ with col1:
 
 with col2:
     st.info("""
-    ### 📚 Kullanım Kılavuzu
-    **1️⃣ Veri Yükleme**
-    **2️⃣ Analiz**
-    **3️⃣ Raporlama**
-    st.warning("""
-    ### ⚠️ Önemli Notlar
-    - Sunucuda saklanmaz
-    - Tarayıcı kapatıldığında silinir
-    """)
+    ### 📚 Kullanım Kılavuzu""")
 
 st.markdown("---")
