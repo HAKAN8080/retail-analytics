@@ -453,240 +453,134 @@ elif menu == "🎲 Hedef Matris":
         st.warning("⚠️ Önce 'Segmentasyon' bölümüne gidin ve segmentasyonu kaydedin!")
         st.stop()
     
-    # Session state'ten segmentleri al
     prod_segments = st.session_state.prod_segments
     store_segments = st.session_state.store_segments
     
-    st.info(f"📏 **Matris Boyutu:** {len(prod_segments)} Ürün Segmenti × {len(store_segments)} Mağaza Segmenti")
+    st.info(f"📏 Matris: {len(prod_segments)} Ürün × {len(store_segments)} Mağaza")
     st.markdown("---")
     
     # ============================================
-    # 1. ŞİŞME ORANI MATRİSİ
+    # 1. ŞİŞME ORANI - BASIT
     # ============================================
-    st.markdown("### 1️⃣ Şişme Oranı Matrisi")
-    st.caption("Satış tahminini şişirme katsayısı (Varsayılan: 0.5)")
+    st.markdown("### 1️⃣ Şişme Oranı Matrisi (Default: 0.5)")
     
-    # Mevcut veya default matris oluştur
-    if st.session_state.sisme_orani is None or len(st.session_state.sisme_orani) == 0:
-        sisme_data = pd.DataFrame(0.5, index=prod_segments, columns=store_segments)
-    else:
-        sisme_data = st.session_state.sisme_orani.copy()
-        for seg in prod_segments:
-            if seg not in sisme_data.index:
-                sisme_data.loc[seg] = 0.5
-        for seg in store_segments:
-            if seg not in sisme_data.columns:
-                sisme_data[seg] = 0.5
-        sisme_data = sisme_data.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
+    # Basit tablo verisi hazırla
+    sisme_rows = []
+    for prod_seg in prod_segments:
+        row_data = {'Ürün_Segment': prod_seg}
+        for store_seg in store_segments:
+            # Eğer kaydedilmiş değer varsa onu al, yoksa 0.5
+            if (st.session_state.sisme_orani is not None and 
+                prod_seg in st.session_state.sisme_orani.index and 
+                store_seg in st.session_state.sisme_orani.columns):
+                row_data[store_seg] = st.session_state.sisme_orani.loc[prod_seg, store_seg]
+            else:
+                row_data[store_seg] = 0.5
+        sisme_rows.append(row_data)
     
-    # Excel gibi tablo için index'i kolon yap
-    sisme_table = sisme_data.copy()
-    sisme_table.insert(0, 'Ürün_Segment', sisme_table.index)
-    sisme_table = sisme_table.reset_index(drop=True)
+    sisme_df = pd.DataFrame(sisme_rows)
     
-    # Editable tablo göster
-    edited_sisme_table = st.data_editor(
-        sisme_table,
+    edited_sisme = st.data_editor(
+        sisme_df,
         use_container_width=True,
         hide_index=True,
-        num_rows="fixed",
-        column_config={
-            'Ürün_Segment': st.column_config.TextColumn(
-                'Ürün Segment',
-                width="medium",
-                disabled=True
-            ),
-            **{col: st.column_config.NumberColumn(
-                col,
-                min_value=0.0,
-                max_value=10.0,
-                step=0.1,
-                format="%.1f",
-                width="small"
-            ) for col in store_segments}
-        },
-        key="sisme_matrix_editor"
+        key="edit_sisme"
     )
     
     st.markdown("---")
     
     # ============================================
-    # 2. GENLEŞTİRME ORANI MATRİSİ
+    # 2. GENLEŞTİRME ORANI - BASIT
     # ============================================
-    st.markdown("### 2️⃣ Genleştirme Oranı Matrisi")
-    st.caption("Sevkiyat miktarını genişletme katsayısı (Varsayılan: 1.0)")
+    st.markdown("### 2️⃣ Genleştirme Oranı Matrisi (Default: 1.0)")
     
-    if st.session_state.genlestirme_orani is None or len(st.session_state.genlestirme_orani) == 0:
-        genlestirme_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-    else:
-        genlestirme_data = st.session_state.genlestirme_orani.copy()
-        for seg in prod_segments:
-            if seg not in genlestirme_data.index:
-                genlestirme_data.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in genlestirme_data.columns:
-                genlestirme_data[seg] = 1.0
-        genlestirme_data = genlestirme_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
+    genlestirme_rows = []
+    for prod_seg in prod_segments:
+        row_data = {'Ürün_Segment': prod_seg}
+        for store_seg in store_segments:
+            if (st.session_state.genlestirme_orani is not None and 
+                prod_seg in st.session_state.genlestirme_orani.index and 
+                store_seg in st.session_state.genlestirme_orani.columns):
+                row_data[store_seg] = st.session_state.genlestirme_orani.loc[prod_seg, store_seg]
+            else:
+                row_data[store_seg] = 1.0
+        genlestirme_rows.append(row_data)
     
-    genlestirme_table = genlestirme_data.copy()
-    genlestirme_table.insert(0, 'Ürün_Segment', genlestirme_table.index)
-    genlestirme_table = genlestirme_table.reset_index(drop=True)
+    genlestirme_df = pd.DataFrame(genlestirme_rows)
     
-    edited_genlestirme_table = st.data_editor(
-        genlestirme_table,
+    edited_genlestirme = st.data_editor(
+        genlestirme_df,
         use_container_width=True,
         hide_index=True,
-        num_rows="fixed",
-        column_config={
-            'Ürün_Segment': st.column_config.TextColumn(
-                'Ürün Segment',
-                width="medium",
-                disabled=True
-            ),
-            **{col: st.column_config.NumberColumn(
-                col,
-                min_value=0.0,
-                max_value=10.0,
-                step=0.1,
-                format="%.1f",
-                width="small"
-            ) for col in store_segments}
-        },
-        key="genlestirme_matrix_editor"
+        key="edit_genlestirme"
     )
     
     st.markdown("---")
     
     # ============================================
-    # 3. MIN ORAN MATRİSİ
+    # 3. MIN ORAN - BASIT
     # ============================================
-    st.markdown("### 3️⃣ Min Oran Matrisi")
-    st.caption("Minimum sevkiyat oranı (Varsayılan: 1.0)")
+    st.markdown("### 3️⃣ Min Oran Matrisi (Default: 1.0)")
     
-    if st.session_state.min_oran is None or len(st.session_state.min_oran) == 0:
-        min_oran_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-    else:
-        min_oran_data = st.session_state.min_oran.copy()
-        for seg in prod_segments:
-            if seg not in min_oran_data.index:
-                min_oran_data.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in min_oran_data.columns:
-                min_oran_data[seg] = 1.0
-        min_oran_data = min_oran_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
+    min_oran_rows = []
+    for prod_seg in prod_segments:
+        row_data = {'Ürün_Segment': prod_seg}
+        for store_seg in store_segments:
+            if (st.session_state.min_oran is not None and 
+                prod_seg in st.session_state.min_oran.index and 
+                store_seg in st.session_state.min_oran.columns):
+                row_data[store_seg] = st.session_state.min_oran.loc[prod_seg, store_seg]
+            else:
+                row_data[store_seg] = 1.0
+        min_oran_rows.append(row_data)
     
-    min_oran_table = min_oran_data.copy()
-    min_oran_table.insert(0, 'Ürün_Segment', min_oran_table.index)
-    min_oran_table = min_oran_table.reset_index(drop=True)
+    min_oran_df = pd.DataFrame(min_oran_rows)
     
-    edited_min_oran_table = st.data_editor(
-        min_oran_table,
+    edited_min_oran = st.data_editor(
+        min_oran_df,
         use_container_width=True,
         hide_index=True,
-        num_rows="fixed",
-        column_config={
-            'Ürün_Segment': st.column_config.TextColumn(
-                'Ürün Segment',
-                width="medium",
-                disabled=True
-            ),
-            **{col: st.column_config.NumberColumn(
-                col,
-                min_value=0.0,
-                max_value=10.0,
-                step=0.1,
-                format="%.1f",
-                width="small"
-            ) for col in store_segments}
-        },
-        key="min_oran_matrix_editor"
+        key="edit_min_oran"
     )
     
     st.markdown("---")
     
     # ============================================
-    # 4. INITIAL MATRİSİ
+    # 4. INITIAL - BASIT
     # ============================================
-    st.markdown("### 4️⃣ Initial Matris (Yeni Ürünler)")
-    st.caption("Yeni ürün sevkiyat çarpanı (Varsayılan: 1.0)")
+    st.markdown("### 4️⃣ Initial Matris (Default: 1.0)")
     
-    if st.session_state.initial_matris is None or len(st.session_state.initial_matris) == 0:
-        initial_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-    else:
-        initial_data = st.session_state.initial_matris.copy()
-        for seg in prod_segments:
-            if seg not in initial_data.index:
-                initial_data.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in initial_data.columns:
-                initial_data[seg] = 1.0
-        initial_data = initial_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
+    initial_rows = []
+    for prod_seg in prod_segments:
+        row_data = {'Ürün_Segment': prod_seg}
+        for store_seg in store_segments:
+            if (st.session_state.initial_matris is not None and 
+                prod_seg in st.session_state.initial_matris.index and 
+                store_seg in st.session_state.initial_matris.columns):
+                row_data[store_seg] = st.session_state.initial_matris.loc[prod_seg, store_seg]
+            else:
+                row_data[store_seg] = 1.0
+        initial_rows.append(row_data)
     
-    initial_table = initial_data.copy()
-    initial_table.insert(0, 'Ürün_Segment', initial_table.index)
-    initial_table = initial_table.reset_index(drop=True)
+    initial_df = pd.DataFrame(initial_rows)
     
-    edited_initial_table = st.data_editor(
-        initial_table,
+    edited_initial = st.data_editor(
+        initial_df,
         use_container_width=True,
         hide_index=True,
-        num_rows="fixed",
-        column_config={
-            'Ürün_Segment': st.column_config.TextColumn(
-                'Ürün Segment',
-                width="medium",
-                disabled=True
-            ),
-            **{col: st.column_config.NumberColumn(
-                col,
-                min_value=0.0,
-                max_value=10.0,
-                step=0.1,
-                format="%.1f",
-                width="small"
-            ) for col in store_segments}
-        },
-        key="initial_matrix_editor"
+        key="edit_initial"
     )
     
     st.markdown("---")
     
-    # ============================================
-    # KAYDETME BUTONLARI
-    # ============================================
-    col1, col2, col3 = st.columns([1, 1, 2])
-    
-    with col1:
-        if st.button("💾 Tümünü Kaydet", type="primary", use_container_width=True):
-            # Tabloları DataFrame'e geri çevir
-            sisme_saved = edited_sisme_table.set_index('Ürün_Segment')
-            genlestirme_saved = edited_genlestirme_table.set_index('Ürün_Segment')
-            min_oran_saved = edited_min_oran_table.set_index('Ürün_Segment')
-            initial_saved = edited_initial_table.set_index('Ürün_Segment')
-            
-            # Session state'e kaydet
-            st.session_state.sisme_orani = sisme_saved
-            st.session_state.genlestirme_orani = genlestirme_saved
-            st.session_state.min_oran = min_oran_saved
-            st.session_state.initial_matris = initial_saved
-            
-            st.success("✅ Tüm matrisler kaydedildi!")
-            time.sleep(1)
-            st.rerun()
-    
-    with col2:
-        if st.button("🔄 Varsayılana Sıfırla", use_container_width=True):
-            st.session_state.sisme_orani = pd.DataFrame(0.5, index=prod_segments, columns=store_segments)
-            st.session_state.genlestirme_orani = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-            st.session_state.min_oran = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-            st.session_state.initial_matris = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
-            st.success("✅ Varsayılan değerlere sıfırlandı!")
-            time.sleep(1)
-            st.rerun()
-    
-    with col3:
-        st.info("💡 Tabloları düzenleyin ve 'Tümünü Kaydet' butonuna basın")
-        
+    # KAYDET
+    if st.button("💾 Tümünü Kaydet", type="primary"):
+        # DataFrame'leri index'e çevir
+        st.session_state.sisme_orani = edited_sisme.set_index('Ürün_Segment')
+        st.session_state.genlestirme_orani = edited_genlestirme.set_index('Ürün_Segment')
+        st.session_state.min_oran = edited_min_oran.set_index('Ürün_Segment')
+        st.session_state.initial_matris = edited_initial.set_index('Ürün_Segment')
+        st.success("✅ Kaydedildi!")
 # ============================================
 # 🚚 HESAPLAMA - DÜZELTİLMİŞ VERSİYON
 # ============================================
