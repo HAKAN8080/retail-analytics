@@ -327,6 +327,9 @@ elif menu == "🫧 Segmentasyon":
 # ============================================
 # 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ VERSİYON
 # ============================================
+# ============================================
+# 🎲 HEDEF MATRİS - BASİT VE GARANTİLİ VERSİYON
+# ============================================
 elif menu == "🎲 Hedef Matris":
     st.title("🎲 Hedef Matris Parametreleri")
     st.markdown("---")
@@ -340,35 +343,35 @@ elif menu == "🎲 Hedef Matris":
     prod_segments = st.session_state.prod_segments  # Sütunlar
     store_segments = st.session_state.store_segments  # Satırlar
     
-    st.info(f"📏 Matris: {len(store_segments)} Mağaza Segment (Satır) × {len(prod_segments)} Ürün Segment (Sütun)")
+    st.info(f"📏 Matris: {len(store_segments)} Mağaza × {len(prod_segments)} Ürün")
     st.markdown("---")
     
     # ============================================
     # 1️⃣ ŞİŞME ORANI MATRİSİ
     # ============================================
-    st.markdown("### 1️⃣ Şişme Oranı Matrisi (Default: 0.5)")
-    st.caption("📍 Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri")
+    st.markdown("### 1️⃣ Şişme Oranı Matrisi")
     
-    # Matris oluştur: Satırlar = Mağaza, Sütunlar = Ürün
+    # Matris oluştur
     if st.session_state.sisme_orani is not None:
         sisme_df = st.session_state.sisme_orani.copy()
     else:
-        # Yeni matris oluştur
-        sisme_data = {}
-        for prod_seg in prod_segments:
-            sisme_data[prod_seg] = [0.5] * len(store_segments)
-        sisme_df = pd.DataFrame(sisme_data, index=store_segments)
+        sisme_df = pd.DataFrame(
+            0.5,  # Default değer
+            index=store_segments,
+            columns=prod_segments
+        )
     
-    # Index'i sütun olarak ekle (mağaza segmentleri)
-    sisme_df_display = sisme_df.reset_index()
-    sisme_df_display.columns = ['Mağaza_Segment'] + list(sisme_df.columns)
+    # Index'i kolon yap
+    sisme_display = sisme_df.reset_index()
+    sisme_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
     
+    # TABLOYU GÖSTER
+    st.write("**Düzenlenebilir Tablo:**")
     edited_sisme = st.data_editor(
-        sisme_df_display,
-        use_container_width=True,
+        sisme_display,
+        key="sisme_editor",
         hide_index=True,
-        num_rows="fixed",
-        key="edit_sisme"
+        use_container_width=True
     )
     
     st.markdown("---")
@@ -376,26 +379,26 @@ elif menu == "🎲 Hedef Matris":
     # ============================================
     # 2️⃣ GENLEŞTİRME ORANI MATRİSİ
     # ============================================
-    st.markdown("### 2️⃣ Genleştirme Oranı Matrisi (Default: 1.0)")
-    st.caption("📍 Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri")
+    st.markdown("### 2️⃣ Genleştirme Oranı Matrisi")
     
     if st.session_state.genlestirme_orani is not None:
-        genlestirme_df = st.session_state.genlestirme_orani.copy()
+        genles_df = st.session_state.genlestirme_orani.copy()
     else:
-        genlestirme_data = {}
-        for prod_seg in prod_segments:
-            genlestirme_data[prod_seg] = [1.0] * len(store_segments)
-        genlestirme_df = pd.DataFrame(genlestirme_data, index=store_segments)
+        genles_df = pd.DataFrame(
+            1.0,
+            index=store_segments,
+            columns=prod_segments
+        )
     
-    genlestirme_df_display = genlestirme_df.reset_index()
-    genlestirme_df_display.columns = ['Mağaza_Segment'] + list(genlestirme_df.columns)
+    genles_display = genles_df.reset_index()
+    genles_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
     
-    edited_genlestirme = st.data_editor(
-        genlestirme_df_display,
-        use_container_width=True,
+    st.write("**Düzenlenebilir Tablo:**")
+    edited_genles = st.data_editor(
+        genles_display,
+        key="genles_editor",
         hide_index=True,
-        num_rows="fixed",
-        key="edit_genlestirme"
+        use_container_width=True
     )
     
     st.markdown("---")
@@ -403,26 +406,26 @@ elif menu == "🎲 Hedef Matris":
     # ============================================
     # 3️⃣ MIN ORAN MATRİSİ
     # ============================================
-    st.markdown("### 3️⃣ Min Oran Matrisi (Default: 1.0)")
-    st.caption("📍 Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri")
+    st.markdown("### 3️⃣ Min Oran Matrisi")
     
     if st.session_state.min_oran is not None:
-        min_oran_df = st.session_state.min_oran.copy()
+        min_df = st.session_state.min_oran.copy()
     else:
-        min_oran_data = {}
-        for prod_seg in prod_segments:
-            min_oran_data[prod_seg] = [1.0] * len(store_segments)
-        min_oran_df = pd.DataFrame(min_oran_data, index=store_segments)
+        min_df = pd.DataFrame(
+            1.0,
+            index=store_segments,
+            columns=prod_segments
+        )
     
-    min_oran_df_display = min_oran_df.reset_index()
-    min_oran_df_display.columns = ['Mağaza_Segment'] + list(min_oran_df.columns)
+    min_display = min_df.reset_index()
+    min_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
     
-    edited_min_oran = st.data_editor(
-        min_oran_df_display,
-        use_container_width=True,
+    st.write("**Düzenlenebilir Tablo:**")
+    edited_min = st.data_editor(
+        min_display,
+        key="min_editor",
         hide_index=True,
-        num_rows="fixed",
-        key="edit_min_oran"
+        use_container_width=True
     )
     
     st.markdown("---")
@@ -430,82 +433,46 @@ elif menu == "🎲 Hedef Matris":
     # ============================================
     # 4️⃣ INITIAL MATRİS
     # ============================================
-    st.markdown("### 4️⃣ Initial Matris (Default: 1.0)")
-    st.caption("📍 Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri")
+    st.markdown("### 4️⃣ Initial Matris")
     
     if st.session_state.initial_matris is not None:
         initial_df = st.session_state.initial_matris.copy()
     else:
-        initial_data = {}
-        for prod_seg in prod_segments:
-            initial_data[prod_seg] = [1.0] * len(store_segments)
-        initial_df = pd.DataFrame(initial_data, index=store_segments)
+        initial_df = pd.DataFrame(
+            1.0,
+            index=store_segments,
+            columns=prod_segments
+        )
     
-    initial_df_display = initial_df.reset_index()
-    initial_df_display.columns = ['Mağaza_Segment'] + list(initial_df.columns)
+    initial_display = initial_df.reset_index()
+    initial_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
     
+    st.write("**Düzenlenebilir Tablo:**")
     edited_initial = st.data_editor(
-        initial_df_display,
-        use_container_width=True,
+        initial_display,
+        key="initial_editor",
         hide_index=True,
-        num_rows="fixed",
-        key="edit_initial"
+        use_container_width=True
     )
     
     st.markdown("---")
     
     # ============================================
-    # KAYDET BUTONU
+    # KAYDET
     # ============================================
-    col1, col2 = st.columns([1, 3])
-    
-    with col1:
-        if st.button("💾 Tümünü Kaydet", type="primary", use_container_width=True):
-            try:
-                # Mağaza_Segment sütununu index'e çevir ve kaydet
-                st.session_state.sisme_orani = edited_sisme.set_index('Mağaza_Segment')
-                st.session_state.genlestirme_orani = edited_genlestirme.set_index('Mağaza_Segment')
-                st.session_state.min_oran = edited_min_oran.set_index('Mağaza_Segment')
-                st.session_state.initial_matris = edited_initial.set_index('Mağaza_Segment')
-                
-                st.success("✅ Tüm matrisler kaydedildi!")
-                
-                # Özet göster
-                st.info(f"""
-                **Kaydedilen Matrisler:**
-                - Şişme Oranı: {st.session_state.sisme_orani.shape[0]} × {st.session_state.sisme_orani.shape[1]}
-                - Genleştirme Oranı: {st.session_state.genlestirme_orani.shape[0]} × {st.session_state.genlestirme_orani.shape[1]}
-                - Min Oran: {st.session_state.min_oran.shape[0]} × {st.session_state.min_oran.shape[1]}
-                - Initial: {st.session_state.initial_matris.shape[0]} × {st.session_state.initial_matris.shape[1]}
-                """)
-                
-            except Exception as e:
-                st.error(f"❌ Kaydetme hatası: {str(e)}")
-    
-    with col2:
-        st.info("💡 **İpucu:** Değerleri doğrudan tabloda düzenleyip 'Kaydet' butonuna basın.")
-    
-    # ============================================
-    # ÖNİZLEME (opsiyonel)
-    # ============================================
-    with st.expander("🔍 Kaydedilmiş Matris Değerlerini Görüntüle", expanded=False):
-        if st.session_state.sisme_orani is not None:
-            st.write("**Şişme Oranı (Kaydedilmiş):**")
-            st.dataframe(st.session_state.sisme_orani, use_container_width=True)
-        
-        if st.session_state.genlestirme_orani is not None:
-            st.write("**Genleştirme Oranı (Kaydedilmiş):**")
-            st.dataframe(st.session_state.genlestirme_orani, use_container_width=True)
-        
-        if st.session_state.min_oran is not None:
-            st.write("**Min Oran (Kaydedilmiş):**")
-            st.dataframe(st.session_state.min_oran, use_container_width=True)
-        
-        if st.session_state.initial_matris is not None:
-            st.write("**Initial Matris (Kaydedilmiş):**")
-            st.dataframe(st.session_state.initial_matris, use_container_width=True)
+    if st.button("💾 KAYDET", type="primary", use_container_width=True):
+        try:
+            # İlk kolonu index yap
+            st.session_state.sisme_orani = edited_sisme.set_index('Mağaza↓ / Ürün→')
+            st.session_state.genlestirme_orani = edited_genles.set_index('Mağaza↓ / Ürün→')
+            st.session_state.min_oran = edited_min.set_index('Mağaza↓ / Ürün→')
+            st.session_state.initial_matris = edited_initial.set_index('Mağaza↓ / Ürün→')
             
-
+            st.success("✅ Kaydedildi!")
+            st.balloons()
+            
+        except Exception as e:
+            st.error(f"Hata: {e}")
 
 
 # ============================================
