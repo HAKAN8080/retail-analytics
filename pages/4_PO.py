@@ -260,8 +260,8 @@ elif menu == "💵 Alım Sipariş Hesaplama":
         cover_threshold = st.number_input(
             "Cover < X için hesapla",
             min_value=0,
-            max_value=100,
-            value=12,
+            max_value=200,
+            value=15,
             step=1,
             help="Sadece cover değeri X'ten küçük ürünler hesaplanır"
         )
@@ -271,7 +271,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
             "Brüt Kar Marjı > % Y için hesapla",
             min_value=-100.0,
             max_value=100.0,
-            value=10.0,
+            value=-20.0,
             step=0.5,
             help="Sadece kar marjı %Y'den büyük ürünler hesaplanır"
         )
@@ -1210,6 +1210,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 width='stretch'
             )
+
 
 
 
