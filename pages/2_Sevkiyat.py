@@ -371,6 +371,9 @@ elif menu == "🫧 Segmentasyon":
     
     st.markdown("---")
     
+    prod_segments = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+    store_segments = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
+    
     # Kaydet butonu
     col1, col2 = st.columns([1, 3])
     with col1:
