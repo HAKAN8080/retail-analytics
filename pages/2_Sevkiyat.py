@@ -443,9 +443,6 @@ elif menu == "🫧 Segmentasyon":
 # ============================================
 # 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ
 # ============================================
-# ============================================
-# 🎲 HEDEF MATRİS - BASIT VE EDİTABLE TABLO VERSİYONU
-# ============================================
 elif menu == "🎲 Hedef Matris":
     st.title("🎲 Hedef Matris Parametreleri")
     st.markdown("---")
@@ -494,25 +491,15 @@ elif menu == "🎲 Hedef Matris":
         
         # Segment sıralama fonksiyonu
         def sort_segments(segments):
+            """Segmentleri numerik değere göre sıralar: 0-4, 5-8, 9-12, 15-20, 20-inf"""
             def get_sort_key(seg):
                 try:
+                    # İlk sayıyı al (0-4 -> 0, 5-8 -> 5, 20-inf -> 20)
                     return int(seg.split('-')[0])
                 except:
-                    return 9999
+                    return 9999  # inf veya parse edilemeyen değerler en sona
+            
             return sorted(segments, key=get_sort_key)
-        
-        # Segmentleri hazırla
-        prod_segments_raw = [str(x) for x in urun_aggregated['urun_segment'].unique() if pd.notna(x)]
-        store_segments_raw = [str(x) for x in magaza_aggregated['magaza_segment'].unique() if pd.notna(x)]
-        
-        prod_segments = sort_segments(prod_segments_raw)
-        store_segments = sort_segments(store_segments_raw)
-        
-        # OTOMATIK KAYDET
-        st.session_state.prod_segments = prod_segments
-        st.session_state.store_segments = store_segments
-        st.session_state.urun_segment_map = urun_aggregated[['urun_kod', 'urun_segment']].set_index('urun_kod')['urun_segment'].to_dict()
-        st.session_state.magaza_segment_map = magaza_aggregated[['magaza_kod', 'magaza_segment']].set_index('magaza_kod')['magaza_segment'].to_dict()
         
         # Segmentasyon sonuçları
         st.subheader("📊 Segmentasyon Sonuçları")
@@ -529,308 +516,154 @@ elif menu == "🎲 Hedef Matris":
             st.dataframe(store_dist, use_container_width=True)
         
         st.markdown("---")
-        st.info(f"**Matris Boyutu:** {len(prod_segments)} Ürün Segmenti × {len(store_segments)} Mağaza Segmenti")
         
-        # ============================================
-        # MATRİS OLUŞTURMA FONKSİYONU
-        # ============================================
-        def create_default_matrix(default_value):
-            """Default değerle matris oluştur"""
-            return pd.DataFrame(
-                default_value,
-                index=prod_segments,
-                columns=store_segments
-            )
+        # Matris seçimi ve parametreler
+        st.subheader("🎯 Matris Parametreleri")
         
-        # ============================================
+        # Segmentleri string olarak al ve SIRALA
+        prod_segments_raw = [str(x) for x in urun_aggregated['urun_segment'].unique() if pd.notna(x)]
+        store_segments_raw = [str(x) for x in magaza_aggregated['magaza_segment'].unique() if pd.notna(x)]
+        
+        prod_segments = sort_segments(prod_segments_raw)
+        store_segments = sort_segments(store_segments_raw)
+        
+        st.info(f"**Ürün Segmentleri:** {', '.join(prod_segments)}")
+        st.info(f"**Mağaza Segmentleri:** {', '.join(store_segments)}")
+        
         # 1. ŞİŞME ORANI MATRİSİ
-        # ============================================
-        st.markdown("### 1️⃣ Şişme Oranı Matrisi")
-        st.caption("💡 Tahmin edilen satışları şişirme katsayısı (Varsayılan: 0.5)")
+        st.markdown("### 1️⃣ Şişme Oranı Matrisi (Default: 0.5)")
         
-        # Session state'te yoksa default ile oluştur
-        if st.session_state.sisme_orani is None:
-            st.session_state.sisme_orani = create_default_matrix(0.5)
+        if st.session_state.sisme_orani is None or len(st.session_state.sisme_orani) == 0:
+            sisme_data = pd.DataFrame(0.5, index=prod_segments, columns=store_segments)
+        else:
+            # Mevcut matrisi kontrol et ve eksikleri doldur
+            sisme_data = st.session_state.sisme_orani.copy()
+            
+            # Eksik satırları ekle
+            for seg in prod_segments:
+                if seg not in sisme_data.index:
+                    sisme_data.loc[seg] = 0.5
+            
+            # Eksik kolonları ekle
+            for seg in store_segments:
+                if seg not in sisme_data.columns:
+                    sisme_data[seg] = 0.5
+            
+            # Sıralama - ÖNEMLİ!
+            sisme_data = sisme_data.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
         
-        # Matris boyutunu güncelle (yeni segmentler eklendiyse)
-        current_sisme = st.session_state.sisme_orani.copy()
-        for seg in prod_segments:
-            if seg not in current_sisme.index:
-                current_sisme.loc[seg] = 0.5
-        for seg in store_segments:
-            if seg not in current_sisme.columns:
-                current_sisme[seg] = 0.5
-        current_sisme = current_sisme.reindex(index=prod_segments, columns=store_segments, fill_value=0.5)
-        
-        # Editable tablo
-        sisme_edited = st.data_editor(
-            current_sisme,
+        edited_sisme = st.data_editor(
+            sisme_data,
             use_container_width=True,
-            num_rows="fixed",
-            key="sisme_orani_editor",
-            column_config={
-                col: st.column_config.NumberColumn(
-                    f"{col}",
-                    min_value=0.0,
-                    max_value=10.0,
-                    step=0.1,
-                    format="%.1f"
-                ) for col in store_segments
-            }
+            column_config={col: st.column_config.NumberColumn(
+                col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+            ) for col in store_segments},
+            key="sisme_matrix"
         )
-        
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("💾 Kaydet", key="save_sisme"):
-                st.session_state.sisme_orani = sisme_edited.copy()
-                st.success("✅ Kaydedildi!")
-        with col2:
-            if st.button("🔄 Varsayılana Sıfırla", key="reset_sisme"):
-                st.session_state.sisme_orani = create_default_matrix(0.5)
-                st.rerun()
         
         st.markdown("---")
         
-        # ============================================
         # 2. GENLEŞTİRME ORANI MATRİSİ
-        # ============================================
-        st.markdown("### 2️⃣ Genleştirme Oranı Matrisi")
-        st.caption("💡 Sevkiyat miktarını genişletme katsayısı (Varsayılan: 1.0)")
+        st.markdown("### 2️⃣ Genleştirme Oranı Matrisi (Default: 1.0)")
         
-        if st.session_state.genlestirme_orani is None:
-            st.session_state.genlestirme_orani = create_default_matrix(1.0)
+        if st.session_state.genlestirme_orani is None or len(st.session_state.genlestirme_orani) == 0:
+            genlestirme_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
+        else:
+            genlestirme_data = st.session_state.genlestirme_orani.copy()
+            
+            for seg in prod_segments:
+                if seg not in genlestirme_data.index:
+                    genlestirme_data.loc[seg] = 1.0
+            
+            for seg in store_segments:
+                if seg not in genlestirme_data.columns:
+                    genlestirme_data[seg] = 1.0
+            
+            # Sıralama - ÖNEMLİ!
+            genlestirme_data = genlestirme_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        current_genlestirme = st.session_state.genlestirme_orani.copy()
-        for seg in prod_segments:
-            if seg not in current_genlestirme.index:
-                current_genlestirme.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in current_genlestirme.columns:
-                current_genlestirme[seg] = 1.0
-        current_genlestirme = current_genlestirme.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
-        
-        genlestirme_edited = st.data_editor(
-            current_genlestirme,
+        edited_genlestirme = st.data_editor(
+            genlestirme_data,
             use_container_width=True,
-            num_rows="fixed",
-            key="genlestirme_orani_editor",
-            column_config={
-                col: st.column_config.NumberColumn(
-                    f"{col}",
-                    min_value=0.0,
-                    max_value=10.0,
-                    step=0.1,
-                    format="%.1f"
-                ) for col in store_segments
-            }
+            column_config={col: st.column_config.NumberColumn(
+                col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+            ) for col in store_segments},
+            key="genlestirme_matrix"
         )
-        
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("💾 Kaydet", key="save_genlestirme"):
-                st.session_state.genlestirme_orani = genlestirme_edited.copy()
-                st.success("✅ Kaydedildi!")
-        with col2:
-            if st.button("🔄 Varsayılana Sıfırla", key="reset_genlestirme"):
-                st.session_state.genlestirme_orani = create_default_matrix(1.0)
-                st.rerun()
         
         st.markdown("---")
         
-        # ============================================
         # 3. MIN ORAN MATRİSİ
-        # ============================================
-        st.markdown("### 3️⃣ Min Oran Matrisi")
-        st.caption("💡 Minimum sevkiyat oranı (Varsayılan: 1.0)")
+        st.markdown("### 3️⃣ Min Oran Matrisi (Default: 1.0)")
         
-        if st.session_state.min_oran is None:
-            st.session_state.min_oran = create_default_matrix(1.0)
+        if st.session_state.min_oran is None or len(st.session_state.min_oran) == 0:
+            min_oran_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
+        else:
+            min_oran_data = st.session_state.min_oran.copy()
+            
+            for seg in prod_segments:
+                if seg not in min_oran_data.index:
+                    min_oran_data.loc[seg] = 1.0
+            
+            for seg in store_segments:
+                if seg not in min_oran_data.columns:
+                    min_oran_data[seg] = 1.0
+            
+            # Sıralama - ÖNEMLİ!
+            min_oran_data = min_oran_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        current_min = st.session_state.min_oran.copy()
-        for seg in prod_segments:
-            if seg not in current_min.index:
-                current_min.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in current_min.columns:
-                current_min[seg] = 1.0
-        current_min = current_min.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
-        
-        min_oran_edited = st.data_editor(
-            current_min,
+        edited_min_oran = st.data_editor(
+            min_oran_data,
             use_container_width=True,
-            num_rows="fixed",
-            key="min_oran_editor",
-            column_config={
-                col: st.column_config.NumberColumn(
-                    f"{col}",
-                    min_value=0.0,
-                    max_value=10.0,
-                    step=0.1,
-                    format="%.1f"
-                ) for col in store_segments
-            }
+            column_config={col: st.column_config.NumberColumn(
+                col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+            ) for col in store_segments},
+            key="min_oran_matrix"
         )
-        
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("💾 Kaydet", key="save_min_oran"):
-                st.session_state.min_oran = min_oran_edited.copy()
-                st.success("✅ Kaydedildi!")
-        with col2:
-            if st.button("🔄 Varsayılana Sıfırla", key="reset_min_oran"):
-                st.session_state.min_oran = create_default_matrix(1.0)
-                st.rerun()
         
         st.markdown("---")
         
-        # ============================================
         # 4. INITIAL MATRİSİ
-        # ============================================
-        st.markdown("### 4️⃣ Initial Matris (Yeni Ürünler İçin)")
-        st.caption("💡 Yeni ürünler için çarpan (Varsayılan: 1.0)")
+        st.markdown("### 4️⃣ Initial Matris (Yeni Ürünler İçin - Default: 1.0)")
         
-        if st.session_state.initial_matris is None:
-            st.session_state.initial_matris = create_default_matrix(1.0)
+        if st.session_state.initial_matris is None or len(st.session_state.initial_matris) == 0:
+            initial_data = pd.DataFrame(1.0, index=prod_segments, columns=store_segments)
+        else:
+            initial_data = st.session_state.initial_matris.copy()
+            
+            for seg in prod_segments:
+                if seg not in initial_data.index:
+                    initial_data.loc[seg] = 1.0
+            
+            for seg in store_segments:
+                if seg not in initial_data.columns:
+                    initial_data[seg] = 1.0
+            
+            # Sıralama - ÖNEMLİ!
+            initial_data = initial_data.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
         
-        current_initial = st.session_state.initial_matris.copy()
-        for seg in prod_segments:
-            if seg not in current_initial.index:
-                current_initial.loc[seg] = 1.0
-        for seg in store_segments:
-            if seg not in current_initial.columns:
-                current_initial[seg] = 1.0
-        current_initial = current_initial.reindex(index=prod_segments, columns=store_segments, fill_value=1.0)
-        
-        initial_edited = st.data_editor(
-            current_initial,
+        edited_initial = st.data_editor(
+            initial_data,
             use_container_width=True,
-            num_rows="fixed",
-            key="initial_matris_editor",
-            column_config={
-                col: st.column_config.NumberColumn(
-                    f"{col}",
-                    min_value=0.0,
-                    max_value=10.0,
-                    step=0.1,
-                    format="%.1f"
-                ) for col in store_segments
-            }
+            column_config={col: st.column_config.NumberColumn(
+                col, min_value=0.0, max_value=10.0, step=0.1, format="%.2f"
+            ) for col in store_segments},
+            key="initial_matrix"
         )
         
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if st.button("💾 Kaydet", key="save_initial"):
-                st.session_state.initial_matris = initial_edited.copy()
-                st.success("✅ Kaydedildi!")
-        with col2:
-            if st.button("🔄 Varsayılana Sıfırla", key="reset_initial"):
-                st.session_state.initial_matris = create_default_matrix(1.0)
-                st.rerun()
-        
         st.markdown("---")
         
-        # ============================================
-        # TOPLU İŞLEMLER
-        # ============================================
-        st.subheader("🔧 Toplu İşlemler")
-        
-        col1, col2, col3 = st.columns(3)
-        
+        # Kaydet butonu
+        col1, col2 = st.columns([1, 4])
         with col1:
-            if st.button("💾 Tümünü Kaydet", type="primary", use_container_width=True):
-                st.session_state.sisme_orani = sisme_edited.copy()
-                st.session_state.genlestirme_orani = genlestirme_edited.copy()
-                st.session_state.min_oran = min_oran_edited.copy()
-                st.session_state.initial_matris = initial_edited.copy()
+            if st.button("💾 Tüm Matrisleri Kaydet", type="primary"):
+                st.session_state.sisme_orani = edited_sisme
+                st.session_state.genlestirme_orani = edited_genlestirme
+                st.session_state.min_oran = edited_min_oran
+                st.session_state.initial_matris = edited_initial
                 st.success("✅ Tüm matrisler kaydedildi!")
-                time.sleep(1)
-                st.rerun()
-        
         with col2:
-            if st.button("🔄 Tümünü Sıfırla", use_container_width=True):
-                st.session_state.sisme_orani = create_default_matrix(0.5)
-                st.session_state.genlestirme_orani = create_default_matrix(1.0)
-                st.session_state.min_oran = create_default_matrix(1.0)
-                st.session_state.initial_matris = create_default_matrix(1.0)
-                st.success("✅ Tüm matrisler varsayılan değerlere sıfırlandı!")
-                time.sleep(1)
-                st.rerun()
-        
-        with col3:
-            # Mevcut matrisleri göster
-            if st.button("📊 Kayıtlı Değerleri Göster", use_container_width=True):
-                st.info("Aşağıda şu anda kayıtlı olan değerler gösteriliyor")
-        
-        # Kayıtlı değerleri göster
-        with st.expander("📋 Şu Anda Kayıtlı Olan Matris Değerleri", expanded=False):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("**Şişme Oranı (Kayıtlı):**")
-                if st.session_state.sisme_orani is not None:
-                    st.dataframe(st.session_state.sisme_orani.style.format("{:.1f}"), use_container_width=True)
-                
-                st.write("**Min Oran (Kayıtlı):**")
-                if st.session_state.min_oran is not None:
-                    st.dataframe(st.session_state.min_oran.style.format("{:.1f}"), use_container_width=True)
-            
-            with col2:
-                st.write("**Genleştirme Oranı (Kayıtlı):**")
-                if st.session_state.genlestirme_orani is not None:
-                    st.dataframe(st.session_state.genlestirme_orani.style.format("{:.1f}"), use_container_width=True)
-                
-                st.write("**Initial Matris (Kayıtlı):**")
-                if st.session_state.initial_matris is not None:
-                    st.dataframe(st.session_state.initial_matris.style.format("{:.1f}"), use_container_width=True)
-        
-        # ============================================
-        # CSV EXPORT/IMPORT
-        # ============================================
-        st.markdown("---")
-        st.subheader("📥📤 Matris Verileri Export/Import")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**📤 Export (CSV İndir)**")
-            
-            if st.button("💾 Tüm Matrisleri İndir", use_container_width=True):
-                import zipfile
-                
-                zip_buffer = io.BytesIO()
-                
-                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    if st.session_state.sisme_orani is not None:
-                        csv_data = st.session_state.sisme_orani.to_csv(encoding='utf-8-sig')
-                        zip_file.writestr('sisme_orani.csv', csv_data.encode('utf-8-sig'))
-                    
-                    if st.session_state.genlestirme_orani is not None:
-                        csv_data = st.session_state.genlestirme_orani.to_csv(encoding='utf-8-sig')
-                        zip_file.writestr('genlestirme_orani.csv', csv_data.encode('utf-8-sig'))
-                    
-                    if st.session_state.min_oran is not None:
-                        csv_data = st.session_state.min_oran.to_csv(encoding='utf-8-sig')
-                        zip_file.writestr('min_oran.csv', csv_data.encode('utf-8-sig'))
-                    
-                    if st.session_state.initial_matris is not None:
-                        csv_data = st.session_state.initial_matris.to_csv(encoding='utf-8-sig')
-                        zip_file.writestr('initial_matris.csv', csv_data.encode('utf-8-sig'))
-                
-                zip_buffer.seek(0)
-                
-                st.download_button(
-                    label="⬇️ ZIP Dosyasını İndir",
-                    data=zip_buffer.getvalue(),
-                    file_name="hedef_matrisler.zip",
-                    mime="application/zip",
-                    use_container_width=True
-                )
-        
-        with col2:
-            st.write("**📥 Import (CSV Yükle)**")
-            st.info("Yakında eklenecek - Matris CSV'lerini yükleyebileceksiniz")
-
-
+            st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")
 # ============================================
 # 🚚 HESAPLAMA - DÜZELTİLMİŞ VERSİYON
 # ============================================
