@@ -15,9 +15,6 @@ st.set_page_config(
 # ============================================
 st.title("📊 Retail Analytics Platform")
 st.markdown("---")
-rişim butonlarından ulaşabilirsiniz.
-""")
-
 # ============================================
 # ANA SAYFA
 # ============================================
