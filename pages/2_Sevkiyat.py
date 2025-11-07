@@ -330,149 +330,82 @@ elif menu == "🫧 Segmentasyon":
 # ============================================
 # 🎲 HEDEF MATRİS - BASİT VE GARANTİLİ VERSİYON
 # ============================================
+# ============================================
+# 🎲 HEDEF MATRİS - SÜPER BASİT TEST
+# ============================================
 elif menu == "🎲 Hedef Matris":
-    st.title("🎲 Hedef Matris Parametreleri")
+    st.title("🎲 TEST - BU BAŞLIĞI GÖRÜYOR MUSUNUZ?")
+    
+    st.error("🔴 KIRMIZI UYARI - BU METNİ GÖRÜYOR MUSUNUZ?")
+    st.success("🟢 YEŞİL MESAJ - BU METNİ GÖRÜYOR MUSUNUZ?")
+    st.warning("🟡 SARI UYARI - BU METNİ GÖRÜYOR MUSUNUZ?")
+    
+    st.write("**Segment Durumu:**")
+    st.write(f"- prod_segments var mı? {st.session_state.prod_segments is not None}")
+    st.write(f"- store_segments var mı? {st.session_state.store_segments is not None}")
+    
+    if st.session_state.prod_segments is not None:
+        st.write(f"- Ürün segmentleri: {st.session_state.prod_segments}")
+    else:
+        st.error("❌ prod_segments YOK!")
+        
+    if st.session_state.store_segments is not None:
+        st.write(f"- Mağaza segmentleri: {st.session_state.store_segments}")
+    else:
+        st.error("❌ store_segments YOK!")
+    
     st.markdown("---")
     
-    # Segmentlerin hazır olup olmadığını kontrol et
+    # Segmentler varsa devam et
     if (st.session_state.prod_segments is None or 
         st.session_state.store_segments is None):
-        st.warning("⚠️ Önce 'Segmentasyon' bölümüne gidin ve segmentasyonu kaydedin!")
+        st.error("⛔ BURASI ÇALIŞTI - SEGMENTLER YOK, DURDURULDU!")
         st.stop()
     
-    prod_segments = st.session_state.prod_segments  # Sütunlar
-    store_segments = st.session_state.store_segments  # Satırlar
+    st.success("✅ Segmentler var, devam ediyoruz...")
     
-    st.info(f"📏 Matris: {len(store_segments)} Mağaza × {len(prod_segments)} Ürün")
+    prod_segments = st.session_state.prod_segments
+    store_segments = st.session_state.store_segments
+    
+    st.write(f"Ürün segmentleri: {prod_segments}")
+    st.write(f"Mağaza segmentleri: {store_segments}")
+    
     st.markdown("---")
+    st.subheader("Şimdi basit bir tablo oluşturalım:")
     
-    # ============================================
-    # 1️⃣ ŞİŞME ORANI MATRİSİ
-    # ============================================
-    st.markdown("### 1️⃣ Şişme Oranı Matrisi")
+    # En basit tablo
+    test_data = {
+        'A': [1, 2, 3],
+        'B': [4, 5, 6],
+        'C': [7, 8, 9]
+    }
+    test_df = pd.DataFrame(test_data)
     
-    # Matris oluştur
-    if st.session_state.sisme_orani is not None:
-        sisme_df = st.session_state.sisme_orani.copy()
-    else:
+    st.write("**Test Tablosu:**")
+    st.write(test_df)
+    
+    st.markdown("---")
+    st.write("**Aynı tablo st.dataframe ile:**")
+    st.dataframe(test_df)
+    
+    st.markdown("---")
+    st.subheader("Gerçek matris oluşturalım:")
+    
+    try:
         sisme_df = pd.DataFrame(
-            0.5,  # Default değer
+            0.5,
             index=store_segments,
             columns=prod_segments
         )
-    
-    # Index'i kolon yap
-    sisme_display = sisme_df.reset_index()
-    sisme_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
-    
-    # TABLOYU GÖSTER
-    st.write("**Düzenlenebilir Tablo:**")
-    edited_sisme = st.data_editor(
-        sisme_display,
-        key="sisme_editor",
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    st.markdown("---")
-    
-    # ============================================
-    # 2️⃣ GENLEŞTİRME ORANI MATRİSİ
-    # ============================================
-    st.markdown("### 2️⃣ Genleştirme Oranı Matrisi")
-    
-    if st.session_state.genlestirme_orani is not None:
-        genles_df = st.session_state.genlestirme_orani.copy()
-    else:
-        genles_df = pd.DataFrame(
-            1.0,
-            index=store_segments,
-            columns=prod_segments
-        )
-    
-    genles_display = genles_df.reset_index()
-    genles_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
-    
-    st.write("**Düzenlenebilir Tablo:**")
-    edited_genles = st.data_editor(
-        genles_display,
-        key="genles_editor",
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    st.markdown("---")
-    
-    # ============================================
-    # 3️⃣ MIN ORAN MATRİSİ
-    # ============================================
-    st.markdown("### 3️⃣ Min Oran Matrisi")
-    
-    if st.session_state.min_oran is not None:
-        min_df = st.session_state.min_oran.copy()
-    else:
-        min_df = pd.DataFrame(
-            1.0,
-            index=store_segments,
-            columns=prod_segments
-        )
-    
-    min_display = min_df.reset_index()
-    min_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
-    
-    st.write("**Düzenlenebilir Tablo:**")
-    edited_min = st.data_editor(
-        min_display,
-        key="min_editor",
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    st.markdown("---")
-    
-    # ============================================
-    # 4️⃣ INITIAL MATRİS
-    # ============================================
-    st.markdown("### 4️⃣ Initial Matris")
-    
-    if st.session_state.initial_matris is not None:
-        initial_df = st.session_state.initial_matris.copy()
-    else:
-        initial_df = pd.DataFrame(
-            1.0,
-            index=store_segments,
-            columns=prod_segments
-        )
-    
-    initial_display = initial_df.reset_index()
-    initial_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
-    
-    st.write("**Düzenlenebilir Tablo:**")
-    edited_initial = st.data_editor(
-        initial_display,
-        key="initial_editor",
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    st.markdown("---")
-    
-    # ============================================
-    # KAYDET
-    # ============================================
-    if st.button("💾 KAYDET", type="primary", use_container_width=True):
-        try:
-            # İlk kolonu index yap
-            st.session_state.sisme_orani = edited_sisme.set_index('Mağaza↓ / Ürün→')
-            st.session_state.genlestirme_orani = edited_genles.set_index('Mağaza↓ / Ürün→')
-            st.session_state.min_oran = edited_min.set_index('Mağaza↓ / Ürün→')
-            st.session_state.initial_matris = edited_initial.set_index('Mağaza↓ / Ürün→')
-            
-            st.success("✅ Kaydedildi!")
-            st.balloons()
-            
-        except Exception as e:
-            st.error(f"Hata: {e}")
+        
+        st.write(f"Matris oluşturuldu: {sisme_df.shape[0]} satır × {sisme_df.shape[1]} sütun")
+        st.write("**Matris içeriği:**")
+        st.dataframe(sisme_df)
+        
+    except Exception as e:
+        st.error(f"❌ Matris oluşturma hatası: {e}")
+        import traceback
+        st.code(traceback.format_exc())
 
 
 # ============================================
