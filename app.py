@@ -20,16 +20,9 @@ st.markdown("---")
 # ============================================
 # HOŞ GELDİNİZ
 # ============================================
-    st.markdown("""
-    ### 👋 Hoş Geldiniz! """)
-    
-    st.success("""
-    **🚀 Hızlı Başlangıç:**
-    1. Sol menüden bir modül seçin (Lost Sales, Sevkiyat, PO, Prepack)
-    2. CSV dosyalarınızı yükleyin
-    3. Parametreleri ayarlayın
-    4. Analiz sonuçlarını görüntüleyin
-    5. Raporları CSV formatında indirin
+st.warning("""
+    ### ⚠️ Büyük kararlar doğru algoritmalar ile alınır
+     - Yapay zeka, ML destekli
+    -  Güvenilir
+    -  Hızlı
     """)
-
-st.markdown("---")
