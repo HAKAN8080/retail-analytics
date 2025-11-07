@@ -1,5 +1,5 @@
 """
-🚀 Retail Analytics Sistemi
+🚀 Thorius Retail Analytics 
 Ana Sayfa
 """
 import streamlit as st
@@ -107,101 +107,6 @@ with col3:
             st.switch_page("pages/3_Prepack_Optimization.py")
 
 st.markdown("---")
-
-# Genel Bilgilendirme
-st.markdown("## 🎯 Sistem Özellikleri")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.info("""
-    **💡 Modüler Yapı**
-    
-    Her modül bağımsız çalışır:
-    - Ayrı veri gereksinimleri
-    - Özel hesaplama mantıkları
-    - Farklı çıktı formatları
-    - Session state yönetimi
-    """)
-
-with col2:
-    st.success("""
-    **✅ Başlangıç Adımları**
-    
-    1. **Veri Yükleme** sayfasına gidin
-    2. Kullanmak istediğiniz modül için gerekli CSV'leri yükleyin
-    3. İlgili modüle geçin ve analizleri çalıştırın
-    4. Sonuçları indirin ve kullanın
-    """)
-
-# PO Modülü İçin Özel Bilgi
-st.markdown("---")
-st.markdown("## 💵 Alım Sipariş (PO) Modülü - Detaylar")
-
-with st.expander("📊 PO Modülü Nasıl Çalışır?", expanded=False):
-    st.markdown("""
-    ### Hesaplama Mantığı
-    
-    **1. Cover Hesaplama:**
-    ```
-    Cover = (Toplam Stoklar) / (Mağaza Satış Hızı)
-    Toplam Stoklar = Mağaza Stok + Yolda + Depo Stok
-    ```
-    
-    **2. Filtreler (Varsayılan):**
-    - Cover < 15 hafta
-    - Brüt Kar Marjı > -20%
-    
-    **3. Sipariş Formülü:**
-    ```
-    Brüt İhtiyaç = (Satış × Genişletme × (FC + 2)) - Mevcut Stoklar + Karşılanamayan Min
-    Net İhtiyaç = Brüt İhtiyaç - Açık Sipariş
-    ```
-    
-    **4. Özellikler:**
-    - ✅ Koli bazında yuvarlama
-    - ✅ İthal ürün faktörü (FC × 1.2)
-    - ✅ Pasif ürün kontrolü
-    - ✅ Yasak ürün filtreleme
-    - ✅ Detaylı KPI hedefleri (marka+MG bazlı)
-    
-    **5. Çıktılar:**
-    - 📊 Segment bazlı raporlar
-    - 🏪 Depo bazlı sipariş listeleri
-    - 💰 Karlılık analizi
-    - 👥 Tedarikçi bazlı özet
-    """)
-
-with st.expander("📋 Gerekli CSV Dosyaları", expanded=False):
-    st.markdown("""
-    ### Zorunlu Dosyalar:
-    
-    1. **Anlık Stok/Satış**
-       - Sütunlar: `urun_kod`, `stok`, `yol`, `satis`, `ciro`, `smm`
-       - Açıklama: Mağaza bazlı güncel stok ve satış verileri
-    
-    2. **Depo Stok**
-       - Sütunlar: `urun_kod`, `depo_kod`, `stok`
-       - Açıklama: Depo bazlı stok seviyeleri
-    
-    3. **KPI**
-       - Sütunlar: `forward_cover`, `servis_seviyesi`, vs.
-       - Açıklama: Genel hedef ve parametreler
-    
-    ### Opsiyonel (Önerilen):
-    
-    4. **Ürün Master**
-       - Sütunlar: `urun_kod`, `satici_kod`, `mg`, `marka_kod`, `durum`, `ithal`, `koli_ici`
-       - Açıklama: Ürün detay bilgileri
-    
-    5. **PO Yasak**
-       - Sütunlar: `urun_kodu`, `yasak_durum`, `acik_siparis`
-       - Açıklama: Yasak ürünler ve açık siparişler
-    
-    6. **PO Detay KPI**
-       - Sütunlar: `marka_kod`, `mg`, `cover_hedef`, `bkar_hedef`
-       - Açıklama: Marka+MG bazında özel hedefler
-    """)
 
 # Footer
 st.markdown("---")
