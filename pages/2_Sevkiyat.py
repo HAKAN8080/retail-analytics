@@ -369,35 +369,35 @@ elif menu == "🫧 Segmentasyon":
             key="download_magaza_segment"
         )
     
-    st.markdown("---")
-    
-    # Segment listelerini hazırla (Kaydet butonundan ÖNCE)
-    product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
-    store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
-    
-    # Kaydet butonu
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        if st.button("💾 Segmentasyonu Kaydet", type="primary"):
-            st.session_state.segmentation_params = {
-                'product_ranges': product_ranges,
-                'store_ranges': store_ranges
-            }
-            
-            # Segmentleri kaydet
-            st.session_state.prod_segments = product_labels
-            st.session_state.store_segments = store_labels
-            
-            # Segment mapping kaydet
-            if 'temp_prod' in locals() and temp_prod is not None:
-                st.session_state.urun_segment_map = temp_prod.set_index('urun_kod')['segment'].to_dict()
-            if 'temp_store' in locals() and temp_store is not None:
-                st.session_state.magaza_segment_map = temp_store.set_index('magaza_kod')['segment'].to_dict()
-            
-            st.success("✅ Ayarlar kaydedildi!")
-    with col2:
-        st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")    
+        st.markdown("---")
         
+        # Segment listelerini hazırla (Kaydet butonundan ÖNCE)
+        product_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in product_ranges]
+        store_labels = [f"{int(r[0])}-{int(r[1]) if r[1] != float('inf') else 'inf'}" for r in store_ranges]
+        
+        # Kaydet butonu
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            if st.button("💾 Segmentasyonu Kaydet", type="primary"):
+                st.session_state.segmentation_params = {
+                    'product_ranges': product_ranges,
+                    'store_ranges': store_ranges
+                }
+                
+                # Segmentleri kaydet
+                st.session_state.prod_segments = product_labels
+                st.session_state.store_segments = store_labels
+                
+                # Segment mapping kaydet
+                if 'temp_prod' in locals() and temp_prod is not None:
+                    st.session_state.urun_segment_map = temp_prod.set_index('urun_kod')['segment'].to_dict()
+                if 'temp_store' in locals() and temp_store is not None:
+                    st.session_state.magaza_segment_map = temp_store.set_index('magaza_kod')['segment'].to_dict()
+                
+                st.success("✅ Ayarlar kaydedildi!")
+        with col2:
+            st.info("ℹ️ Kaydetmeseniz de default değerler kullanılacaktır.")    
+            
     st.markdown("---")
     
     # HER İKİSİNİ BİRLİKTE İNDİR
