@@ -322,91 +322,138 @@ elif menu == "🫧 Segmentasyon":
             )
 
 # ============================================
-# 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ
+# 🎲 HEDEF MATRİS 
 # ============================================
+
+
 # ============================================
-# 🎲 HEDEF MATRİS - TAM DÜZELTİLMİŞ VERSİYON
-# ============================================
-# ============================================
-# 🎲 HEDEF MATRİS - BASİT VE GARANTİLİ VERSİYON
-# ============================================
-# ============================================
-# 🎲 HEDEF MATRİS - SÜPER BASİT TEST
+# 🎲 HEDEF MATRİS - GÖRÜNTÜLEME (READ-ONLY)
 # ============================================
 elif menu == "🎲 Hedef Matris":
-    st.title("🎲 TEST - BU BAŞLIĞI GÖRÜYOR MUSUNUZ?")
-    
-    st.error("🔴 KIRMIZI UYARI - BU METNİ GÖRÜYOR MUSUNUZ?")
-    st.success("🟢 YEŞİL MESAJ - BU METNİ GÖRÜYOR MUSUNUZ?")
-    st.warning("🟡 SARI UYARI - BU METNİ GÖRÜYOR MUSUNUZ?")
-    
-    st.write("**Segment Durumu:**")
-    st.write(f"- prod_segments var mı? {st.session_state.prod_segments is not None}")
-    st.write(f"- store_segments var mı? {st.session_state.store_segments is not None}")
-    
-    if st.session_state.prod_segments is not None:
-        st.write(f"- Ürün segmentleri: {st.session_state.prod_segments}")
-    else:
-        st.error("❌ prod_segments YOK!")
-        
-    if st.session_state.store_segments is not None:
-        st.write(f"- Mağaza segmentleri: {st.session_state.store_segments}")
-    else:
-        st.error("❌ store_segments YOK!")
-    
+    st.title("🎲 Hedef Matris Parametreleri")
     st.markdown("---")
     
-    # Segmentler varsa devam et
+    # Segmentleri kontrol et
     if (st.session_state.prod_segments is None or 
         st.session_state.store_segments is None):
-        st.error("⛔ BURASI ÇALIŞTI - SEGMENTLER YOK, DURDURULDU!")
+        st.warning("⚠️ Önce 'Segmentasyon' bölümüne gidin ve segmentasyonu kaydedin!")
         st.stop()
     
-    st.success("✅ Segmentler var, devam ediyoruz...")
+    prod_segments = st.session_state.prod_segments  # Sütunlar
+    store_segments = st.session_state.store_segments  # Satırlar
     
-    prod_segments = st.session_state.prod_segments
-    store_segments = st.session_state.store_segments
-    
-    st.write(f"Ürün segmentleri: {prod_segments}")
-    st.write(f"Mağaza segmentleri: {store_segments}")
-    
+    st.info(f"📏 Matris Boyutu: {len(store_segments)} Mağaza Segment (Satır) × {len(prod_segments)} Ürün Segment (Sütun)")
     st.markdown("---")
-    st.subheader("Şimdi basit bir tablo oluşturalım:")
     
-    # En basit tablo
-    test_data = {
-        'A': [1, 2, 3],
-        'B': [4, 5, 6],
-        'C': [7, 8, 9]
-    }
-    test_df = pd.DataFrame(test_data)
+    # ============================================
+    # 1️⃣ ŞİŞME ORANI MATRİSİ
+    # ============================================
+    st.subheader("1️⃣ Şişme Oranı Matrisi")
+    st.caption("📊 Default değer: 0.5")
     
-    st.write("**Test Tablosu:**")
-    st.write(test_df)
-    
-    st.markdown("---")
-    st.write("**Aynı tablo st.dataframe ile:**")
-    st.dataframe(test_df)
-    
-    st.markdown("---")
-    st.subheader("Gerçek matris oluşturalım:")
-    
-    try:
+    # Matris oluştur veya yükle
+    if st.session_state.sisme_orani is not None:
+        sisme_df = st.session_state.sisme_orani.copy()
+        st.info("✅ Kaydedilmiş değerler yüklendi")
+    else:
+        # Yeni matris oluştur (default değerlerle)
         sisme_df = pd.DataFrame(
-            0.5,
+            0.5,  # Default değer
             index=store_segments,
             columns=prod_segments
         )
-        
-        st.write(f"Matris oluşturuldu: {sisme_df.shape[0]} satır × {sisme_df.shape[1]} sütun")
-        st.write("**Matris içeriği:**")
-        st.dataframe(sisme_df)
-        
-    except Exception as e:
-        st.error(f"❌ Matris oluşturma hatası: {e}")
-        import traceback
-        st.code(traceback.format_exc())
-
+        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
+    
+    # Matrisi göster (read-only)
+    st.write("**Matris Değerleri:**")
+    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
+    st.write(sisme_df)
+    
+    st.markdown("---")
+    
+    # ============================================
+    # 2️⃣ GENLEŞTİRME ORANI MATRİSİ
+    # ============================================
+    st.subheader("2️⃣ Genleştirme Oranı Matrisi")
+    st.caption("📊 Default değer: 1.0")
+    
+    if st.session_state.genlestirme_orani is not None:
+        genles_df = st.session_state.genlestirme_orani.copy()
+        st.info("✅ Kaydedilmiş değerler yüklendi")
+    else:
+        genles_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
+        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
+    
+    st.write("**Matris Değerleri:**")
+    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
+    st.write(genles_df)
+    
+    st.markdown("---")
+    
+    # ============================================
+    # 3️⃣ MIN ORAN MATRİSİ
+    # ============================================
+    st.subheader("3️⃣ Min Oran Matrisi")
+    st.caption("📊 Default değer: 1.0")
+    
+    if st.session_state.min_oran is not None:
+        min_df = st.session_state.min_oran.copy()
+        st.info("✅ Kaydedilmiş değerler yüklendi")
+    else:
+        min_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
+        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
+    
+    st.write("**Matris Değerleri:**")
+    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
+    st.write(min_df)
+    
+    st.markdown("---")
+    
+    # ============================================
+    # 4️⃣ INITIAL MATRİS
+    # ============================================
+    st.subheader("4️⃣ Initial Matris")
+    st.caption("📊 Default değer: 1.0")
+    
+    if st.session_state.initial_matris is not None:
+        initial_df = st.session_state.initial_matris.copy()
+        st.info("✅ Kaydedilmiş değerler yüklendi")
+    else:
+        initial_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
+        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
+    
+    st.write("**Matris Değerleri:**")
+    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
+    st.write(initial_df)
+    
+    st.markdown("---")
+    
+    # ============================================
+    # ÖZET BİLGİ
+    # ============================================
+    st.subheader("📋 Özet Bilgi")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Şişme Oranı", 
+                 "Kaydedilmiş ✅" if st.session_state.sisme_orani is not None else "Default ⚠️")
+    
+    with col2:
+        st.metric("Genleştirme", 
+                 "Kaydedilmiş ✅" if st.session_state.genlestirme_orani is not None else "Default ⚠️")
+    
+    with col3:
+        st.metric("Min Oran", 
+                 "Kaydedilmiş ✅" if st.session_state.min_oran is not None else "Default ⚠️")
+    
+    with col4:
+        st.metric("Initial", 
+                 "Kaydedilmiş ✅" if st.session_state.initial_matris is not None else "Default ⚠️")
+    
+    st.markdown("---")
+    
+    st.info("ℹ️ **Not:** Bu sayfada sadece görüntüleme yapabilirsiniz. Düzenleme özelliği yakında eklenecek!")
 
 # ============================================
 # 🚚 HESAPLAMA - TAM DÜZELTİLMİŞ VERSİYON
