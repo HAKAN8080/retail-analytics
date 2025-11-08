@@ -1089,26 +1089,6 @@ elif menu == "📐 Hesaplama":
                 
                 st.markdown("---")
                 
-                # ÖZET METRİKLER
-                st.subheader("📊 Özet Metrikler")
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    ort_sevk = il_detay['Ortalama Sevkiyat/Mağaza']
-                    ort_sevk_str = f"{float(ort_sevk):,.0f}" if pd.notna(ort_sevk) else "0"
-                    st.metric("Ortalama Sevkiyat/Mağaza", ort_sevk_str, key="ort_sevkiyat_metric")
-                with col2:
-                    top_sevk = il_detay['Toplam Sevkiyat']
-                    top_sevk_str = f"{float(top_sevk):,.0f}" if pd.notna(top_sevk) else "0"
-                    st.metric("Toplam Sevkiyat", top_sevk_str, key="toplam_sevkiyat_metric")
-                with col3:
-                    mag_say = il_detay['Mağaza Sayısı']
-                    mag_say_str = f"{float(mag_say):,.0f}" if pd.notna(mag_say) else "0"
-                    st.metric("Mağaza Sayısı", mag_say_str, key="magaza_sayisi_metric")
-                with col4:
-                    perf = il_detay['Performans Segmenti']
-                    perf_str = str(perf) if pd.notna(perf) else "Bilinmiyor"
-                    st.metric("Performans", perf_str, key="performans_metric")                
-                st.markdown("---")
                                 
                 # SAP DOSYASI
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
