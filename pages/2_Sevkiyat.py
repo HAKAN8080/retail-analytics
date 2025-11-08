@@ -554,11 +554,7 @@ elif menu == "🎲 Hedef Matris":
                 except Exception as e:
                     st.error(f"CSV indirme hatası: {e}")
 
-# ============================================
-# 🔢 SIRALAMA - EKLENECEK BÖLÜM
-# ============================================
-# Bu kodu şu satırdan ÖNCE ekleyin:
-# elif menu == "📐 Hesaplama":
+
 
 # ============================================
 # 🔢 SIRALAMA - İHTİYAÇ ÖNCELİKLENDİRME
@@ -768,9 +764,6 @@ elif menu == "🔢 Sıralama":
 
 
 
-# ============================================
-# 🚚 HESAPLAMA 
-# ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
     st.markdown("---")
@@ -794,6 +787,8 @@ elif menu == "📐 Hesaplama":
     st.success("✅ Tüm zorunlu veriler hazır!")
     
     if st.button("🚀 HESAPLA", type="primary", use_container_width=True):
+        # ⏱️ SÜRE ÖLÇÜMÜ BAŞLAT - BURAYA EKLE
+        baslaangic_zamani = time.time()    
         with st.spinner("Hesaplanıyor..."):
             try:
                 # 1. VERİ HAZIRLA
@@ -1083,12 +1078,101 @@ elif menu == "📐 Hesaplama":
                 final.insert(1, 'oncelik', range(1, len(final) + 1))
                 
                 # KAYDET
+                # ⏱️ SÜRE ÖLÇÜMÜ BİTİR
                 st.session_state.sevkiyat_sonuc = final
-                
+
+                bitis_zamani = time.time()
+                algoritma_suresi = bitis_zamani - baslaangic_zamani           
                 st.success(f"✅ Hesaplama tamamlandı! {len(final):,} satır oluşturuldu.")
+                st.markdown("---")
+
+                # ============================================
+                # 📊 ÖZET METRİKLER TABLOSU
+                # ============================================
+                st.subheader("📊 Hesaplama Özet Metrikleri")
+                
+                # Metrikleri hesapla
+                toplam_magaza_stok = df['stok'].sum()
+                toplam_yol = df['yol'].sum()
+                toplam_depo_stok = depo_df['stok'].sum()
+                toplam_satis = df['satis'].sum()
+                toplam_ihtiyac = final['ihtiyac_miktari'].sum()
+                toplam_sevkiyat = final['sevkiyat_miktari'].sum()
+                performans = (toplam_sevkiyat / toplam_ihtiyac * 100) if toplam_ihtiyac > 0 else 0
+                magaza_sayisi = df['magaza_kod'].nunique()
+                urun_sayisi = df['urun_kod'].nunique()
+                sevk_olan_urun_sayisi = final[final['sevkiyat_miktari'] > 0]['urun_kod'].nunique()
+                
+                # Özet tablosu oluştur
+                ozet_data = {
+                    'Metrik': [
+                        '📦 Toplam Mağaza Stok',
+                        '🚚 Toplam Yol',
+                        '🏭 Toplam Depo Stok',
+                        '💰 Toplam Satış',
+                        '📋 Toplam İhtiyaç',
+                        '✅ Toplam Sevkiyat',
+                        '📈 Performans (%)',
+                        '⏱️ Algoritma Süresi (sn)',
+                        '🏪 Mağaza Sayısı',
+                        '🏷️ Ürün Sayısı',
+                        '📤 Sevk Olan Ürün Sayısı'
+                    ],
+                    'Değer': [
+                        f"{toplam_magaza_stok:,.0f}",
+                        f"{toplam_yol:,.0f}",
+                        f"{toplam_depo_stok:,.0f}",
+                        f"{toplam_satis:,.0f}",
+                        f"{toplam_ihtiyac:,.0f}",
+                        f"{toplam_sevkiyat:,.0f}",
+                        f"{performans:.2f}%",
+                        f"{algoritma_suresi:.2f} saniye",
+                        f"{magaza_sayisi:,}",
+                        f"{urun_sayisi:,}",
+                        f"{sevk_olan_urun_sayisi:,}"
+                    ]
+                }
+                
+                ozet_df = pd.DataFrame(ozet_data)
+                
+                # Tabloyu göster
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.dataframe(
+                        ozet_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        height=450
+                    )
+                
+                with col2:
+                    # Önemli metrikler - büyük kartlar
+                    st.metric(
+                        "🎯 Genel Performans", 
+                        f"{performans:.1f}%",
+                        delta=f"{performans - 100:.1f}%" if performans < 100 else "Hedef Aşıldı!"
+                    )
+                    
+                    st.metric(
+                        "⚡ İşlem Süresi", 
+                        f"{algoritma_suresi:.2f} sn"
+                    )
+                    
+                    karsilama_orani = (toplam_sevkiyat / toplam_ihtiyac * 100) if toplam_ihtiyac > 0 else 0
+                    st.metric(
+                        "📊 Karşılama Oranı",
+                        f"{karsilama_orani:.1f}%"
+                    )
+                    
+                    # Stok durumu özeti
+                    toplam_stok_sistemi = toplam_magaza_stok + toplam_yol + toplam_depo_stok
+                    st.metric(
+                        "💼 Toplam Sistem Stok",
+                        f"{toplam_stok_sistemi:,.0f}"
+                    )
                 
                 st.markdown("---")
-                
                                 
                 # SAP DOSYASI
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
