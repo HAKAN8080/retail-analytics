@@ -325,9 +325,8 @@ elif menu == "🫧 Segmentasyon":
 # 🎲 HEDEF MATRİS 
 # ============================================
 
-
 # ============================================
-# 🎲 HEDEF MATRİS - GÖRÜNTÜLEME (READ-ONLY)
+# 🎲 HEDEF MATRİS - DÜZENLENEBİLİR VERSİYON (ADIM 2)
 # ============================================
 elif menu == "🎲 Hedef Matris":
     st.title("🎲 Hedef Matris Parametreleri")
@@ -342,32 +341,35 @@ elif menu == "🎲 Hedef Matris":
     prod_segments = st.session_state.prod_segments  # Sütunlar
     store_segments = st.session_state.store_segments  # Satırlar
     
-    st.info(f"📏 Matris Boyutu: {len(store_segments)} Mağaza Segment (Satır) × {len(prod_segments)} Ürün Segment (Sütun)")
+    st.info(f"📏 Matris Boyutu: {len(store_segments)} Mağaza Segment × {len(prod_segments)} Ürün Segment")
+    st.success("✨ **Artık hücrelere tıklayarak değerleri düzenleyebilirsiniz!**")
     st.markdown("---")
     
     # ============================================
     # 1️⃣ ŞİŞME ORANI MATRİSİ
     # ============================================
     st.subheader("1️⃣ Şişme Oranı Matrisi")
-    st.caption("📊 Default değer: 0.5")
+    st.caption("📊 Default: 0.5 | Düzenlemek için hücreye çift tıklayın")
     
     # Matris oluştur veya yükle
     if st.session_state.sisme_orani is not None:
         sisme_df = st.session_state.sisme_orani.copy()
-        st.info("✅ Kaydedilmiş değerler yüklendi")
     else:
-        # Yeni matris oluştur (default değerlerle)
-        sisme_df = pd.DataFrame(
-            0.5,  # Default değer
-            index=store_segments,
-            columns=prod_segments
-        )
-        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
+        sisme_df = pd.DataFrame(0.5, index=store_segments, columns=prod_segments)
     
-    # Matrisi göster (read-only)
-    st.write("**Matris Değerleri:**")
-    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
-    st.write(sisme_df)
+    # Index'i kolon olarak ekle (data_editor için gerekli)
+    sisme_display = sisme_df.reset_index()
+    sisme_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
+    
+    # Düzenlenebilir tablo
+    edited_sisme = st.data_editor(
+        sisme_display,
+        key="editor_sisme_v1",
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        disabled=["Mağaza↓ / Ürün→"]  # İlk sütun düzenlenemez
+    )
     
     st.markdown("---")
     
@@ -375,18 +377,24 @@ elif menu == "🎲 Hedef Matris":
     # 2️⃣ GENLEŞTİRME ORANI MATRİSİ
     # ============================================
     st.subheader("2️⃣ Genleştirme Oranı Matrisi")
-    st.caption("📊 Default değer: 1.0")
+    st.caption("📊 Default: 1.0 | Düzenlemek için hücreye çift tıklayın")
     
     if st.session_state.genlestirme_orani is not None:
         genles_df = st.session_state.genlestirme_orani.copy()
-        st.info("✅ Kaydedilmiş değerler yüklendi")
     else:
         genles_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
-        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
     
-    st.write("**Matris Değerleri:**")
-    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
-    st.write(genles_df)
+    genles_display = genles_df.reset_index()
+    genles_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
+    
+    edited_genles = st.data_editor(
+        genles_display,
+        key="editor_genles_v1",
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        disabled=["Mağaza↓ / Ürün→"]
+    )
     
     st.markdown("---")
     
@@ -394,18 +402,24 @@ elif menu == "🎲 Hedef Matris":
     # 3️⃣ MIN ORAN MATRİSİ
     # ============================================
     st.subheader("3️⃣ Min Oran Matrisi")
-    st.caption("📊 Default değer: 1.0")
+    st.caption("📊 Default: 1.0 | Düzenlemek için hücreye çift tıklayın")
     
     if st.session_state.min_oran is not None:
         min_df = st.session_state.min_oran.copy()
-        st.info("✅ Kaydedilmiş değerler yüklendi")
     else:
         min_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
-        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
     
-    st.write("**Matris Değerleri:**")
-    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
-    st.write(min_df)
+    min_display = min_df.reset_index()
+    min_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
+    
+    edited_min = st.data_editor(
+        min_display,
+        key="editor_min_v1",
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        disabled=["Mağaza↓ / Ürün→"]
+    )
     
     st.markdown("---")
     
@@ -413,48 +427,135 @@ elif menu == "🎲 Hedef Matris":
     # 4️⃣ INITIAL MATRİS
     # ============================================
     st.subheader("4️⃣ Initial Matris")
-    st.caption("📊 Default değer: 1.0")
+    st.caption("📊 Default: 1.0 | Düzenlemek için hücreye çift tıklayın")
     
     if st.session_state.initial_matris is not None:
         initial_df = st.session_state.initial_matris.copy()
-        st.info("✅ Kaydedilmiş değerler yüklendi")
     else:
         initial_df = pd.DataFrame(1.0, index=store_segments, columns=prod_segments)
-        st.warning("⚠️ Henüz kaydedilmiş değer yok, default değerler gösteriliyor")
     
-    st.write("**Matris Değerleri:**")
-    st.write("*Satırlar: Mağaza Segmentleri | Sütunlar: Ürün Segmentleri*")
-    st.write(initial_df)
+    initial_display = initial_df.reset_index()
+    initial_display.rename(columns={'index': 'Mağaza↓ / Ürün→'}, inplace=True)
+    
+    edited_initial = st.data_editor(
+        initial_display,
+        key="editor_initial_v1",
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        disabled=["Mağaza↓ / Ürün→"]
+    )
     
     st.markdown("---")
     
     # ============================================
-    # ÖZET BİLGİ
+    # KAYDET BUTONU
     # ============================================
-    st.subheader("📋 Özet Bilgi")
+    st.subheader("💾 Değişiklikleri Kaydet")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.metric("Şişme Oranı", 
-                 "Kaydedilmiş ✅" if st.session_state.sisme_orani is not None else "Default ⚠️")
+        if st.button("💾 KAYDET", type="primary", use_container_width=True, key="save_matrices_btn"):
+            try:
+                # Düzenlenmiş dataframe'leri index'e çevir ve kaydet
+                st.session_state.sisme_orani = edited_sisme.set_index('Mağaza↓ / Ürün→')
+                st.session_state.genlestirme_orani = edited_genles.set_index('Mağaza↓ / Ürün→')
+                st.session_state.min_oran = edited_min.set_index('Mağaza↓ / Ürün→')
+                st.session_state.initial_matris = edited_initial.set_index('Mağaza↓ / Ürün→')
+                
+                st.success("✅ Tüm matrisler başarıyla kaydedildi!")
+                st.balloons()
+                
+                # Doğrulama bilgisi
+                st.info(f"""
+                **Kaydedilen Boyutlar:**
+                - Şişme Oranı: {st.session_state.sisme_orani.shape[0]} × {st.session_state.sisme_orani.shape[1]}
+                - Genleştirme: {st.session_state.genlestirme_orani.shape[0]} × {st.session_state.genlestirme_orani.shape[1]}
+                - Min Oran: {st.session_state.min_oran.shape[0]} × {st.session_state.min_oran.shape[1]}
+                - Initial: {st.session_state.initial_matris.shape[0]} × {st.session_state.initial_matris.shape[1]}
+                """)
+                
+            except Exception as e:
+                st.error(f"❌ Kaydetme hatası: {str(e)}")
     
     with col2:
-        st.metric("Genleştirme", 
-                 "Kaydedilmiş ✅" if st.session_state.genlestirme_orani is not None else "Default ⚠️")
-    
-    with col3:
-        st.metric("Min Oran", 
-                 "Kaydedilmiş ✅" if st.session_state.min_oran is not None else "Default ⚠️")
-    
-    with col4:
-        st.metric("Initial", 
-                 "Kaydedilmiş ✅" if st.session_state.initial_matris is not None else "Default ⚠️")
+        st.info("💡 **İpucu:** Değerleri değiştirdikten sonra 'Kaydet' butonuna basın. Kaydedilmeyen değişiklikler kaybolur!")
     
     st.markdown("---")
     
-    st.info("ℹ️ **Not:** Bu sayfada sadece görüntüleme yapabilirsiniz. Düzenleme özelliği yakında eklenecek!")
-
+    # ============================================
+    # İNDİRME SEÇENEKLERİ (BONUS)
+    # ============================================
+    with st.expander("📥 Matrisleri Excel/CSV Olarak İndir"):
+        st.write("**Kaydedilmiş matrisleri dışa aktarın:**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Excel formatında (tüm matrisler tek dosyada)
+            if st.button("📊 Excel İndir (Tüm Matrisler)", key="download_excel"):
+                try:
+                    from io import BytesIO
+                    
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        if st.session_state.sisme_orani is not None:
+                            st.session_state.sisme_orani.to_excel(writer, sheet_name='Şişme Oranı')
+                        if st.session_state.genlestirme_orani is not None:
+                            st.session_state.genlestirme_orani.to_excel(writer, sheet_name='Genleştirme')
+                        if st.session_state.min_oran is not None:
+                            st.session_state.min_oran.to_excel(writer, sheet_name='Min Oran')
+                        if st.session_state.initial_matris is not None:
+                            st.session_state.initial_matris.to_excel(writer, sheet_name='Initial')
+                    
+                    output.seek(0)
+                    
+                    st.download_button(
+                        label="⬇️ Excel Dosyasını İndir",
+                        data=output.getvalue(),
+                        file_name="hedef_matrisler.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                except Exception as e:
+                    st.error(f"Excel indirme hatası: {e}")
+        
+        with col2:
+            # CSV formatında (ZIP içinde 4 dosya)
+            if st.button("📦 CSV İndir (ZIP)", key="download_csv"):
+                try:
+                    import zipfile
+                    from io import BytesIO
+                    
+                    zip_buffer = BytesIO()
+                    
+                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        if st.session_state.sisme_orani is not None:
+                            csv_data = st.session_state.sisme_orani.to_csv(encoding='utf-8-sig')
+                            zip_file.writestr('sisme_orani.csv', csv_data)
+                        
+                        if st.session_state.genlestirme_orani is not None:
+                            csv_data = st.session_state.genlestirme_orani.to_csv(encoding='utf-8-sig')
+                            zip_file.writestr('genlestirme_orani.csv', csv_data)
+                        
+                        if st.session_state.min_oran is not None:
+                            csv_data = st.session_state.min_oran.to_csv(encoding='utf-8-sig')
+                            zip_file.writestr('min_oran.csv', csv_data)
+                        
+                        if st.session_state.initial_matris is not None:
+                            csv_data = st.session_state.initial_matris.to_csv(encoding='utf-8-sig')
+                            zip_file.writestr('initial_matris.csv', csv_data)
+                    
+                    zip_buffer.seek(0)
+                    
+                    st.download_button(
+                        label="⬇️ ZIP Dosyasını İndir",
+                        data=zip_buffer.getvalue(),
+                        file_name="hedef_matrisler.zip",
+                        mime="application/zip"
+                    )
+                except Exception as e:
+                    st.error(f"CSV indirme hatası: {e}")
 # ============================================
 # 🚚 HESAPLAMA - TAM DÜZELTİLMİŞ VERSİYON
 # ============================================
