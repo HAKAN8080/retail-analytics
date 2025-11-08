@@ -533,12 +533,12 @@ if selected_data:
 
 st.markdown("---")
 
-# CSV İHRAÇ
-st.subheader("📤 Veri İhracı")
+# CSV İNDİR
+st.subheader("📤 Veri Dosyası İndir")
 
 if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k in data_definitions.keys()):
     export_data = st.selectbox(
-        "İhraç etmek istediğiniz veriyi seçin:",
+        "İndirmek istediğiniz veriyi seçin:",
         options=[k for k in data_definitions.keys() if st.session_state.get(data_definitions[k]['state_key']) is not None],
         format_func=lambda x: f"{data_definitions[x]['icon']} {data_definitions[x]['name']}",
         key="export_select"
@@ -577,7 +577,7 @@ if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k 
                 time.sleep(0.5)
                 st.rerun()
 else:
-    st.info("İhraç edilecek veri yok")
+    st.info("İndirilebilecek veri yok")
 
 st.markdown("---")
 
@@ -596,4 +596,5 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
