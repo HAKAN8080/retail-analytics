@@ -1569,11 +1569,11 @@ elif menu == "📈 Raporlar":
                                 val_str = "Bilinmiyor"
                             st.metric("Performans", val_str)
                         
-                        # Seçilen ildeki mağaza detayları - DÜZELTİLMİŞ
+                        # Seçilen ildeki mağaza detayları - MAGAZA_AD OLMADAN
                         st.subheader(f"🏪 {secilen_il} İlindeki Mağaza Performansları")
                         
                         try:
-                            # Mağaza bazında verileri hazırla - VERİ TİPLERİNİ DÜZELT
+                            # Mağaza bazında verileri hazırla
                             magaza_detay = result_df[result_df['magaza_kod'].isin(
                                 magaza_master[magaza_master['il'] == secilen_il]['magaza_kod'].astype(str)
                             )]
@@ -1585,6 +1585,8 @@ elif menu == "📈 Raporlar":
                                     'urun_kod': 'nunique'
                                 }).reset_index()
                                 
+                                # Kolon isimlerini düzenle
+                                magaza_ozet.columns = ['Mağaza Kodu', 'Toplam Sevkiyat', 'Toplam İhtiyaç', 'Ürün Sayısı']
                                 # VERİ TİPLERİNİ AYNI YAP
                                 magaza_ozet['magaza_kod'] = magaza_ozet['magaza_kod'].astype(str)
                                 
