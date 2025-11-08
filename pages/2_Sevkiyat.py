@@ -873,66 +873,106 @@ elif menu == "📐 Hesaplama":
                     df['min_deger'] = 0.0
                     df['max_deger'] = 999999.0
                 
-                # 5. MATRİS DEĞERLERİ - TAM GÜVENLİ ATAMA
-                # Önce kolonları default değerlerle oluştur
-                df['genlestirme'] = 1.0
-                df['sisme'] = 0.5
-                df['min_oran'] = 1.0
-                df['initial_katsayi'] = 1.0
-                
-                # Matris değerlerini segment bazında uygula - GÜVENLİ VERSİYON
-                try:
-                    # Tüm matrislerin var olduğunu kontrol et
-                    all_matrices_exist = all([
-                        st.session_state.genlestirme_orani is not None,
-                        st.session_state.sisme_orani is not None,
-                        st.session_state.min_oran is not None,
-                        st.session_state.initial_matris is not None
-                    ])
-                    
-                    if all_matrices_exist:
-                        # Her bir satır için matris değerlerini uygula
-                        for idx, row in df.iterrows():
-                            urun_seg = str(row['urun_segment'])
-                            magaza_seg = str(row['magaza_segment'])
-                            
-                            # Genleştirme oranı
-                            try:
-                                if (urun_seg in st.session_state.genlestirme_orani.index and 
-                                    magaza_seg in st.session_state.genlestirme_orani.columns):
-                                    df.at[idx, 'genlestirme'] = float(st.session_state.genlestirme_orani.loc[urun_seg, magaza_seg])
-                            except Exception:
-                                pass
-                            
-                            # Şişme oranı
-                            try:
-                                if (urun_seg in st.session_state.sisme_orani.index and 
-                                    magaza_seg in st.session_state.sisme_orani.columns):
-                                    df.at[idx, 'sisme'] = float(st.session_state.sisme_orani.loc[urun_seg, magaza_seg])
-                            except Exception:
-                                pass
-                            
-                            # Min oran
-                            try:
-                                if (urun_seg in st.session_state.min_oran.index and 
-                                    magaza_seg in st.session_state.min_oran.columns):
-                                    df.at[idx, 'min_oran'] = float(st.session_state.min_oran.loc[urun_seg, magaza_seg])
-                            except Exception:
-                                pass
-                            
-                            # Initial katsayı
-                            try:
-                                if (urun_seg in st.session_state.initial_matris.index and 
-                                    magaza_seg in st.session_state.initial_matris.columns):
-                                    df.at[idx, 'initial_katsayi'] = float(st.session_state.initial_matris.loc[urun_seg, magaza_seg])
-                            except Exception:
-                                pass
-                    else:
-                        st.info("ℹ️ Hedef matris değerleri tanımlı değil, default değerler kullanılıyor.")
-                        
-                except Exception as e:
-                    st.warning(f"⚠️ Matris değer atama hatası (default değerler kullanılacak): {str(e)}")
-                
+                # ============================================
+# MATRİS DEĞERLERİ - SÜPER HIZLI VERSİYON (MERGE)
+# ============================================
+# Hesaplama bölümünde matris atama kısmını tamamen değiştirin
+
+# 5. MATRİS DEĞERLERİ - SÜPER HIZLI ATAMA
+# Önce kolonları default değerlerle oluştur
+df['genlestirme'] = 1.0
+df['sisme'] = 0.5
+df['min_oran'] = 1.0
+df['initial_katsayi'] = 1.0
+
+# Matris değerlerini segment bazında uygula - MERGE ile HIZLI VERSİYON
+try:
+    all_matrices_exist = all([
+        st.session_state.genlestirme_orani is not None,
+        st.session_state.sisme_orani is not None,
+        st.session_state.min_oran is not None,
+        st.session_state.initial_matris is not None
+    ])
+    
+    if all_matrices_exist:
+        st.info("🔄 Matris değerleri uygulanıyor (yüksek performans modu)...")
+        
+        # Segment'ları string'e çevir
+        df['urun_segment'] = df['urun_segment'].astype(str)
+        df['magaza_segment'] = df['magaza_segment'].astype(str)
+        
+        # 1. Genleştirme Oranı
+        genles_long = st.session_state.genlestirme_orani.stack().reset_index()
+        genles_long.columns = ['magaza_segment', 'urun_segment', 'genlestirme_mat']
+        genles_long['magaza_segment'] = genles_long['magaza_segment'].astype(str)
+        genles_long['urun_segment'] = genles_long['urun_segment'].astype(str)
+        
+        df = df.merge(
+            genles_long, 
+            on=['magaza_segment', 'urun_segment'], 
+            how='left'
+        )
+        df['genlestirme'] = df['genlestirme_mat'].fillna(df['genlestirme'])
+        df.drop('genlestirme_mat', axis=1, inplace=True)
+        
+        # 2. Şişme Oranı
+        sisme_long = st.session_state.sisme_orani.stack().reset_index()
+        sisme_long.columns = ['magaza_segment', 'urun_segment', 'sisme_mat']
+        sisme_long['magaza_segment'] = sisme_long['magaza_segment'].astype(str)
+        sisme_long['urun_segment'] = sisme_long['urun_segment'].astype(str)
+        
+        df = df.merge(
+            sisme_long, 
+            on=['magaza_segment', 'urun_segment'], 
+            how='left'
+        )
+        df['sisme'] = df['sisme_mat'].fillna(df['sisme'])
+        df.drop('sisme_mat', axis=1, inplace=True)
+        
+        # 3. Min Oran
+        min_long = st.session_state.min_oran.stack().reset_index()
+        min_long.columns = ['magaza_segment', 'urun_segment', 'min_oran_mat']
+        min_long['magaza_segment'] = min_long['magaza_segment'].astype(str)
+        min_long['urun_segment'] = min_long['urun_segment'].astype(str)
+        
+        df = df.merge(
+            min_long, 
+            on=['magaza_segment', 'urun_segment'], 
+            how='left'
+        )
+        df['min_oran'] = df['min_oran_mat'].fillna(df['min_oran'])
+        df.drop('min_oran_mat', axis=1, inplace=True)
+        
+        # 4. Initial Matris
+        initial_long = st.session_state.initial_matris.stack().reset_index()
+        initial_long.columns = ['magaza_segment', 'urun_segment', 'initial_mat']
+        initial_long['magaza_segment'] = initial_long['magaza_segment'].astype(str)
+        initial_long['urun_segment'] = initial_long['urun_segment'].astype(str)
+        
+        df = df.merge(
+            initial_long, 
+            on=['magaza_segment', 'urun_segment'], 
+            how='left'
+        )
+        df['initial_katsayi'] = df['initial_mat'].fillna(df['initial_katsayi'])
+        df.drop('initial_mat', axis=1, inplace=True)
+        
+        st.success("✅ Matris değerleri uygulandı (merge yöntemi - süper hızlı!)")
+    else:
+        st.info("ℹ️ Hedef matris değerleri tanımlı değil, default değerler kullanılıyor.")
+        
+except Exception as e:
+    st.warning(f"⚠️ Matris değer atama hatası (default değerler kullanılacak): {str(e)}")
+    import traceback
+    st.code(traceback.format_exc())
+
+# ============================================
+# NEREDE KULLANILACAK?
+# ============================================
+# 2_Sevkiyat.py dosyasında, Hesaplama bölümünde:
+# "# 5. MATRİS DEĞERLERİ" yazan kısmı bulun
+# Tüm for loop kodunu silin
+# Bu yeni kodu yapıştırın
                 # 6. RPT/MIN/INITIAL DURUMLARI
                 rpt = df.copy()
                 rpt['Durum'] = 'RPT'
