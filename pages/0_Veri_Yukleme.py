@@ -19,13 +19,13 @@ st.set_page_config(
 st.markdown("""
 <style>
     html, body, [class*="css"] {
-        font-size: 70% !important;
+        font-size: 80% !important;
     }
     h1 { font-size: 1.8rem !important; }
     h2 { font-size: 1.4rem !important; }
     h3 { font-size: 1.2rem !important; }
-    .stButton>button { font-size: 0.7rem !important; }
-    .stSelectbox, .stMultiSelect, .stTextInput { font-size: 0.7rem !important; }
+    .stButton>button { font-size: 0.8rem !important; }
+    .stSelectbox, .stMultiSelect, .stTextInput { font-size: 0.8rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -517,3 +517,4 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
