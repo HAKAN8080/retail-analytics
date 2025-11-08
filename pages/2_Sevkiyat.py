@@ -1092,25 +1092,24 @@ elif menu == "📐 Hesaplama":
                 # ÖZET METRİKLER
                 st.subheader("📊 Özet Metrikler")
                 col1, col2, col3, col4 = st.columns(4)
-                
                 with col1:
-                    ihtiyac_toplam = final['ihtiyac_miktari'].sum() if 'ihtiyac_miktari' in final.columns else 0
-                    st.metric("Toplam İhtiyaç", f"{ihtiyac_toplam:,.0f}")
-                
+                    ort_sevk = il_detay['Ortalama Sevkiyat/Mağaza']
+                    ort_sevk_str = f"{float(ort_sevk):,.0f}" if pd.notna(ort_sevk) else "0"
+                    st.metric("Ortalama Sevkiyat/Mağaza", ort_sevk_str, key="ort_sevkiyat_metric")
                 with col2:
-                    sevkiyat_toplam = final['sevkiyat_miktari'].sum() if 'sevkiyat_miktari' in final.columns else 0
-                    st.metric("Toplam Sevkiyat", f"{sevkiyat_toplam:,.0f}")
-                
+                    top_sevk = il_detay['Toplam Sevkiyat']
+                    top_sevk_str = f"{float(top_sevk):,.0f}" if pd.notna(top_sevk) else "0"
+                    st.metric("Toplam Sevkiyat", top_sevk_str, key="toplam_sevkiyat_metric")
                 with col3:
-                    kayip_toplam = final['stok_yoklugu_satis_kaybi'].sum() if 'stok_yoklugu_satis_kaybi' in final.columns else 0
-                    st.metric("Satış Kaybı", f"{kayip_toplam:,.0f}")
-                
+                    mag_say = il_detay['Mağaza Sayısı']
+                    mag_say_str = f"{float(mag_say):,.0f}" if pd.notna(mag_say) else "0"
+                    st.metric("Mağaza Sayısı", mag_say_str, key="magaza_sayisi_metric")
                 with col4:
-                    gerceklesme_orani = (sevkiyat_toplam / ihtiyac_toplam * 100) if ihtiyac_toplam > 0 else 0
-                    st.metric("Gerçekleşme Oranı", f"{gerceklesme_orani:.1f}%")
-                
-                st.markdown("---")
-                
+                    perf = il_detay['Performans Segmenti']
+                    perf_str = str(perf) if pd.notna(perf) else "Bilinmiyor"
+                    st.metric("Performans", perf_str, key="performans_metric")                
+                                st.markdown("---")
+                                
                 # SAP DOSYASI
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
                 st.info("Bu dosyayı SAP sistemine yükleyebilirsiniz")
