@@ -252,60 +252,6 @@ data_definitions = {
     }
 }
 
-# ============================================
-# VERİ YÜKLEME DURUMU TABLOSU - YENİ FORMAT
-# ============================================
-st.subheader("📊 Veri Yükleme Durumu")
-
-status_data = []
-for key, definition in data_definitions.items():
-    data = st.session_state.get(definition['state_key'])
-    
-    if data is not None and len(data) > 0:
-        status = '✅ Başarılı'
-        kolon_sayisi = len(data.columns)
-        boyut_mb = f"{data.memory_usage(deep=True).sum() / 1024**2:.2f}"
-    else:
-        status = '❌ Yüklenmedi'
-        kolon_sayisi = '-'
-        boyut_mb = '-'
-    
-    status_data.append({
-        'CSV Adı': f"{definition['icon']} {definition['name']}",
-        'Zorunlu': 'Evet ⚠️' if definition['required'] else 'Hayır ℹ️',
-        'Kolon Sayısı': kolon_sayisi,
-        'Durum': status,
-        'Boyut (MB)': boyut_mb
-    })
-
-status_df = pd.DataFrame(status_data)
-
-st.dataframe(
-    status_df,
-    use_container_width=True,
-    hide_index=True,
-    height=350
-)
-
-# Özet metrikler
-col1, col2, col3 = st.columns(3)
-with col1:
-    zorunlu_count = sum(1 for d in data_definitions.values() if d['required'])
-    zorunlu_loaded = sum(1 for k, d in data_definitions.items() 
-                        if d['required'] and st.session_state.get(d['state_key']) is not None)
-    st.metric("Zorunlu Dosyalar", f"{zorunlu_loaded}/{zorunlu_count}")
-
-with col2:
-    opsiyonel_count = sum(1 for d in data_definitions.values() if not d['required'])
-    opsiyonel_loaded = sum(1 for k, d in data_definitions.items() 
-                          if not d['required'] and st.session_state.get(d['state_key']) is not None)
-    st.metric("Opsiyonel Dosyalar", f"{opsiyonel_loaded}/{opsiyonel_count}")
-
-with col3:
-    all_ready = zorunlu_loaded == zorunlu_count
-    st.metric("Sistem Durumu", "Hazır ✅" if all_ready else "Eksik ⚠️")
-
-st.markdown("---")
 
 # ============================================
 # ÖZEL: ANLIK STOK/SATIŞ PARÇALI YÜKLEME
@@ -504,6 +450,65 @@ with col2:
 
 st.markdown("---")
 
+
+# ============================================
+# VERİ YÜKLEME DURUMU TABLOSU - YENİ FORMAT
+# ============================================
+st.subheader("📊 Veri Yükleme Durumu")
+
+status_data = []
+for key, definition in data_definitions.items():
+    data = st.session_state.get(definition['state_key'])
+    
+    if data is not None and len(data) > 0:
+        status = '✅ Başarılı'
+        kolon_sayisi = len(data.columns)
+        boyut_mb = f"{data.memory_usage(deep=True).sum() / 1024**2:.2f}"
+    else:
+        status = '❌ Yüklenmedi'
+        kolon_sayisi = '-'
+        boyut_mb = '-'
+    
+    status_data.append({
+        'CSV Adı': f"{definition['icon']} {definition['name']}",
+        'Zorunlu': 'Evet ⚠️' if definition['required'] else 'Hayır ℹ️',
+        'Kolon Sayısı': kolon_sayisi,
+        'Durum': status,
+        'Boyut (MB)': boyut_mb
+    })
+
+status_df = pd.DataFrame(status_data)
+
+st.dataframe(
+    status_df,
+    use_container_width=True,
+    hide_index=True,
+    height=350
+)
+
+# Özet metrikler
+col1, col2, col3 = st.columns(3)
+with col1:
+    zorunlu_count = sum(1 for d in data_definitions.values() if d['required'])
+    zorunlu_loaded = sum(1 for k, d in data_definitions.items() 
+                        if d['required'] and st.session_state.get(d['state_key']) is not None)
+    st.metric("Zorunlu Dosyalar", f"{zorunlu_loaded}/{zorunlu_count}")
+
+with col2:
+    opsiyonel_count = sum(1 for d in data_definitions.values() if not d['required'])
+    opsiyonel_loaded = sum(1 for k, d in data_definitions.items() 
+                          if not d['required'] and st.session_state.get(d['state_key']) is not None)
+    st.metric("Opsiyonel Dosyalar", f"{opsiyonel_loaded}/{opsiyonel_count}")
+
+with col3:
+    all_ready = zorunlu_loaded == zorunlu_count
+    st.metric("Sistem Durumu", "Hazır ✅" if all_ready else "Eksik ⚠️")
+
+st.markdown("---")
+
+
+
+
 # TEK DOSYA DETAYI
 st.subheader("🔍 Detaylı Veri İncelemesi")
 
@@ -591,3 +596,4 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
