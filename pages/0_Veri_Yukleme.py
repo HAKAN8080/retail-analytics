@@ -447,8 +447,6 @@ if selected_data:
         st.metric("Kolon", len(data.columns))
     with col3:
         st.metric("Bellek", f"{data.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-    
-    st.code(', '.join(current_def['columns']), language=None)
 
 st.markdown("---")
 
@@ -515,5 +513,6 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
 
