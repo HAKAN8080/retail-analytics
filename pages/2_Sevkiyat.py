@@ -1253,14 +1253,7 @@ elif menu == "📈 Raporlar":
     else:
         result_df = st.session_state.sevkiyat_sonuc.copy()
         
-        # Debug: Veri yapısını göster
-        with st.expander("🔍 Veri Yapısı (Debug)", expanded=False):
-            st.write("**Kolonlar:**", list(result_df.columns))
-            st.write("**İlk 5 satır:**")
-            st.dataframe(result_df.head(), width='content')
-            st.write("**Temel İstatistikler:**")
-            st.write(f"- Toplam satır: {len(result_df)}")
-            
+                   
             # KOLON ADI DÜZELTMESİ
             sevkiyat_kolon_adi = 'sevkiyat_miktari' if 'sevkiyat_miktari' in result_df.columns else 'sevkiyat_gercek'
             ihtiyac_kolon_adi = 'ihtiyac_miktari' if 'ihtiyac_miktari' in result_df.columns else 'ihtiyac'
