@@ -249,7 +249,6 @@ elif menu == "💵 Alım Sipariş Hesaplama":
     # Cover Segment Matrix - GERÇEK 2D MATRİS ✅
     st.subheader("📊 Cover Segment Genişletme Katsayıları (Matris)")
     
-    st.info("**Matris Yapısı:** Ürün Cover Segmenti (satır) × Mağaza Cover Segmenti (sütun) = Genişletme Katsayısı")
     
     product_ranges = st.session_state.segmentation_params['product_ranges']
     store_ranges = st.session_state.segmentation_params['store_ranges']
@@ -1193,5 +1192,6 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 use_container_width=True
             )
+
 
 
