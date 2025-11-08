@@ -1570,7 +1570,6 @@ elif menu == "📈 Raporlar":
                             st.metric("Performans", val_str)
                         
                         # Seçilen ildeki mağaza detayları - MAGAZA_AD OLMADAN
-                        # Seçilen ildeki mağaza detayları - MAGAZA_AD OLMADAN
                         st.subheader(f"🏪 {secilen_il} İlindeki Mağaza Performansları")
                         
                         try:
