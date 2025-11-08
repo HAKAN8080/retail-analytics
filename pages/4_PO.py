@@ -68,9 +68,7 @@ if menu == "🏠 Ana Sayfa":
     missing_data = [name for name, data in required_data.items() if data is None]
     
     if missing_data:
-        st.error("❌ Gerekli veriler yüklenmemiş!")
-        st.warning(f"**Eksik veriler:** {', '.join(missing_data)}")
-        
+  
         st.info("""
         **👉 Lütfen önce veri yükleme sayfasından CSV dosyalarınızı yükleyin.**
         
@@ -1192,6 +1190,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 use_container_width=True
             )
+
 
 
 
