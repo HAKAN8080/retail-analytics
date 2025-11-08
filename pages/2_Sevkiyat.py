@@ -1553,15 +1553,41 @@ elif menu == "📈 Raporlar":
                         # Seçilen ilin detaylarını göster
                         il_detay = il_bazinda[il_bazinda['İl'] == secilen_il].iloc[0]
                         
+                        # İl detayları metrikleri - GÜVENLİ VERSİYON
+
                         col1, col2, col3, col4 = st.columns(4)
+                        
                         with col1:
-                            st.metric("Ortalama Sevkiyat/Mağaza", f"{il_detay['Ortalama Sevkiyat/Mağaza']:,.0f}", key="ort_sevkiyat_metric")
+                            try:
+                                val = il_detay['Ortalama Sevkiyat/Mağaza']
+                                val_str = f"{float(val):,.0f}" if pd.notna(val) and val != '' else "0"
+                            except:
+                                val_str = "0"
+                            st.metric("Ortalama Sevkiyat/Mağaza", val_str)
+                        
                         with col2:
-                            st.metric("Toplam Sevkiyat", f"{il_detay['Toplam Sevkiyat']:,.0f}", key="toplam_sevkiyat_metric")
+                            try:
+                                val = il_detay['Toplam Sevkiyat']
+                                val_str = f"{float(val):,.0f}" if pd.notna(val) and val != '' else "0"
+                            except:
+                                val_str = "0"
+                            st.metric("Toplam Sevkiyat", val_str)
+                        
                         with col3:
-                            st.metric("Mağaza Sayısı", f"{il_detay['Mağaza Sayısı']:,.0f}", key="magaza_sayisi_metric")
+                            try:
+                                val = il_detay['Mağaza Sayısı']
+                                val_str = f"{float(val):,.0f}" if pd.notna(val) and val != '' else "0"
+                            except:
+                                val_str = "0"
+                            st.metric("Mağaza Sayısı", val_str)
+                        
                         with col4:
-                            st.metric("Performans", il_detay['Performans Segmenti'], key="performans_metric")
+                            try:
+                                val = il_detay['Performans Segmenti']
+                                val_str = str(val) if pd.notna(val) and val != '' else "Bilinmiyor"
+                            except:
+                                val_str = "Bilinmiyor"
+                            st.metric("Performans", val_str)
                         
                         # Seçilen ildeki mağaza detayları - DÜZELTİLMİŞ
                         st.subheader(f"🏪 {secilen_il} İlindeki Mağaza Performansları")
