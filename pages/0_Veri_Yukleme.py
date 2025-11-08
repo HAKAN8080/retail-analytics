@@ -19,13 +19,13 @@ st.set_page_config(
 st.markdown("""
 <style>
     html, body, [class*="css"] {
-        font-size: 80% !important;
+        font-size: 70% !important;
     }
     h1 { font-size: 1.8rem !important; }
     h2 { font-size: 1.4rem !important; }
     h3 { font-size: 1.2rem !important; }
-    .stButton>button { font-size: 0.8rem !important; }
-    .stSelectbox, .stMultiSelect, .stTextInput { font-size: 0.8rem !important; }
+    .stButton>button { font-size: 0.7rem !important; }
+    .stSelectbox, .stMultiSelect, .stTextInput { font-size: 0.7rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -308,6 +308,84 @@ with col3:
 st.markdown("---")
 
 # ============================================
+# ÖZEL: ANLIK STOK/SATIŞ PARÇALI YÜKLEME
+# ============================================
+st.subheader("📊 Anlık Stok/Satış - Parçalı Yükleme")
+st.info("💡 **İpucu:** Büyük dosyaları parça parça yükleyebilirsiniz. Sistem otomatik birleştirecek.")
+
+anlik_parts = st.file_uploader(
+    "Anlık Stok/Satış CSV parçalarını seçin (birden fazla)",
+    type=['csv'],
+    accept_multiple_files=True,
+    key="anlik_parts_upload"
+)
+
+if anlik_parts:
+    st.write(f"**{len(anlik_parts)} parça seçildi**")
+    
+    if st.button("🔗 Parçaları Birleştir ve Yükle", type="primary", use_container_width=True):
+        try:
+            combined_df = None
+            total_rows = 0
+            part_info = []
+            
+            for idx, part_file in enumerate(anlik_parts, 1):
+                # CSV oku
+                df_part, used_sep = read_csv_safe(part_file)
+                
+                # Kolon kontrolü
+                expected_cols = set(data_definitions['anlik_stok_satis']['columns'])
+                if not expected_cols.issubset(set(df_part.columns)):
+                    st.error(f"❌ {part_file.name}: Eksik kolonlar var!")
+                    continue
+                
+                # Sadece gerekli kolonları al
+                df_part = df_part[data_definitions['anlik_stok_satis']['columns']].copy()
+                
+                # String kolonları temizle
+                string_cols = df_part.select_dtypes(include=['object']).columns
+                for col in string_cols:
+                    df_part[col] = df_part[col].str.strip()
+                
+                # Birleştir
+                if combined_df is None:
+                    combined_df = df_part
+                else:
+                    combined_df = pd.concat([combined_df, df_part], ignore_index=True)
+                
+                part_info.append(f"✅ Parça {idx}: {len(df_part):,} satır")
+                total_rows += len(df_part)
+            
+            if combined_df is not None:
+                # Duplicate kontrolü (opsiyonel)
+                before_dedup = len(combined_df)
+                combined_df = combined_df.drop_duplicates(subset=['magaza_kod', 'urun_kod'], keep='last')
+                after_dedup = len(combined_df)
+                
+                # Kaydet
+                st.session_state.anlik_stok_satis = combined_df
+                
+                # Sonuçları göster
+                st.success(f"🎉 **Başarıyla birleştirildi!**")
+                for info in part_info:
+                    st.write(info)
+                
+                st.info(f"""
+                **Özet:**
+                - Toplam yüklenen: {total_rows:,} satır
+                - Duplicate temizlendi: {before_dedup - after_dedup:,} satır
+                - Final: {after_dedup:,} satır
+                """)
+                
+                time.sleep(1)
+                st.rerun()
+        
+        except Exception as e:
+            st.error(f"❌ Birleştirme hatası: {str(e)}")
+
+st.markdown("---")
+
+# ============================================
 # ÇOKLU DOSYA YÜKLEME + ÖRNEK İNDİRME
 # ============================================
 st.subheader("📤 Çoklu Dosya Yükleme")
@@ -450,8 +528,8 @@ if selected_data:
 
 st.markdown("---")
 
-# CSV İndir
-st.subheader("📤 Veri İndir")
+# CSV İHRAÇ
+st.subheader("📤 Veri İhracı")
 
 if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k in data_definitions.keys()):
     export_data = st.selectbox(
@@ -494,7 +572,7 @@ if any(st.session_state.get(data_definitions[k]['state_key']) is not None for k 
                 time.sleep(0.5)
                 st.rerun()
 else:
-    st.info("İndirilecek veri bulunamadı!!!")
+    st.info("İhraç edilecek veri yok")
 
 st.markdown("---")
 
@@ -513,7 +591,3 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
-
-
-
-
