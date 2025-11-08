@@ -98,16 +98,13 @@ if menu == "🏠 Ana Sayfa":
     st.markdown("---")
     
 # ============================================
-# 🎯 SEGMENTASYON AYARLARI
-# ============================================
-# ============================================
 # 🫧 SEGMENTASYON AYARLARI - DÜZELTİLMİŞ
 # ============================================
 elif menu == "🫧 Segmentasyon":
     st.title("🫧 Segmentasyon")
     st.markdown("---")
     
-    st.info("**Stok/Satış oranına göre** ürün ve mağazaları gruplandırma (Toplam Stok / Toplam Satış)")
+    st.info("**Stok/Satış oranına göre** ürün ve mağazaları gruplandırma (Mağaza Stok / Toplam Satış)")
     
     if st.session_state.anlik_stok_satis is None:
         st.warning("⚠️ Önce 'Veri Yükleme' bölümünden anlık stok/satış verisini yükleyin!")
