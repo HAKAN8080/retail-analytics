@@ -617,11 +617,11 @@ elif menu == "💵 Alım Sipariş Hesaplama":
                 filtre_sayisi = urun_toplam['filtre_uygun'].sum()
                 st.write(f"**✅ Filtreye uygun:** {filtre_sayisi} ürün")
                 
-                # 13. ALIM SİPARİŞ HESAPLA - FC + 5 ✅
+                # 13. ALIM SİPARİŞ HESAPLA - FC + 4 ✅
                 urun_toplam['talep'] = (
                     urun_toplam['satis'] * 
                     urun_toplam['genlestirme_katsayisi'] * 
-                    (urun_toplam['forward_cover'] + 5)  # ✅ +2'den +5'e değişti
+                    (urun_toplam['forward_cover'] + 4)  # ✅ +2'den +4'e değişti
                 )
                 
                 # Brüt ihtiyaç
@@ -1193,3 +1193,4 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 use_container_width=True
             )
+
