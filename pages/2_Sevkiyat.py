@@ -1108,7 +1108,7 @@ elif menu == "📐 Hesaplama":
                     perf = il_detay['Performans Segmenti']
                     perf_str = str(perf) if pd.notna(perf) else "Bilinmiyor"
                     st.metric("Performans", perf_str, key="performans_metric")                
-                                st.markdown("---")
+                st.markdown("---")
                                 
                 # SAP DOSYASI
                 st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
