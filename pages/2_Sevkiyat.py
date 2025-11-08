@@ -1570,6 +1570,7 @@ elif menu == "📈 Raporlar":
                             st.metric("Performans", val_str)
                         
                         # Seçilen ildeki mağaza detayları - MAGAZA_AD OLMADAN
+                        # Seçilen ildeki mağaza detayları - MAGAZA_AD OLMADAN
                         st.subheader(f"🏪 {secilen_il} İlindeki Mağaza Performansları")
                         
                         try:
@@ -1587,20 +1588,8 @@ elif menu == "📈 Raporlar":
                                 
                                 # Kolon isimlerini düzenle
                                 magaza_ozet.columns = ['Mağaza Kodu', 'Toplam Sevkiyat', 'Toplam İhtiyaç', 'Ürün Sayısı']
-                                # VERİ TİPLERİNİ AYNI YAP
-                                magaza_ozet['magaza_kod'] = magaza_ozet['magaza_kod'].astype(str)
                                 
-                                # Mağaza adlarını ekle - VERİ TİPİ UYUMLU HALE GETİR
-                                magaza_master_temp = st.session_state.magaza_master[['magaza_kod', 'magaza_ad']].copy()
-                                magaza_master_temp['magaza_kod'] = magaza_master_temp['magaza_kod'].astype(str)
-                                
-                                magaza_ozet = magaza_ozet.merge(
-                                    magaza_master_temp, 
-                                    on='magaza_kod', 
-                                    how='left'
-                                )
-                                
-                                magaza_ozet.columns = ['Mağaza Kodu', 'Toplam Sevkiyat', 'Toplam İhtiyaç', 'Ürün Sayısı', 'Mağaza Adı']
+                                # Gerçekleşme yüzdesi hesapla
                                 magaza_ozet['Gerçekleşme %'] = np.where(
                                     magaza_ozet['Toplam İhtiyaç'] > 0,
                                     (magaza_ozet['Toplam Sevkiyat'] / magaza_ozet['Toplam İhtiyaç'] * 100),
