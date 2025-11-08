@@ -1174,27 +1174,6 @@ elif menu == "📐 Hesaplama":
                 
                 st.markdown("---")
                                 
-                # SAP DOSYASI
-                st.subheader("📥 SAP İçin Detaylı Sevkiyat Dosyası")
-                st.info("Bu dosyayı SAP sistemine yükleyebilirsiniz")
-                
-                sap_data = final[['magaza_kod', 'urun_kod', 'depo_kod', 'sevkiyat_miktari']].copy()
-                sap_data.columns = ['magaza_kodu', 'urun_kodu', 'depo_kodu', 'sevk_adet']
-                sap_data = sap_data[sap_data['sevk_adet'] > 0]
-                
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.write("**Dosya Önizlemesi (İlk 10 satır):**")
-                    st.dataframe(sap_data.head(10), use_container_width=True, height=300)
-                
-                with col2:
-                    st.metric("Toplam Sevkiyat Satırı", f"{len(sap_data):,}")
-                    st.metric("Toplam Sevk Adet", f"{sap_data['sevk_adet'].sum():,}")
-                    st.metric("Ortalama Sevk/Satır", f"{sap_data['sevk_adet'].mean():,.1f}")
-                
-                st.markdown("---")
-                
                 col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
                     st.download_button(
@@ -1221,9 +1200,7 @@ elif menu == "📐 Hesaplama":
                 import traceback
                 st.code(traceback.format_exc())
 
-# ============================================
-# 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ (HARİTA EKLENDİ)
-# ============================================
+
 # ============================================
 # 📈 RAPORLAR - TAMAMI DÜZELTİLMİŞ (DUPLICATE KEY HATASI ÇÖZÜLDÜ)
 # ============================================
