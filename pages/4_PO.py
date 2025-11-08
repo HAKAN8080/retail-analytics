@@ -230,7 +230,7 @@ elif menu == "💵 Alım Sipariş Hesaplama":
             "İthal Ürün FC Çarpanı",
             min_value=1.0,
             max_value=2.0,
-            value=1.2,
+            value=1.0,
             step=0.05,
             help="İthal ürünler için forward cover bu katsayı ile çarpılır"
         )
@@ -1190,6 +1190,7 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 use_container_width=True
             )
+
 
 
 
