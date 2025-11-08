@@ -553,8 +553,223 @@ elif menu == "🎲 Hedef Matris":
                     )
                 except Exception as e:
                     st.error(f"CSV indirme hatası: {e}")
+
 # ============================================
-# 🚚 HESAPLAMA - TAM DÜZELTİLMİŞ VERSİYON
+# 🔢 SIRALAMA - EKLENECEK BÖLÜM
+# ============================================
+# Bu kodu şu satırdan ÖNCE ekleyin:
+# elif menu == "📐 Hesaplama":
+
+# ============================================
+# 🔢 SIRALAMA - İHTİYAÇ ÖNCELİKLENDİRME
+# ============================================
+elif menu == "🔢 Sıralama":
+    st.title("🔢 Sıralama Öncelikleri")
+    st.markdown("---")
+    
+    # Session state başlatma
+    if 'oncelik_siralama' not in st.session_state:
+        st.session_state.oncelik_siralama = None
+    
+    # Segment kontrolü
+    if st.session_state.prod_segments is None:
+        st.warning("⚠️ Önce 'Segmentasyon' sayfasına gidin ve segmentasyonu kaydedin!")
+        st.stop()
+    
+    prod_segments = st.session_state.prod_segments
+    
+    st.info(f"📊 Toplam {len(prod_segments)} ürün segmenti için öncelik sıralaması yapacaksınız")
+    st.markdown("---")
+    
+    # Açıklama
+    st.markdown("""
+    ### 📋 Nasıl Çalışır?
+    
+    Her **ürün segmenti** için ihtiyaç türlerinin öncelik sırasını belirleyin:
+    
+    - **RPT (Replenishment):** Normal stok tamamlama
+    - **Initial:** Yeni ürün ilk dağıtımı  
+    - **Min:** Minimum stok garantisi
+    
+    **Örnek:**
+    - Segment **0-4** için: `1. RPT → 2. Initial → 3. Min`
+    - Segment **5-8** için: `1. Initial → 2. RPT → 3. Min`
+    
+    **Depo stok dağıtımı** bu sıraya göre yapılacak.
+    """)
+    
+    st.markdown("---")
+    
+    # Mevcut sıralamayı yükle veya default oluştur
+    if st.session_state.oncelik_siralama is not None:
+        siralama_dict = st.session_state.oncelik_siralama
+        st.success("✅ Kaydedilmiş sıralama yüklendi")
+    else:
+        # Default: RPT → Initial → Min
+        siralama_dict = {segment: ['RPT', 'Initial', 'Min'] for segment in prod_segments}
+        st.info("ℹ️ Default sıralama gösteriliyor (RPT → Initial → Min)")
+    
+    st.markdown("---")
+    
+    # Sıralama tablosu
+    st.subheader("🎯 Öncelik Sıralaması")
+    
+    # Düzenlenebilir tablo oluştur
+    siralama_data = []
+    for segment in prod_segments:
+        current_order = siralama_dict.get(segment, ['RPT', 'Initial', 'Min'])
+        siralama_data.append({
+            'Ürün Segmenti': segment,
+            '1. Öncelik': current_order[0],
+            '2. Öncelik': current_order[1],
+            '3. Öncelik': current_order[2]
+        })
+    
+    siralama_df = pd.DataFrame(siralama_data)
+    
+    # Data editor ile düzenleme
+    st.write("**Sıralamayı Düzenleyin:**")
+    st.caption("Her segment için öncelik sırasını değiştirin (dropdown'dan seçin)")
+    
+    edited_df = st.data_editor(
+        siralama_df,
+        column_config={
+            "Ürün Segmenti": st.column_config.TextColumn(
+                "Ürün Segmenti",
+                disabled=True,
+                width="medium"
+            ),
+            "1. Öncelik": st.column_config.SelectboxColumn(
+                "1. Öncelik",
+                options=['RPT', 'Initial', 'Min'],
+                required=True,
+                width="medium"
+            ),
+            "2. Öncelik": st.column_config.SelectboxColumn(
+                "2. Öncelik",
+                options=['RPT', 'Initial', 'Min'],
+                required=True,
+                width="medium"
+            ),
+            "3. Öncelik": st.column_config.SelectboxColumn(
+                "3. Öncelik",
+                options=['RPT', 'Initial', 'Min'],
+                required=True,
+                width="medium"
+            )
+        },
+        hide_index=True,
+        use_container_width=True,
+        key="siralama_editor"
+    )
+    
+    st.markdown("---")
+    
+    # Validasyon ve Kaydet
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        if st.button("💾 KAYDET", type="primary", use_container_width=True):
+            # Validasyon: Her satırda aynı değer tekrar etmemeli
+            valid = True
+            error_rows = []
+            
+            for idx, row in edited_df.iterrows():
+                values = [row['1. Öncelik'], row['2. Öncelik'], row['3. Öncelik']]
+                if len(values) != len(set(values)):
+                    valid = False
+                    error_rows.append(row['Ürün Segmenti'])
+            
+            if not valid:
+                st.error(f"❌ Hata! Aynı öncelik tekrar ediyor: {', '.join(error_rows)}")
+                st.warning("Her segment için RPT, Initial ve Min değerleri farklı olmalı!")
+            else:
+                # Dictionary formatında kaydet
+                yeni_siralama = {}
+                for _, row in edited_df.iterrows():
+                    yeni_siralama[row['Ürün Segmenti']] = [
+                        row['1. Öncelik'],
+                        row['2. Öncelik'],
+                        row['3. Öncelik']
+                    ]
+                
+                st.session_state.oncelik_siralama = yeni_siralama
+                st.success("✅ Sıralama kaydedildi!")
+                st.balloons()
+    
+    with col2:
+        st.info("💡 **İpucu:** Her satırda RPT, Initial ve Min farklı sırada olmalı")
+    
+    st.markdown("---")
+    
+    # Önizleme
+    st.subheader("👁️ Kayıtlı Sıralama Önizlemesi")
+    
+    if st.session_state.oncelik_siralama is not None:
+        import json
+        preview_data = []
+        for segment, order in st.session_state.oncelik_siralama.items():
+            preview_data.append({
+                'Segment': segment,
+                'Sıralama': ' → '.join(order)
+            })
+        
+        preview_df = pd.DataFrame(preview_data)
+        st.dataframe(preview_df, use_container_width=True, hide_index=True, height=250)
+        
+        # JSON export
+        with st.expander("📥 JSON Formatında İndir"):
+            json_str = json.dumps(st.session_state.oncelik_siralama, indent=2, ensure_ascii=False)
+            st.download_button(
+                label="💾 JSON İndir",
+                data=json_str,
+                file_name="oncelik_siralama.json",
+                mime="application/json"
+            )
+            st.code(json_str, language='json')
+    else:
+        st.warning("⚠️ Henüz kayıtlı sıralama yok")
+    
+    st.markdown("---")
+    
+    # Reset butonu
+    if st.button("🔄 Default Sıralamaya Sıfırla"):
+        st.session_state.oncelik_siralama = None
+        st.success("✅ Sıfırlandı! Sayfa yenileniyor...")
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Bilgilendirme
+    st.info("""
+    **ℹ️ Bu Sıralama Nerede Kullanılır?**
+    
+    **Hesaplama** bölümünde sevkiyat ihtiyaçları hesaplanırken:
+    1. Tüm ürün-mağaza kombinasyonları için ihtiyaç hesaplanır (RPT/Initial/Min)
+    2. Bu sıralama bilgisine göre öncelik atanır
+    3. Depo stoku **bu öncelik sırasına göre dağıtılır**
+    
+    **Örnek:**
+    - Segment 0-4 ürünü için önce **RPT** ihtiyaçları karşılanır
+    - Sonra **Initial** (yeni ürün dağıtımı)
+    - En son **Min** (minimum garantisi)
+    
+    **⚠️ Önemli:** Kaydet butonuna basmazsanız **default sıralama** (RPT → Initial → Min) kullanılır!
+    """)
+    
+    st.markdown("---")
+    
+    # Kullanım Notu
+    st.success("""
+    ✅ **Hızlı Kullanım:**
+    - Varsayılan sıralamayı kullanmak istiyorsanız → Hiçbir şey yapmanıza gerek yok!
+    - Özel sıralama istiyorsanız → Tabloyu düzenleyin ve **Kaydet** butonuna basın
+    """)
+
+
+
+# ============================================
+# 🚚 HESAPLAMA 
 # ============================================
 elif menu == "📐 Hesaplama":
     st.title("📐 Hesaplama")
