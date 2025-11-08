@@ -280,13 +280,13 @@ elif menu == "💵 Alım Sipariş Hesaplama":
         for i, prod_seg in enumerate(cover_segments_sorted):
             prod_start = int(prod_seg.split('-')[0])
             if prod_start < 5:
-                default_matrix.loc[prod_seg, :] = 1.5
+                default_matrix.loc[prod_seg, :] = 1.2
             elif prod_start < 10:
-                default_matrix.loc[prod_seg, :] = 1.3
+                default_matrix.loc[prod_seg, :] = 1.1
             elif prod_start < 15:
-                default_matrix.loc[prod_seg, :] = 1.0
+                default_matrix.loc[prod_seg, :] = 1.05
             else:
-                default_matrix.loc[prod_seg, :] = 0.8
+                default_matrix.loc[prod_seg, :] = 0.75
         
         st.session_state.cover_segment_matrix = default_matrix
     
@@ -1193,4 +1193,5 @@ elif menu == "📦 Depo Bazlı Sipariş":
                 mime="text/csv",
                 use_container_width=True
             )
+
 
