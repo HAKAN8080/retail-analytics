@@ -1348,22 +1348,21 @@ elif menu == "📈 Raporlar":
             st.markdown("---")
             
             # Grafikler - TOP 10 KALDIRILDI
-            if len(filtered_urun) > 0:
-                st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
-                try:
-                    oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
-                    # Grafik etiketlerini düzelt
-                    oran_dagilim_dict = {}
-                    for interval in oran_dagilim.index:
-                        key_str = f"{int(interval.left)}-{int(interval.right)}%"
-                        oran_dagilim_dict[key_str] = int(oran_dagilim[interval])
-                    
-                    if oran_dagilim_dict:
-                        oran_dagilim_df = pd.DataFrame.from_dict(oran_dagilim_dict, orient='index', columns=['Adet'])
-                        st.bar_chart(oran_dagilim_df, key="rapor_urun_oran_dagilim")
-                except Exception as e:
-                    st.warning(f"Grafik oluşturulamadı: {str(e)}")
             
+            st.write("**Sevkiyat/İhtiyaç Oranı Dağılımı**")
+            try:
+                oran_dagilim = filtered_urun['Sevkiyat/İhtiyaç %'].value_counts(bins=10).sort_index()
+                oran_dagilim_dict = {}
+                for interval in oran_dagilim.index:
+                    key_str = f"{int(interval.left)}-{int(interval.right)}%"
+                    oran_dagilim_dict[key_str] = int(oran_dagilim[interval])
+                
+                if oran_dagilim_dict:
+                    oran_dagilim_df = pd.DataFrame.from_dict(oran_dagilim_dict, orient='index', columns=['Adet'])
+                    st.bar_chart(oran_dagilim_df)  # ✅ key parametresi kaldırıldı!
+            except Exception as e:
+                st.warning(f"Grafik oluşturulamadı: {str(e)}") 
+                        
             st.markdown("---")
             
             # İndirme butonları - UNIQUE KEY'LER
