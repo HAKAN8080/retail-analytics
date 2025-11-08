@@ -1649,8 +1649,12 @@ elif menu == "📈 Raporlar":
                     with col2:
                         st.write("**Segment Dağılımı**")
                         segment_dagilim = segment_ozet.set_index('Performans Segmenti')[['İl Sayısı']]
-                        st.bar_chart(segment_dagilim, key="segment_dagilim_chart")
-                    
+                        fig = px.bar(
+                            segment_dagilim,
+                            title='Segment Dağılımı',
+                            labels={'index': 'Segment', 'value': 'Adet'}
+                        )
+                        st.plotly_chart(fig, use_container_width=True, key="segment_dagilim_chart")                    
                     # İndirme butonu - UNIQUE KEY
                     st.download_button(
                         label="📥 İl Bazında Analiz İndir (CSV)",
