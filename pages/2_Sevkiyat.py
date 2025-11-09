@@ -4,8 +4,8 @@ import time
 import numpy as np
 import io
 
-# Sayfa config(
-st.set_page_configif menu == "🏠 Ana Sayfa":
+# Sayfa config
+st.set_page_config(
     page_title="Retail Sevkiyat Planlama",
     page_icon="📦", 
     layout="wide"
