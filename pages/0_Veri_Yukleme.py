@@ -252,6 +252,379 @@ data_definitions = {
     }
 }
 
+# ============================================
+# 📖 KULLANICI KILAVUZU - İNDİRİLEBİLİR DOKÜMAN
+# ============================================
+st.markdown("---")
+st.subheader("📖 Kullanıcı Kılavuzu")
+
+# Kılavuz içeriğini hazırla
+kilavuz_metni = """
+═══════════════════════════════════════════════════════════════
+                    📖 VERİ YÜKLEME KILAVUZU
+                        Thorius Sistemi
+═══════════════════════════════════════════════════════════════
+
+İçindekiler:
+1. Hızlı Başlangıç
+2. Dosya Formatı Gereksinimleri
+3. Zorunlu Dosyalar ve Açıklamaları
+4. Kolon Açıklamaları (Detaylı)
+5. Yaygın Hatalar ve Çözümleri
+
+═══════════════════════════════════════════════════════════════
+1. HIZLI BAŞLANGIÇ
+═══════════════════════════════════════════════════════════════
+
+ADIM 1: Örnek Dosyaları İndirin
+   → Sayfadaki "📥 Örnek CSV Dosyalarını İndir" butonuna tıklayın
+   → İndirilen ZIP dosyasını açın
+   → İçindeki CSV dosyalarını Excel ile açın ve inceleyin
+
+ADIM 2: Kendi Verilerinizi Hazırlayın
+   → Excel'de örnek dosyaları açın
+   → Kendi verilerinizi AYNI FORMATTA girin
+   → Kolon adlarını DEĞİŞTİRMEYİN!
+   → "Farklı Kaydet" → "CSV UTF-8 (Virgülle ayrılmış)" seçin
+
+ADIM 3: Dosyaları Yükleyin
+   → "CSV dosyalarını seçin" alanına tıklayın
+   → Hazırladığınız CSV dosyalarını seçin (birden fazla seçebilirsiniz)
+   → "🚀 Tüm Dosyaları Yükle" butonuna basın
+   → Durum tablosundan başarılı yüklemeyi kontrol edin
+
+═══════════════════════════════════════════════════════════════
+2. DOSYA FORMATI GEREKSİNİMLERİ
+═══════════════════════════════════════════════════════════════
+
+✅ DOĞRU FORMAT:
+   • Dosya türü: CSV (Comma Separated Values)
+   • Kodlama: UTF-8 (Türkçe karakterler için ZORUNLU)
+   • Ayraç: Noktalı virgül (;) veya virgül (,)
+   • İlk satır: Kolon başlıkları (küçük harf, alt çizgi ile)
+   • Örnek: urun_kod, magaza_kod, stok
+
+❌ YANLIŞ FORMAT:
+   • Excel dosyaları (.xlsx, .xls) → Mutlaka CSV'ye çevirin!
+   • PDF, Word dosyaları → CSV'ye çevirin!
+   • Türkçe karakterli kolon adları → İngilizce kullanın
+   • Boşluklu kolon adları → Alt çizgi (_) kullanın
+
+Excel'de CSV Kaydetme:
+   1. "Dosya" → "Farklı Kaydet"
+   2. "Dosya türü" → "CSV UTF-8 (Virgülle ayrılmış) (*.csv)"
+   3. Kaydet
+
+═══════════════════════════════════════════════════════════════
+3. ZORUNLU DOSYALAR VE AÇIKLAMALARI
+═══════════════════════════════════════════════════════════════
+
+Bu 5 dosya MUTLAKA yüklenmelidir:
+
+┌─────────────────────────────────────────────────────────────┐
+│ 📦 ÜRÜN MASTER (urun_master.csv)                            │
+├─────────────────────────────────────────────────────────────┤
+│ • Tüm ürünlerin temel bilgileri                             │
+│ • Neden gerekli: Ürün kodlarını tanımak ve kategorize etmek│
+│ • Minimum satır sayısı: En az 1 ürün                        │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 🏪 MAĞAZA MASTER (magaza_master.csv)                        │
+├─────────────────────────────────────────────────────────────┤
+│ • Tüm mağazaların temel bilgileri                           │
+│ • Neden gerekli: Mağaza kodlarını tanımak ve lokasyon bilgi│
+│ • Minimum satır sayısı: En az 1 mağaza                      │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 📦 DEPO STOK (depo_stok.csv)                                │
+├─────────────────────────────────────────────────────────────┤
+│ • Depolardaki mevcut stok miktarları                        │
+│ • Neden gerekli: Sevkiyat için uygun stok kontrolü         │
+│ • Format: Her depo-ürün kombinasyonu için stok miktarı     │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 ANLIK STOK/SATIŞ (anlik_stok_satis.csv)                 │
+├─────────────────────────────────────────────────────────────┤
+│ • Mağazalardaki güncel stok ve satış bilgileri              │
+│ • Neden gerekli: İhtiyaç hesaplamak için temel veri        │
+│ • Format: Her mağaza-ürün kombinasyonu için bilgiler       │
+│ • ÖNEMLİ: Büyük dosyalarda parçalı yükleme kullanın!       │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 🎯 KPI (kpi.csv)                                            │
+├─────────────────────────────────────────────────────────────┤
+│ • Hedef ve limitler (min/max değerler)                     │
+│ • Neden gerekli: Minimum/maksimum stok hedefleri için      │
+│ • Format: Mal grubu bazında hedef değerler                 │
+└─────────────────────────────────────────────────────────────┘
+
+OPSİYONEL DOSYALAR (İsteğe Bağlı):
+   • 🚫 Yasak: Bazı ürünlerin bazı mağazalara gitmemesi
+   • 📈 Haftalık Trend: Geçmiş haftalık satış verileri
+   • 🚫 PO Yasak: Alım siparişi yasak ürünler
+   • 🎯 PO Detay KPI: Alım siparişi detaylı hedefler
+
+═══════════════════════════════════════════════════════════════
+4. KOLON AÇIKLAMALARI (DETAYLI)
+═══════════════════════════════════════════════════════════════
+
+4.1 ÜRÜN MASTER (urun_master.csv)
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+urun_kod        | Ürünün benzersiz kodu         | U001, 12345
+satici_kod      | Tedarikçi kodu                | S001
+kategori_kod    | Kategori kodu                 | K001
+umg             | Üst Mal Grubu                 | UMG1
+mg              | Mal Grubu                     | MG1
+marka_kod       | Marka kodu                    | M001
+klasman_kod     | Sınıflandırma kodu            | K1
+nitelik         | Ürün özellikleri (virgülle)   | Renk:Kırmızı, Beden:M
+durum           | Aktif/Pasif durumu            | Aktif
+ithal           | İthal mi? (1=Evet, 0=Hayır)   | 1
+olcu_birimi     | Ölçü birimi                   | Adet, Kg, Litre
+koli_ici        | Koli içindeki adet            | 12
+paket_ici       | Paket içindeki adet           | 6
+
+💡 ÖNEMLİ NOTLAR:
+   • urun_kod her ürün için FARKLI olmalı (tekrar etmemeli)
+   • ithal kolonu sadece 0 veya 1 değeri alır
+   • nitelik kolonunda virgülle ayırarak özellik yazabilirsiniz
+
+4.2 MAĞAZA MASTER (magaza_master.csv)
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+magaza_kod      | Mağazanın benzersiz kodu      | M001, MG123
+il              | Mağazanın bulunduğu il        | İstanbul
+bolge           | Bölge bilgisi                 | Marmara
+tip             | Mağaza tipi                   | Hipermarket
+adres_kod       | Adres kodu                    | ADR001
+sm              | Satış metrekaresi             | 5000
+bs              | Bayi segmenti                 | BS1
+depo_kod        | Bağlı olduğu depo kodu        | D001
+
+💡 ÖNEMLİ NOTLAR:
+   • magaza_kod her mağaza için FARKLI olmalı
+   • il kolonunda Türkçe karakter kullanabilirsiniz (İstanbul, İzmir)
+   • depo_kod, Depo Stok dosyasındaki depo kodlarıyla eşleşmeli
+
+4.3 DEPO STOK (depo_stok.csv)
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+depo_kod        | Depo kodu                     | D001
+urun_kod        | Ürün kodu                     | U001
+stok            | Depodaki stok miktarı         | 1000
+
+💡 ÖNEMLİ NOTLAR:
+   • Her depo-ürün kombinasyonu için AYRI SATIR
+   • Stok negatif olamaz (minimum 0)
+   • Ürün kodları, Ürün Master'daki kodlarla eşleşmeli
+
+4.4 ANLIK STOK/SATIŞ (anlik_stok_satis.csv)
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+magaza_kod      | Mağaza kodu                   | M001
+urun_kod        | Ürün kodu                     | U001
+stok            | Mağazadaki mevcut stok        | 100
+yol             | Yoldaki miktar                | 20
+satis           | Satış miktarı (haftalık)      | 50
+ciro            | Ciro tutarı                   | 5000
+smm             | Satış/Stok oranı              | 2.5
+
+💡 ÖNEMLİ NOTLAR:
+   • Her mağaza-ürün kombinasyonu için AYRI SATIR
+   • Bu dosya BÜYÜK olabilir, parçalı yükleme kullanın!
+   • Satış genellikle haftalık veya aylık olarak girilir
+   • SMM = Stok Miktarı Mevcut (manuel hesaplama gerekmez)
+
+4.5 KPI (kpi.csv)
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+mg_id           | Mal grubu ID                  | MG1
+min_deger       | Minimum stok hedefi           | 100
+max_deger       | Maksimum stok hedefi          | 500
+forward_cover   | Hedef cover süresi (gün)      | 7
+
+💡 ÖNEMLİ NOTLAR:
+   • mg_id, Ürün Master'daki mg ile eşleşmeli
+   • min_deger < max_deger olmalı
+   • forward_cover genellikle 7-30 gün arası
+
+4.6 YASAK (yasak.csv) - OPSİYONEL
+───────────────────────────────────────────────────────────────
+Kolon Adı       | Açıklama                      | Örnek Değer
+────────────────┼───────────────────────────────┼─────────────
+urun_kod        | Ürün kodu                     | U001
+magaza_kod      | Mağaza kodu                   | M002
+yasak_durum     | Yasak mı? (1=Evet, 0=Hayır)   | 1
+
+═══════════════════════════════════════════════════════════════
+5. YAYGIN HATALAR VE ÇÖZÜMLERİ
+═══════════════════════════════════════════════════════════════
+
+HATA 1: "Eksik kolon: urun_kod, stok"
+───────────────────────────────────────────────────────────────
+Sebep: CSV dosyasında zorunlu kolonlar eksik
+Çözüm:
+   1. Örnek CSV'yi indirin
+   2. Kolon adlarını AYNEN kopyalayın
+   3. Küçük/büyük harf duyarlıdır: "urun_kod" ≠ "Urun_Kod"
+
+HATA 2: "CSV okuma hatası"
+───────────────────────────────────────────────────────────────
+Sebep: Dosya formatı yanlış veya bozuk
+Çözüm:
+   1. Dosyayı Excel'de açın
+   2. "Farklı Kaydet" → "CSV UTF-8 (Virgülle ayrılmış)"
+   3. Dosya adında Türkçe karakter kullanmayın
+
+HATA 3: "Eşleştirilemedi"
+───────────────────────────────────────────────────────────────
+Sebep: Dosya adı tanınamiyor
+Çözüm:
+   Dosya adında şu kelimeler olmalı:
+   • urun_master veya urun
+   • magaza_master veya magaza
+   • depo_stok veya depo
+   • anlik_stok_satis veya anlik
+   • kpi
+   
+   Örnek: "urun_master_2025.csv" ✅
+          "ürünler.csv" ❌
+
+HATA 4: Türkçe karakterler bozuk görünüyor
+───────────────────────────────────────────────────────────────
+Sebep: Yanlış karakter kodlaması
+Çözüm:
+   1. Excel'de "Farklı Kaydet"
+   2. MUTLAKA "CSV UTF-8" seçin
+   3. Normal "CSV" seçmeyin!
+
+HATA 5: Anlık Stok/Satış dosyası çok büyük
+───────────────────────────────────────────────────────────────
+Sebep: Dosya boyutu fazla
+Çözüm:
+   1. Dosyayı Excel'de açın
+   2. Parçalara bölün (örn: 50.000'er satır)
+   3. "Parçalı Yükleme" bölümünü kullanın
+   4. Tüm parçaları birlikte seçin ve yükleyin
+
+HATA 6: Duplicate satırlar
+───────────────────────────────────────────────────────────────
+Sebep: Aynı ürün-mağaza kombinasyonu birden fazla kez var
+Çözüm:
+   • Sistem otomatik olarak son kaydı tutar
+   • Eğer farklı değerlerse, veriyi temizleyin
+   • Excel'de "Remove Duplicates" özelliğini kullanın
+
+═══════════════════════════════════════════════════════════════
+EK BİLGİLER
+═══════════════════════════════════════════════════════════════
+
+BÜYÜK DOSYALARLA ÇALIŞMA:
+   • Anlık Stok/Satış dosyanız 100.000+ satırsa parçalayın
+   • Her parça 50.000-100.000 satır olabilir
+   • "Parçalı Yükleme" bölümünü kullanın
+   • Sistem otomatik birleştirecek
+
+VERİ KONTROLÜ:
+   • Yükleme sonrası "Veri Yükleme Durumu" tablosunu kontrol edin
+   • Tüm zorunlu dosyalar "✅ Başarılı" olmalı
+   • "Detaylı Veri İncelemesi" ile önizleme yapın
+
+DOSYA BOYUTU LİMİTLERİ:
+   • Tek dosya: Maksimum 200MB
+   • Parçalı yükleme: Toplam 1GB'a kadar
+   • Daha büyük veriler için teknik destek alın
+
+DESTEK:
+   • Sorun yaşarsanız örnek CSV'leri inceleyin
+   • Hata mesajlarını not alın
+   • Teknik ekiple paylaşın
+
+═══════════════════════════════════════════════════════════════
+                    📞 YARDIM VE DESTEK
+═══════════════════════════════════════════════════════════════
+
+Bu kılavuz size yardımcı olmadıysa:
+   1. Örnek CSV dosyalarını tekrar indirin
+   2. Kendi dosyanızla karşılaştırın
+   3. Hata mesajını tamamen okuyun
+   4. Teknik destek ile iletişime geçin
+
+Son Güncelleme: 2025
+Versiyon: 1.0
+"""
+
+# İndirme butonları
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.download_button(
+        label="📥 Kılavuzu İndir (.txt)",
+        data=kilavuz_metni,
+        file_name="veri_yukleme_kilavuzu.txt",
+        mime="text/plain",
+        use_container_width=True,
+        help="Metin formatında indir - Not Defteri ile açılabilir"
+    )
+
+with col2:
+    st.download_button(
+        label="📥 Kılavuzu İndir (.md)",
+        data=kilavuz_metni,
+        file_name="veri_yukleme_kilavuzu.md",
+        mime="text/markdown",
+        use_container_width=True,
+        help="Markdown formatında indir - GitHub'da güzel görünür"
+    )
+
+with col3:
+    # HTML formatı için
+    html_content = f"""
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Veri Yükleme Kılavuzu</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+            h1 {{ color: #2c3e50; border-bottom: 3px solid #3498db; }}
+            h2 {{ color: #34495e; margin-top: 30px; }}
+            pre {{ background: #f4f4f4; padding: 15px; border-left: 4px solid #3498db; }}
+            table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+            th {{ background-color: #3498db; color: white; }}
+            .success {{ color: #27ae60; }}
+            .error {{ color: #e74c3c; }}
+            .warning {{ color: #f39c12; }}
+        </style>
+    </head>
+    <body>
+        <pre>{kilavuz_metni}</pre>
+    </body>
+    </html>
+    """
+    
+    st.download_button(
+        label="📥 Kılavuzu İndir (.html)",
+        data=html_content,
+        file_name="veri_yukleme_kilavuzu.html",
+        mime="text/html",
+        use_container_width=True,
+        help="HTML formatında indir - Tarayıcıda açılabilir"
+    )
+
+st.info("💡 **İpucu:** Kılavuzu indirip kaydedin, ihtiyaç duyduğunuzda açın!")
+
+st.markdown("---")
 
 # ============================================
 # ÖZEL: ANLIK STOK/SATIŞ PARÇALI YÜKLEME
@@ -596,5 +969,6 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
 
