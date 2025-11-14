@@ -1119,20 +1119,19 @@ elif menu == "📐 Hesaplama":
                         '📤 Sevk Olan Ürün Sayısı'
                     ],
                     'Değer': [
-                        f"{toplam_magaza_stok:,.0f}",
-                        f"{toplam_yol:,.0f}",
-                        f"{toplam_depo_stok:,.0f}",
-                        f"{toplam_satis:,.0f}",
-                        f"{toplam_ihtiyac:,.0f}",
-                        f"{toplam_sevkiyat:,.0f}",
-                        f"{performans:.2f}%",
-                        f"{algoritma_suresi:.2f} saniye",
-                        f"{magaza_sayisi:,}",
-                        f"{urun_sayisi:,}",
-                        f"{sevk_olan_urun_sayisi:,}"
+                        str(f"{toplam_magaza_stok:,.0f}"),
+                        str(f"{toplam_yol:,.0f}"),
+                        str(f"{toplam_depo_stok:,.0f}"),
+                        str(f"{toplam_satis:,.0f}"),
+                        str(f"{toplam_ihtiyac:,.0f}"),
+                        str(f"{toplam_sevkiyat:,.0f}"),
+                        str(f"{performans:.2f}%"),
+                        str(f"{algoritma_suresi:.2f} saniye"),
+                        str(f"{magaza_sayisi:,}"),
+                        str(f"{urun_sayisi:,}"),
+                        str(f"{sevk_olan_urun_sayisi:,}")
                     ]
-                }
-                
+                }              
                 ozet_df = pd.DataFrame(ozet_data)
                 
                 # Tabloyu göster
