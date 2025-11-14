@@ -778,10 +778,32 @@ with col1:
                         })
                     else:
                         df_clean = df[definition['columns']].copy()
+                        # String kolonları temizle
                         string_columns = df_clean.select_dtypes(include=['object']).columns
                         for col in string_columns:
                             df_clean[col] = df_clean[col].str.strip() if df_clean[col].dtype == 'object' else df_clean[col]
                         
+                        # 🆕 SAYISAL KOLONLARI ZORLA (Özel dosyalar için)
+                        if matched_key == 'anlik_stok_satis':
+                            # Anlık Stok/Satış için sayısal kolonları zorla
+                            numeric_cols = ['stok', 'yol', 'satis', 'ciro', 'smm']
+                            for col in numeric_cols:
+                                if col in df_clean.columns:
+                                    df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
+                        
+                        elif matched_key == 'depo_stok':
+                            # Depo Stok için sayısal kolonları zorla
+                            if 'stok' in df_clean.columns:
+                                df_clean['stok'] = pd.to_numeric(df_clean['stok'], errors='coerce').fillna(0)
+                        
+                        elif matched_key == 'kpi':
+                            # KPI için sayısal kolonları zorla
+                            numeric_cols = ['min_deger', 'max_deger', 'forward_cover']
+                            for col in numeric_cols:
+                                if col in df_clean.columns:
+                                    df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
+                        
+                        st.session_state[definition['state_key']] = df_clean
                         st.session_state[definition['state_key']] = df_clean
                         upload_results.append({
                             'Dosya': uploaded_file.name,
@@ -969,6 +991,7 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
+
 
 
 
