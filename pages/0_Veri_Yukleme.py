@@ -369,197 +369,6 @@ OPSİYONEL DOSYALAR (İsteğe Bağlı):
    • 🎯 PO Detay KPI: Alım siparişi detaylı hedefler
 
 ═══════════════════════════════════════════════════════════════
-4. KOLON AÇIKLAMALARI (DETAYLI)
-═══════════════════════════════════════════════════════════════
-
-4.1 ÜRÜN MASTER (urun_master.csv)
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-urun_kod        | Ürünün benzersiz kodu         | U001, 12345
-satici_kod      | Tedarikçi kodu                | S001
-kategori_kod    | Kategori kodu                 | K001
-umg             | Üst Mal Grubu                 | UMG1
-mg              | Mal Grubu                     | MG1
-marka_kod       | Marka kodu                    | M001
-klasman_kod     | Sınıflandırma kodu            | K1
-nitelik         | Ürün özellikleri (virgülle)   | Renk:Kırmızı, Beden:M
-durum           | Aktif/Pasif durumu            | Aktif
-ithal           | İthal mi? (1=Evet, 0=Hayır)   | 1
-olcu_birimi     | Ölçü birimi                   | Adet, Kg, Litre
-koli_ici        | Koli içindeki adet            | 12
-paket_ici       | Paket içindeki adet           | 6
-
-💡 ÖNEMLİ NOTLAR:
-   • urun_kod her ürün için FARKLI olmalı (tekrar etmemeli)
-   • ithal kolonu sadece 0 veya 1 değeri alır
-   • nitelik kolonunda virgülle ayırarak özellik yazabilirsiniz
-
-4.2 MAĞAZA MASTER (magaza_master.csv)
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-magaza_kod      | Mağazanın benzersiz kodu      | M001, MG123
-il              | Mağazanın bulunduğu il        | İstanbul
-bolge           | Bölge bilgisi                 | Marmara
-tip             | Mağaza tipi                   | Hipermarket
-adres_kod       | Adres kodu                    | ADR001
-sm              | Satış metrekaresi             | 5000
-bs              | Bayi segmenti                 | BS1
-depo_kod        | Bağlı olduğu depo kodu        | D001
-
-💡 ÖNEMLİ NOTLAR:
-   • magaza_kod her mağaza için FARKLI olmalı
-   • il kolonunda Türkçe karakter kullanabilirsiniz (İstanbul, İzmir)
-   • depo_kod, Depo Stok dosyasındaki depo kodlarıyla eşleşmeli
-
-4.3 DEPO STOK (depo_stok.csv)
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-depo_kod        | Depo kodu                     | D001
-urun_kod        | Ürün kodu                     | U001
-stok            | Depodaki stok miktarı         | 1000
-
-💡 ÖNEMLİ NOTLAR:
-   • Her depo-ürün kombinasyonu için AYRI SATIR
-   • Stok negatif olamaz (minimum 0)
-   • Ürün kodları, Ürün Master'daki kodlarla eşleşmeli
-
-4.4 ANLIK STOK/SATIŞ (anlik_stok_satis.csv)
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-magaza_kod      | Mağaza kodu                   | M001
-urun_kod        | Ürün kodu                     | U001
-stok            | Mağazadaki mevcut stok        | 100
-yol             | Yoldaki miktar                | 20
-satis           | Satış miktarı (haftalık)      | 50
-ciro            | Ciro tutarı                   | 5000
-smm             | Satış/Stok oranı              | 2.5
-
-💡 ÖNEMLİ NOTLAR:
-   • Her mağaza-ürün kombinasyonu için AYRI SATIR
-   • Bu dosya BÜYÜK olabilir, parçalı yükleme kullanın!
-   • Satış genellikle haftalık veya aylık olarak girilir
-   • SMM = Stok Miktarı Mevcut (manuel hesaplama gerekmez)
-
-4.5 KPI (kpi.csv)
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-mg_id           | Mal grubu ID                  | MG1
-min_deger       | Minimum stok hedefi           | 100
-max_deger       | Maksimum stok hedefi          | 500
-forward_cover   | Hedef cover süresi (gün)      | 7
-
-💡 ÖNEMLİ NOTLAR:
-   • mg_id, Ürün Master'daki mg ile eşleşmeli
-   • min_deger < max_deger olmalı
-   • forward_cover genellikle 7-30 gün arası
-
-4.6 YASAK (yasak.csv) - OPSİYONEL
-───────────────────────────────────────────────────────────────
-Kolon Adı       | Açıklama                      | Örnek Değer
-────────────────┼───────────────────────────────┼─────────────
-urun_kod        | Ürün kodu                     | U001
-magaza_kod      | Mağaza kodu                   | M002
-yasak_durum     | Yasak mı? (1=Evet, 0=Hayır)   | 1
-
-═══════════════════════════════════════════════════════════════
-5. YAYGIN HATALAR VE ÇÖZÜMLERİ
-═══════════════════════════════════════════════════════════════
-
-HATA 1: "Eksik kolon: urun_kod, stok"
-───────────────────────────────────────────────────────────────
-Sebep: CSV dosyasında zorunlu kolonlar eksik
-Çözüm:
-   1. Örnek CSV'yi indirin
-   2. Kolon adlarını AYNEN kopyalayın
-   3. Küçük/büyük harf duyarlıdır: "urun_kod" ≠ "Urun_Kod"
-
-HATA 2: "CSV okuma hatası"
-───────────────────────────────────────────────────────────────
-Sebep: Dosya formatı yanlış veya bozuk
-Çözüm:
-   1. Dosyayı Excel'de açın
-   2. "Farklı Kaydet" → "CSV UTF-8 (Virgülle ayrılmış)"
-   3. Dosya adında Türkçe karakter kullanmayın
-
-HATA 3: "Eşleştirilemedi"
-───────────────────────────────────────────────────────────────
-Sebep: Dosya adı tanınamiyor
-Çözüm:
-   Dosya adında şu kelimeler olmalı:
-   • urun_master veya urun
-   • magaza_master veya magaza
-   • depo_stok veya depo
-   • anlik_stok_satis veya anlik
-   • kpi
-   
-   Örnek: "urun_master_2025.csv" ✅
-          "ürünler.csv" ❌
-
-HATA 4: Türkçe karakterler bozuk görünüyor
-───────────────────────────────────────────────────────────────
-Sebep: Yanlış karakter kodlaması
-Çözüm:
-   1. Excel'de "Farklı Kaydet"
-   2. MUTLAKA "CSV UTF-8" seçin
-   3. Normal "CSV" seçmeyin!
-
-HATA 5: Anlık Stok/Satış dosyası çok büyük
-───────────────────────────────────────────────────────────────
-Sebep: Dosya boyutu fazla
-Çözüm:
-   1. Dosyayı Excel'de açın
-   2. Parçalara bölün (örn: 50.000'er satır)
-   3. "Parçalı Yükleme" bölümünü kullanın
-   4. Tüm parçaları birlikte seçin ve yükleyin
-
-HATA 6: Duplicate satırlar
-───────────────────────────────────────────────────────────────
-Sebep: Aynı ürün-mağaza kombinasyonu birden fazla kez var
-Çözüm:
-   • Sistem otomatik olarak son kaydı tutar
-   • Eğer farklı değerlerse, veriyi temizleyin
-   • Excel'de "Remove Duplicates" özelliğini kullanın
-
-═══════════════════════════════════════════════════════════════
-EK BİLGİLER
-═══════════════════════════════════════════════════════════════
-
-BÜYÜK DOSYALARLA ÇALIŞMA:
-   • Anlık Stok/Satış dosyanız 100.000+ satırsa parçalayın
-   • Her parça 50.000-100.000 satır olabilir
-   • "Parçalı Yükleme" bölümünü kullanın
-   • Sistem otomatik birleştirecek
-
-VERİ KONTROLÜ:
-   • Yükleme sonrası "Veri Yükleme Durumu" tablosunu kontrol edin
-   • Tüm zorunlu dosyalar "✅ Başarılı" olmalı
-   • "Detaylı Veri İncelemesi" ile önizleme yapın
-
-DOSYA BOYUTU LİMİTLERİ:
-   • Tek dosya: Maksimum 200MB
-   • Parçalı yükleme: Toplam 1GB'a kadar
-   • Daha büyük veriler için teknik destek alın
-
-DESTEK:
-   • Sorun yaşarsanız örnek CSV'leri inceleyin
-   • Hata mesajlarını not alın
-   • Teknik ekiple paylaşın
-
-═══════════════════════════════════════════════════════════════
-                    📞 YARDIM VE DESTEK
-═══════════════════════════════════════════════════════════════
-
-Bu kılavuz size yardımcı olmadıysa:
-   1. Örnek CSV dosyalarını tekrar indirin
-   2. Kendi dosyanızla karşılaştırın
-   3. Hata mesajını tamamen okuyun
-   4. Teknik destek ile iletişime geçin
-
 Son Güncelleme: 2025
 Versiyon: 1.0
 """
@@ -665,6 +474,12 @@ if anlik_parts:
                 string_cols = df_part.select_dtypes(include=['object']).columns
                 for col in string_cols:
                     df_part[col] = df_part[col].str.strip()
+                
+                # 🆕 Sayısal kolonları zorla
+                numeric_cols = ['stok', 'yol', 'satis', 'ciro', 'smm']
+                for col in numeric_cols:
+                    if col in df_part.columns:
+                        df_part[col] = pd.to_numeric(df_part[col], errors='coerce').fillna(0)
                 
                 # Birleştir
                 if combined_df is None:
@@ -778,6 +593,7 @@ with col1:
                         })
                     else:
                         df_clean = df[definition['columns']].copy()
+                        
                         # String kolonları temizle
                         string_columns = df_clean.select_dtypes(include=['object']).columns
                         for col in string_columns:
@@ -803,7 +619,6 @@ with col1:
                                 if col in df_clean.columns:
                                     df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
                         
-                        st.session_state[definition['state_key']] = df_clean
                         st.session_state[definition['state_key']] = df_clean
                         upload_results.append({
                             'Dosya': uploaded_file.name,
@@ -847,7 +662,7 @@ st.markdown("---")
 
 
 # ============================================
-# VERİ YÜKLEME DURUMU TABLOSU - YENİ FORMAT
+# VERİ YÜKLEME DURUMU TABLOSU - DÜZELTİLMİŞ
 # ============================================
 st.subheader("📊 Veri Yükleme Durumu")
 
@@ -857,7 +672,7 @@ for key, definition in data_definitions.items():
     
     if data is not None and len(data) > 0:
         status = '✅ Başarılı'
-        kolon_sayisi = len(data.columns)
+        kolon_sayisi = str(len(data.columns))  # 🆕 String'e çevir (Arrow hatası için)
         boyut_mb = f"{data.memory_usage(deep=True).sum() / 1024**2:.2f}"
     else:
         status = '❌ Yüklenmedi'
@@ -991,7 +806,3 @@ if required_loaded_final == required_count_final and required_count_final > 0:
     with col2:
         if st.button("➡️ Alım Sipariş Modülüne Git", use_container_width=True):
             st.switch_page("pages/4_PO.py")
-
-
-
-
