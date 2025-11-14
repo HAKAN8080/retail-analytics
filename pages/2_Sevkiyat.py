@@ -1027,6 +1027,10 @@ elif menu == "📐 Hesaplama":
                 # 10. DEPO STOK DAĞITIMI
 
                 result = result[result['ihtiyac'] > 0].copy()
+
+
+                # 🆕 Depo stok verisini AL
+                depo_df = st.session_state.depo_stok.copy()  # ✅ Önce tanımla!
                 
                 # 🆕 Depo stok veri tiplerini düzelt
                 depo_df['depo_kod'] = depo_df['depo_kod'].astype(int)
