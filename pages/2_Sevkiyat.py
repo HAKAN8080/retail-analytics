@@ -1025,28 +1025,33 @@ elif menu == "📐 Hesaplama":
                         result.loc[result['yasak_durum'] == 'Yasak', 'ihtiyac'] = 0
                 
                 # 10. DEPO STOK DAĞITIMI
+
                 result = result[result['ihtiyac'] > 0].copy()
+                
+                # 🆕 Depo stok veri tiplerini düzelt
+                depo_df['depo_kod'] = depo_df['depo_kod'].astype(int)
+                depo_df['urun_kod'] = depo_df['urun_kod'].astype(int)
+                
+                # 🆕 Result veri tiplerini düzelt
+                result['depo_kod'] = pd.to_numeric(result['depo_kod'], errors='coerce').fillna(0).astype(int)
+                result['urun_kod'] = result['urun_kod'].astype(int)
                 
                 # Depo stok sözlüğü
                 depo_dict = {}
                 for _, row in depo_df.iterrows():
-                    depo_kod = str(row.get('depo_kod', 'DEPO_01'))
-                    urun_kod = str(row['urun_kod'])
+                    depo_kod = int(row['depo_kod'])
+                    urun_kod = int(row['urun_kod'])
                     key = (depo_kod, urun_kod)
                     depo_dict[key] = float(row['stok'])
                 
                 # Öncelik sıralaması
-                if st.session_state.siralama_data is not None:
-                    siralama_df = st.session_state.siralama_data.copy()
-                    result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
-                else:
-                    result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
+                result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
                 
                 # Sevkiyat hesapla
                 sevkiyat_list = []
                 for _, row in result.iterrows():
-                    depo_kod = str(row.get('depo_kod', 'DEPO_01'))
-                    urun_kod = str(row['urun_kod'])
+                    depo_kod = int(row['depo_kod'])
+                    urun_kod = int(row['urun_kod'])
                     key = (depo_kod, urun_kod)
                     ihtiyac = float(row['ihtiyac'])
                     
@@ -1058,6 +1063,9 @@ elif menu == "📐 Hesaplama":
                         sevkiyat_list.append(0.0)
                 
                 result['sevkiyat_miktari'] = sevkiyat_list
+                                
+                
+               
                 result['stok_yoklugu_satis_kaybi'] = result['ihtiyac'] - result['sevkiyat_miktari']
                 
                 # 11. SONUÇ HAZIRLA
