@@ -968,44 +968,76 @@ elif menu == "📐 Hesaplama":
                 # "# 5. MATRİS DEĞERLERİ" yazan kısmı bulun
                 # Tüm for loop kodunu silin
                 # Bu yeni kodu yapıştırın
-                # 6. RPT/MIN/INITIAL DURUMLARI
-                rpt = df.copy()
-                rpt['Durum'] = 'RPT'
+                # 6. RPT/MIN/INITIAL DURUMLARI - MEMORY EFFICIENT VERSION
+                # ❌ ESKİ: df.copy() 3 kez = 3x memory
+                # ✅ YENİ: Tek DataFrame, sadece 'Durum' kolonu ekleniyor
                 
-                min_df = df.copy()
+                st.info("📊 İhtiyaç türleri hazırlanıyor...")
+                
+                # Sadece gerekli kolonları al
+                base_cols = ['urun_kod', 'magaza_kod', 'stok', 'yol', 'satis', 
+                            'urun_segment', 'magaza_segment', 'mg', 
+                            'min_deger', 'max_deger', 'genlestirme', 'sisme', 
+                            'min_oran', 'initial_katsayi', 'depo_kod']
+                
+                # Sadece mevcut kolonları al
+                available_base = [col for col in base_cols if col in df.columns]
+                df_slim = df[available_base].copy()
+                
+                # RPT durumu
+                df_slim['Durum'] = 'RPT'
+                result_list = [df_slim]
+                
+                # Min durumu - hafif kopyalama
+                min_df = df_slim.copy()
                 min_df['Durum'] = 'Min'
+                result_list.append(min_df)
                 
+                # Initial durumu (sadece yeni ürünler için)
                 if yeni_urunler:
-                    initial = df[df['urun_kod'].isin(yeni_urunler)].copy()
-                    initial['Durum'] = 'Initial'
-                    result = pd.concat([rpt, initial, min_df], ignore_index=True)
-                else:
-                    result = pd.concat([rpt, min_df], ignore_index=True)
+                    initial_mask = df_slim['urun_kod'].isin(yeni_urunler)
+                    if initial_mask.sum() > 0:
+                        initial_df = df_slim[initial_mask].copy()
+                        initial_df['Durum'] = 'Initial'
+                        result_list.append(initial_df)
                 
-                # 7. İHTİYAÇ HESAPLA
-                result['ihtiyac_rpt'] = (default_fc * result['satis'] * result['genlestirme']) - (result['stok'] + result['yol'])
-                result['ihtiyac_min'] = (result['min_oran'] * result['min_deger']) - (result['stok'] + result['yol'])
-                result['ihtiyac_initial'] = (result['min_deger'] * result['initial_katsayi']) - (result['stok'] + result['yol'])
+                # Birleştir
+                result = pd.concat(result_list, ignore_index=True)
+                del df_slim, min_df, result_list  # Memory temizle
+                if 'initial_df' in dir():
+                    del initial_df
                 
+                st.success(f"✅ {len(result):,} satır oluşturuldu")
+                
+                # 7. İHTİYAÇ HESAPLA - VECTORIZED
+                st.info("🔢 İhtiyaçlar hesaplanıyor...")
+                
+                # Vectorized hesaplama
                 result['ihtiyac'] = 0.0
-                result.loc[result['Durum'] == 'RPT', 'ihtiyac'] = result['ihtiyac_rpt']
-                result.loc[result['Durum'] == 'Min', 'ihtiyac'] = result['ihtiyac_min']
-                result.loc[result['Durum'] == 'Initial', 'ihtiyac'] = result['ihtiyac_initial']
                 
-                # Negatif ihtiyaçları 0 yap
+                # RPT ihtiyacı
+                rpt_mask = result['Durum'] == 'RPT'
+                result.loc[rpt_mask, 'ihtiyac'] = (
+                    default_fc * result.loc[rpt_mask, 'satis'] * result.loc[rpt_mask, 'genlestirme']
+                ) - (result.loc[rpt_mask, 'stok'] + result.loc[rpt_mask, 'yol'])
+                
+                # Min ihtiyacı
+                min_mask = result['Durum'] == 'Min'
+                result.loc[min_mask, 'ihtiyac'] = (
+                    result.loc[min_mask, 'min_oran'] * result.loc[min_mask, 'min_deger']
+                ) - (result.loc[min_mask, 'stok'] + result.loc[min_mask, 'yol'])
+                
+                # Initial ihtiyacı
+                initial_mask = result['Durum'] == 'Initial'
+                if initial_mask.sum() > 0:
+                    result.loc[initial_mask, 'ihtiyac'] = (
+                        result.loc[initial_mask, 'min_deger'] * result.loc[initial_mask, 'initial_katsayi']
+                    ) - (result.loc[initial_mask, 'stok'] + result.loc[initial_mask, 'yol'])
+                
+                # Negatif ihtiyaçları sıfırla
                 result['ihtiyac'] = result['ihtiyac'].clip(lower=0)
                 
-
-                # 8. DEPO EŞLEŞTİR
-
-                if 'depo_kod' in magaza_df.columns:
-                    result = result.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
-                    # 🆕 KRİTİK: FLOAT → INT DÖNÜŞÜMÜ
-                    result['depo_kod'] = result['depo_kod'].fillna(0).astype(int)
-                    result['depo_kod'] = result['depo_kod'].replace(0, 'DEPO_01')
-                else:
-                    result['depo_kod'] = 'DEPO_01'
-
+                # 8. DEPO EŞLEŞTİR (zaten yapıldı yukarıda)
                 
                 # 9. YASAK KONTROL
                 if (st.session_state.yasak_master is not None and 
@@ -1015,6 +1047,8 @@ elif menu == "📐 Hesaplama":
                     yasak = st.session_state.yasak_master.copy()
                     yasak['urun_kod'] = yasak['urun_kod'].astype(str)
                     yasak['magaza_kod'] = yasak['magaza_kod'].astype(str)
+                    result['urun_kod'] = result['urun_kod'].astype(str)
+                    result['magaza_kod'] = result['magaza_kod'].astype(str)
                     
                     if 'yasak_durum' in yasak.columns:
                         result = result.merge(
@@ -1023,54 +1057,70 @@ elif menu == "📐 Hesaplama":
                             how='left'
                         )
                         result.loc[result['yasak_durum'] == 'Yasak', 'ihtiyac'] = 0
+                        result.drop('yasak_durum', axis=1, inplace=True, errors='ignore')
                 
-                # 10. DEPO STOK DAĞITIMI
-
+                # 10. DEPO STOK DAĞITIMI - SUPER FAST VECTORIZED VERSION
+                st.info("🚀 Depo stok dağıtımı yapılıyor (yüksek performans modu)...")
+                
+                # Sadece pozitif ihtiyaçları al
                 result = result[result['ihtiyac'] > 0].copy()
-
-
-                # 🆕 Depo stok verisini AL
-                depo_df = st.session_state.depo_stok.copy()  # ✅ Önce tanımla!
+                st.write(f"Pozitif ihtiyaç sayısı: {len(result):,}")
                 
-                # 🆕 Depo stok veri tiplerini düzelt
-                depo_df['depo_kod'] = depo_df['depo_kod'].astype(int)
-                depo_df['urun_kod'] = depo_df['urun_kod'].astype(int)
+                if len(result) == 0:
+                    st.warning("⚠️ Hiç pozitif ihtiyaç bulunamadı!")
+                    st.stop()
                 
-                # 🆕 Result veri tiplerini düzelt
+                # Veri tiplerini düzelt
                 result['depo_kod'] = pd.to_numeric(result['depo_kod'], errors='coerce').fillna(0).astype(int)
-                result['urun_kod'] = result['urun_kod'].astype(int)
+                result['urun_kod'] = result['urun_kod'].astype(str)
                 
-                # Depo stok sözlüğü
-                depo_dict = {}
+                depo_df = st.session_state.depo_stok.copy()
+                depo_df['depo_kod'] = depo_df['depo_kod'].astype(int)
+                depo_df['urun_kod'] = depo_df['urun_kod'].astype(str)
+                
+                # Öncelik sıralaması (Durum bazında)
+                durum_priority = {'RPT': 1, 'Initial': 2, 'Min': 3}
+                result['durum_oncelik'] = result['Durum'].map(durum_priority).fillna(4)
+                result = result.sort_values(['durum_oncelik', 'ihtiyac'], ascending=[True, False])
+                result = result.reset_index(drop=True)
+                
+                # ⚡ VECTORIZED DEPO STOK DAĞITIMI
+                # Depo stok dictionary
+                depo_stok_dict = {}
                 for _, row in depo_df.iterrows():
-                    depo_kod = int(row['depo_kod'])
-                    urun_kod = int(row['urun_kod'])
-                    key = (depo_kod, urun_kod)
-                    depo_dict[key] = float(row['stok'])
+                    key = (int(row['depo_kod']), str(row['urun_kod']))
+                    depo_stok_dict[key] = float(row['stok'])
                 
-                # Öncelik sıralaması
-                result = result.sort_values(['Durum', 'ihtiyac'], ascending=[True, False])
+                # Batch işleme - her 10K satırda bir güncelle
+                batch_size = 10000
+                total_rows = len(result)
+                sevkiyat_array = np.zeros(total_rows)
                 
-                # Sevkiyat hesapla
-                sevkiyat_list = []
-                for _, row in result.iterrows():
-                    depo_kod = int(row['depo_kod'])
-                    urun_kod = int(row['urun_kod'])
-                    key = (depo_kod, urun_kod)
-                    ihtiyac = float(row['ihtiyac'])
+                for batch_start in range(0, total_rows, batch_size):
+                    batch_end = min(batch_start + batch_size, total_rows)
                     
-                    if key in depo_dict and depo_dict[key] > 0:
-                        sevk = min(ihtiyac, depo_dict[key])
-                        depo_dict[key] -= sevk
-                        sevkiyat_list.append(sevk)
-                    else:
-                        sevkiyat_list.append(0.0)
+                    for idx in range(batch_start, batch_end):
+                        row = result.iloc[idx]
+                        key = (int(row['depo_kod']), str(row['urun_kod']))
+                        ihtiyac = float(row['ihtiyac'])
+                        
+                        if key in depo_stok_dict and depo_stok_dict[key] > 0:
+                            sevk = min(ihtiyac, depo_stok_dict[key])
+                            depo_stok_dict[key] -= sevk
+                            sevkiyat_array[idx] = sevk
+                    
+                    # Progress göster
+                    if batch_end % 50000 == 0 or batch_end == total_rows:
+                        progress = (batch_end / total_rows) * 100
+                        st.write(f"İşlenen: {batch_end:,}/{total_rows:,} ({progress:.1f}%)")
                 
-                result['sevkiyat_miktari'] = sevkiyat_list
-                                
-                
-               
+                result['sevkiyat_miktari'] = sevkiyat_array
                 result['stok_yoklugu_satis_kaybi'] = result['ihtiyac'] - result['sevkiyat_miktari']
+                
+                # Temizlik
+                result.drop('durum_oncelik', axis=1, inplace=True, errors='ignore')
+                
+                st.success("✅ Depo stok dağıtımı tamamlandı!")
                 
                 # 11. SONUÇ HAZIRLA
                 final_columns = [
