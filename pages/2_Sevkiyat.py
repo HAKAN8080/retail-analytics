@@ -1193,6 +1193,12 @@ elif menu == "📐 Hesaplama":
                                 
                 col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
+                    
+                    # SAP formatında dosya hazırla
+                    
+                    sap_data = final[['magaza_kod', 'urun_kod', 'depo_kod', 'sevkiyat_miktari']].copy()
+                    sap_data = sap_data[sap_data['sevkiyat_miktari'] > 0]  # Sadece sevkiyat olanlar
+                    
                     st.download_button(
                         label="📥 SAP Dosyası İndir (CSV)",
                         data=sap_data.to_csv(index=False, encoding='utf-8-sig'),
