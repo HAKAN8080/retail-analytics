@@ -1,7 +1,3 @@
-"""
-🚀 Thorius Retail Analytics 
-Ana Sayfa
-"""
 import streamlit as st
 
 # Sayfa konfigürasyonu
