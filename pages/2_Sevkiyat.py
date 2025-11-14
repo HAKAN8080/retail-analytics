@@ -995,11 +995,17 @@ elif menu == "📐 Hesaplama":
                 # Negatif ihtiyaçları 0 yap
                 result['ihtiyac'] = result['ihtiyac'].clip(lower=0)
                 
+
                 # 8. DEPO EŞLEŞTİR
+
                 if 'depo_kod' in magaza_df.columns:
                     result = result.merge(magaza_df[['magaza_kod', 'depo_kod']], on='magaza_kod', how='left')
+                    # 🆕 KRİTİK: FLOAT → INT DÖNÜŞÜMÜ
+                    result['depo_kod'] = result['depo_kod'].fillna(0).astype(int)
+                    result['depo_kod'] = result['depo_kod'].replace(0, 'DEPO_01')
                 else:
                     result['depo_kod'] = 'DEPO_01'
+
                 
                 # 9. YASAK KONTROL
                 if (st.session_state.yasak_master is not None and 
